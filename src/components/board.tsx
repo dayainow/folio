@@ -327,7 +327,7 @@ export function BoardPanel() {
         </Card>
       ) : null}
 
-      {/* Board */}
+      {/* 일정 (Board) */}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
