@@ -42,6 +42,14 @@ function rowToDoc(row: DocRow): DocEntry {
   };
 }
 
+async function requireUserId() {
+  const supabase = createBrowserSupabaseClient();
+  const { data, error } = await supabase.auth.getUser();
+  if (error) throw error;
+  if (!data.user) throw new Error('Supabase 로그인이 필요합니다.');
+  return { supabase, userId: data.user.id };
+}
+
 export function loadDocs(): DocEntry[] {
   if (typeof window === 'undefined') return [];
   try {
@@ -97,7 +105,7 @@ export function loadCategories(): string[] {
 
 /** Supabase `docs` 테이블에서 문서 목록을 불러온다 */
 export async function loadDocsSupabase(): Promise<DocEntry[]> {
-  const supabase = createBrowserSupabaseClient();
+  const { supabase } = await requireUserId();
   const { data, error } = await supabase
     .from('docs')
     .select('id, title, content, category, created_at, updated_at')
@@ -113,11 +121,12 @@ export async function loadDocsSupabase(): Promise<DocEntry[]> {
 
 /** Supabase `docs` 테이블에 문서를 upsert한다 */
 export async function saveDocSupabase(doc: DocEntry) {
-  const supabase = createBrowserSupabaseClient();
+  const { supabase, userId } = await requireUserId();
   const now = new Date().toISOString();
   const { error } = await supabase.from('docs').upsert(
     {
       id: doc.id,
+      user_id: userId,
       title: doc.title,
       content: doc.content,
       category: doc.category,
@@ -135,11 +144,39 @@ export async function saveDocSupabase(doc: DocEntry) {
 
 /** Supabase `docs` 테이블에서 문서를 삭제한다 */
 export async function deleteDocSupabase(id: string) {
-  const supabase = createBrowserSupabaseClient();
+  const { supabase } = await requireUserId();
   const { error } = await supabase.from('docs').delete().eq('id', id);
 
   if (error) {
     console.error('deleteDocSupabase:', error.message);
     throw error;
+  }
+}
+
+export async function saveDocWithFallback(doc: DocEntry) {
+  try {
+    await saveDocSupabase(doc);
+  } catch (err) {
+    console.warn('saveDocWithFallback → localStorage', err);
+    saveDoc(doc);
+  }
+}
+
+export async function deleteDocWithFallback(id: string) {
+  try {
+    await deleteDocSupabase(id);
+  } catch (err) {
+    console.warn('deleteDocWithFallback → localStorage', err);
+    deleteDoc(id);
+  }
+}
+
+/** Supabase → localStorage 폴백 */
+export async function loadDocsWithFallback(): Promise<DocEntry[]> {
+  try {
+    return await loadDocsSupabase();
+  } catch (err) {
+    console.warn('loadDocsWithFallback → localStorage', err);
+    return loadDocs();
   }
 }

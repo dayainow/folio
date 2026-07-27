@@ -19,7 +19,7 @@ import {
   Eye,
   Pencil,
 } from 'lucide-react';
-import { loadDocs, saveDoc, deleteDoc, loadCategories, type DocEntry } from '@/lib/docs';
+import { loadDocsWithFallback, saveDocWithFallback, deleteDocWithFallback, loadCategories, type DocEntry } from '@/lib/docs';
 
 type EditPane = 'edit' | 'preview' | 'split';
 
@@ -59,14 +59,26 @@ function MarkdownPreview({ content }: { content: string }) {
 }
 
 export function DocsPanel() {
-  // SSR/CSR 첫 렌더는 동일하게 비워 두고, 마운트 후 localStorage 로드
+  // SSR/CSR 첫 렌더는 동일하게 비워 두고, 마운트 후 Supabase → localStorage 폴백 로드
   const [docs, setDocs] = useState<DocEntry[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
-  const refresh = () => setDocs(loadDocs());
+
+  const refresh = useCallback(async () => {
+    const next = await loadDocsWithFallback();
+    setDocs(next);
+  }, []);
 
   useEffect(() => {
-    setDocs(loadDocs());
-    setCategories(loadCategories());
+    let cancelled = false;
+    (async () => {
+      const next = await loadDocsWithFallback();
+      if (cancelled) return;
+      setDocs(next);
+      setCategories(loadCategories());
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -91,7 +103,7 @@ export function DocsPanel() {
     setEditing(true);
   };
 
-  const startNew = () => {
+  const startNew = async () => {
     const newDoc: DocEntry = {
       id: crypto.randomUUID(),
       title: '새 문서',
@@ -100,26 +112,33 @@ export function DocsPanel() {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    saveDoc(newDoc);
-    refresh();
+    await saveDocWithFallback(newDoc);
+    await refresh();
     selectDoc(newDoc);
     setEditPane('edit');
     setEditing(true);
   };
 
-  const doSave = () => {
+  const doSave = async () => {
     if (!selectedId) return;
-    saveDoc({ id: selectedId, title, content, category, createdAt: docs.find(d => d.id === selectedId)!.createdAt, updatedAt: new Date().toISOString() });
-    refresh();
+    await saveDocWithFallback({
+      id: selectedId,
+      title,
+      content,
+      category,
+      createdAt: docs.find(d => d.id === selectedId)!.createdAt,
+      updatedAt: new Date().toISOString(),
+    });
+    await refresh();
     setEditing(false);
     setEditPane('edit');
   };
 
-  const doDelete = () => {
+  const doDelete = async () => {
     if (!selectedId) return;
-    deleteDoc(selectedId);
+    await deleteDocWithFallback(selectedId);
     setSelectedId(null);
-    refresh();
+    await refresh();
   };
 
   const filtered = docs

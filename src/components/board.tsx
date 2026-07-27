@@ -27,7 +27,7 @@ import {
   ChevronUp,
   ChevronDown,
 } from 'lucide-react';
-import { loadTasks, saveTasks, type Task, DEFAULT_COLUMNS } from '@/lib/board';
+import { loadTasksWithFallback, saveTasksWithFallback, deleteTaskWithFallback, type Task, DEFAULT_COLUMNS } from '@/lib/board';
 
 const STATUS_ORDER: Task['status'][] = ['backlog', 'in_progress', 'review', 'done'];
 
@@ -175,7 +175,7 @@ function DroppableColumn({
 }
 
 export function BoardPanel() {
-  // SSR/CSR 첫 렌더는 동일하게 비워 두고, 마운트 후 localStorage 로드
+  // SSR/CSR 첫 렌더는 동일하게 비워 두고, 마운트 후 Supabase → localStorage 폴백 로드
   const [tasks, setTasks] = useState<Task[]>([]);
   const [search, setSearch] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -183,7 +183,14 @@ export function BoardPanel() {
   const [form, setForm] = useState<{ title: string; description: string; priority: Task['priority']; tags: string; status: Task['status'] }>({ title: '', description: '', priority: 'medium', tags: '', status: 'backlog' });
 
   useEffect(() => {
-    setTasks(loadTasks());
+    let cancelled = false;
+    (async () => {
+      const next = await loadTasksWithFallback();
+      if (!cancelled) setTasks(next);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const sensors = useSensors(
@@ -192,24 +199,26 @@ export function BoardPanel() {
     }),
   );
 
-  const refresh = () => setTasks(loadTasks());
-
-  const persist = (t: Task[]) => {
-    saveTasks(t);
-    refresh();
+  const persist = async (next: Task[]) => {
+    const removed = tasks.filter(old => !next.some(n => n.id === old.id));
+    for (const item of removed) {
+      await deleteTaskWithFallback(item.id);
+    }
+    await saveTasksWithFallback(next);
+    setTasks(next);
   };
 
-  const setTaskStatus = (id: string, status: Task['status']) => {
+  const setTaskStatus = async (id: string, status: Task['status']) => {
     const task = tasks.find(t => t.id === id);
     if (!task || task.status === status) return;
-    persist(tasks.map(t => t.id === id ? { ...t, status, updatedAt: new Date().toISOString() } : t));
+    await persist(tasks.map(t => t.id === id ? { ...t, status, updatedAt: new Date().toISOString() } : t));
   };
 
-  const doSave = () => {
+  const doSave = async () => {
     if (!form.title.trim()) return;
     const tags = form.tags.split(',').map(t => t.trim()).filter(Boolean);
     if (editingId) {
-      persist(tasks.map(t => t.id === editingId ? { ...t, title: form.title, description: form.description, priority: form.priority as Task['priority'], tags, updatedAt: new Date().toISOString() } : t));
+      await persist(tasks.map(t => t.id === editingId ? { ...t, title: form.title, description: form.description, priority: form.priority as Task['priority'], tags, updatedAt: new Date().toISOString() } : t));
     } else {
       const newTask: Task = {
         id: crypto.randomUUID(),
@@ -221,7 +230,7 @@ export function BoardPanel() {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-      persist([...tasks, newTask]);
+      await persist([...tasks, newTask]);
     }
     setForm({ title: '', description: '', priority: 'medium', tags: '', status: 'backlog' });
     setEditingId(null);
@@ -232,20 +241,20 @@ export function BoardPanel() {
     setForm({ title: task.title, description: task.description, priority: task.priority, tags: task.tags.join(', '), status: task.status });
   };
 
-  const doDelete = (id: string) => {
-    persist(tasks.filter(t => t.id !== id));
+  const doDelete = async (id: string) => {
+    await persist(tasks.filter(t => t.id !== id));
     if (editingId === id) setEditingId(null);
   };
 
-  const move = (id: string, direction: 'left' | 'right') => {
+  const move = async (id: string, direction: 'left' | 'right') => {
     const task = tasks.find(t => t.id === id);
     if (!task) return;
     const idx = STATUS_ORDER.indexOf(task.status);
     if (direction === 'left' && idx > 0) {
-      setTaskStatus(id, STATUS_ORDER[idx - 1]);
+      await setTaskStatus(id, STATUS_ORDER[idx - 1]);
     }
     if (direction === 'right' && idx < STATUS_ORDER.length - 1) {
-      setTaskStatus(id, STATUS_ORDER[idx + 1]);
+      await setTaskStatus(id, STATUS_ORDER[idx + 1]);
     }
   };
 
@@ -260,7 +269,7 @@ export function BoardPanel() {
 
     const nextStatus = resolveDropStatus(over.id, tasks);
     if (!nextStatus) return;
-    setTaskStatus(String(active.id), nextStatus);
+    void setTaskStatus(String(active.id), nextStatus);
   };
 
   const handleDragCancel = () => {

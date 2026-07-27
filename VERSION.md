@@ -8,7 +8,7 @@
 |------|-----|
 | 버전 | 0.2.0-wip |
 | Phase | Phase 1 (기본 기능) |
-| 진행 중 | P4 Supabase 연동 |
+| 진행 중 | P4 Supabase 연동, P4-2 Supabase DB 스키마 + UI 전환 |
 | 다음 | P5 Jira 연동 |
 
 ## 완료 항목
@@ -24,11 +24,19 @@
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| P4 | Supabase 연동 | 스캐폴드 `08dc0f9`. UI 전환·스키마는 후속 |
+| P4 | Supabase 연동 | 스캐폴드 `08dc0f9` |
+| P4-2 | Supabase DB 스키마 + UI 전환 | schema SQL, journal/docs/board Supabase 우선+폴백 |
 
 ## 변경 이력
 
-### 0.2.0-wip — 2026-07-27
+### 0.2.0-wip — 2026-07-27 (P4-2)
+
+- `docs/supabase-schema.sql` (journals / docs / boards + RLS + 인덱스)
+- UI 저장: Supabase 우선, 실패 시 localStorage 폴백
+- UI 로드: Journal은 local→Supabase(우선), Docs/Board는 Supabase→local 폴백
+- `@supabase/auth-ui-react` 추가 (로그인 UI 준비)
+
+### 0.2.0-wip — 2026-07-27 (P4)
 
 - `@supabase/ssr`, `@supabase/supabase-js` 추가
 - `.env.local` placeholder + `.gitignore`에 `.env.local` 명시

@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Save, ChevronLeft, ChevronRight } from 'lucide-react';
-import { saveJournal, loadJournals, getAllTags } from '@/lib/journal';
+import { saveJournalWithFallback, loadJournalsWithFallback, getAllTags } from '@/lib/journal';
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -36,15 +36,25 @@ export function JournalPanel() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const entries = loadJournals();
-    const map: Record<string, Day> = {};
-    for (const k in entries) map[k] = { content: entries[k].content, tags: entries[k].tags };
-    const today = todayStr();
-    setDate(today);
-    setDays(map);
-    setDraft(map[today]?.content ?? '');
-    setTagsInput(joinTags(map[today]?.tags ?? []));
-    setReady(true);
+    let cancelled = false;
+
+    (async () => {
+      // localStorage → Supabase 순으로 시도하되, Supabase 성공 시 우선 적용
+      const entries = await loadJournalsWithFallback();
+      if (cancelled) return;
+      const map: Record<string, Day> = {};
+      for (const k in entries) map[k] = { content: entries[k].content, tags: entries[k].tags };
+      const today = todayStr();
+      setDate(today);
+      setDays(map);
+      setDraft(map[today]?.content ?? '');
+      setTagsInput(joinTags(map[today]?.tags ?? []));
+      setReady(true);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -112,9 +122,9 @@ export function JournalPanel() {
     }
   };
 
-  const save = useCallback(() => {
+  const save = useCallback(async () => {
     const tags = parseTags(tagsInput);
-    saveJournal(date, draft, tags);
+    await saveJournalWithFallback(date, draft, tags);
     setDays(prev => ({ ...prev, [date]: { content: draft, tags } }));
   }, [date, draft, tagsInput]);
 
@@ -122,8 +132,9 @@ export function JournalPanel() {
     if (!ready) return;
     const t = setInterval(() => {
       const tags = parseTags(tagsInput);
-      saveJournal(date, draft, tags);
-      setDays(prev => ({ ...prev, [date]: { content: draft, tags } }));
+      void saveJournalWithFallback(date, draft, tags).then(() => {
+        setDays(prev => ({ ...prev, [date]: { content: draft, tags } }));
+      });
     }, 2000);
     return () => clearInterval(t);
   }, [date, draft, tagsInput, ready]);
