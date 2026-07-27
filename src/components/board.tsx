@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -175,11 +175,16 @@ function DroppableColumn({
 }
 
 export function BoardPanel() {
-  const [tasks, setTasks] = useState<Task[]>(() => loadTasks());
+  // SSR/CSR 첫 렌더는 동일하게 비워 두고, 마운트 후 localStorage 로드
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [search, setSearch] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [form, setForm] = useState<{ title: string; description: string; priority: Task['priority']; tags: string; status: Task['status'] }>({ title: '', description: '', priority: 'medium', tags: '', status: 'backlog' });
+
+  useEffect(() => {
+    setTasks(loadTasks());
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {

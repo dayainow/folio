@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -17,9 +17,15 @@ import {
 import { loadDocs, saveDoc, deleteDoc, loadCategories, type DocEntry } from '@/lib/docs';
 
 export function DocsPanel() {
-  const [docs, setDocs] = useState<DocEntry[]>(() => loadDocs());
+  // SSR/CSR 첫 렌더는 동일하게 비워 두고, 마운트 후 localStorage 로드
+  const [docs, setDocs] = useState<DocEntry[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
   const refresh = () => setDocs(loadDocs());
-  const [categories] = useState<string[]>(loadCategories);
+
+  useEffect(() => {
+    setDocs(loadDocs());
+    setCategories(loadCategories());
+  }, []);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState<string | null>(null);

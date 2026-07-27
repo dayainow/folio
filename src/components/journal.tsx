@@ -28,26 +28,33 @@ export function JournalPanel() {
   const [filterTag, setFilterTag] = useState<string | null>(null);
 
   type Day = { content: string; tags: string[] };
-  const [days, setDays] = useState<Record<string, Day>>(() => {
+  // SSR/CSR 첫 렌더는 동일하게 비워 두고, 마운트 후 localStorage를 읽어 hydration mismatch 방지
+  const [days, setDays] = useState<Record<string, Day>>({});
+  const [draft, setDraft] = useState('');
+  const [tagsInput, setTagsInput] = useState('');
+  const [tagDraft, setTagDraft] = useState('');
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
     const entries = loadJournals();
     const map: Record<string, Day> = {};
     for (const k in entries) map[k] = { content: entries[k].content, tags: entries[k].tags };
-    return map;
-  });
-
-  const content = days[date]?.content ?? '';
-  const tagsValue = joinTags(days[date]?.tags ?? []);
-  const [draft, setDraft] = useState(content);
-  const [tagsInput, setTagsInput] = useState(tagsValue);
-  const [tagDraft, setTagDraft] = useState('');
+    const today = todayStr();
+    setDate(today);
+    setDays(map);
+    setDraft(map[today]?.content ?? '');
+    setTagsInput(joinTags(map[today]?.tags ?? []));
+    setReady(true);
+  }, []);
 
   useEffect(() => {
+    if (!ready) return;
     setDraft(days[date]?.content ?? '');
     setTagsInput(joinTags(days[date]?.tags ?? []));
     setTagDraft('');
     // days는 자동저장으로 갱신되므로 date 전환 시에만 동기화
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [date]);
+  }, [date, ready]);
 
   const currentTags = useMemo(() => parseTags(tagsInput), [tagsInput]);
 
@@ -112,13 +119,14 @@ export function JournalPanel() {
   }, [date, draft, tagsInput]);
 
   useEffect(() => {
+    if (!ready) return;
     const t = setInterval(() => {
       const tags = parseTags(tagsInput);
       saveJournal(date, draft, tags);
       setDays(prev => ({ ...prev, [date]: { content: draft, tags } }));
     }, 2000);
     return () => clearInterval(t);
-  }, [date, draft, tagsInput]);
+  }, [date, draft, tagsInput, ready]);
 
   const allTags = useMemo(() => getAllTags(days), [days]);
 
