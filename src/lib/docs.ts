@@ -1,5 +1,7 @@
 'use client';
 
+import { createBrowserSupabaseClient } from '@/lib/supabase';
+
 export interface DocEntry {
   id: string;
   title: string;
@@ -19,6 +21,26 @@ const DEFAULT_CATEGORIES = [
   'Deploy',
   'Meeting',
 ];
+
+type DocRow = {
+  id: string;
+  title: string;
+  content: string;
+  category: string;
+  created_at: string;
+  updated_at: string;
+};
+
+function rowToDoc(row: DocRow): DocEntry {
+  return {
+    id: row.id,
+    title: row.title,
+    content: row.content ?? '',
+    category: row.category,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
 
 export function loadDocs(): DocEntry[] {
   if (typeof window === 'undefined') return [];
@@ -71,4 +93,53 @@ export function deleteDoc(id: string) {
 
 export function loadCategories(): string[] {
   return [...DEFAULT_CATEGORIES];
+}
+
+/** Supabase `docs` 테이블에서 문서 목록을 불러온다 */
+export async function loadDocsSupabase(): Promise<DocEntry[]> {
+  const supabase = createBrowserSupabaseClient();
+  const { data, error } = await supabase
+    .from('docs')
+    .select('id, title, content, category, created_at, updated_at')
+    .order('updated_at', { ascending: false });
+
+  if (error) {
+    console.error('loadDocsSupabase:', error.message);
+    throw error;
+  }
+
+  return ((data ?? []) as DocRow[]).map(rowToDoc);
+}
+
+/** Supabase `docs` 테이블에 문서를 upsert한다 */
+export async function saveDocSupabase(doc: DocEntry) {
+  const supabase = createBrowserSupabaseClient();
+  const now = new Date().toISOString();
+  const { error } = await supabase.from('docs').upsert(
+    {
+      id: doc.id,
+      title: doc.title,
+      content: doc.content,
+      category: doc.category,
+      created_at: doc.createdAt || now,
+      updated_at: now,
+    },
+    { onConflict: 'id' },
+  );
+
+  if (error) {
+    console.error('saveDocSupabase:', error.message);
+    throw error;
+  }
+}
+
+/** Supabase `docs` 테이블에서 문서를 삭제한다 */
+export async function deleteDocSupabase(id: string) {
+  const supabase = createBrowserSupabaseClient();
+  const { error } = await supabase.from('docs').delete().eq('id', id);
+
+  if (error) {
+    console.error('deleteDocSupabase:', error.message);
+    throw error;
+  }
 }

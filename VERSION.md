@@ -6,10 +6,10 @@
 
 | 항목 | 값 |
 |------|-----|
-| 버전 | 0.1.1 |
+| 버전 | 0.2.0-wip |
 | Phase | Phase 1 (기본 기능) |
-| 진행 중 | - |
-| 다음 | P4 Supabase 연동, P5 Jira 연동 |
+| 진행 중 | P4 Supabase 연동 |
+| 다음 | P5 Jira 연동 |
 
 ## 완료 항목
 
@@ -20,7 +20,20 @@
 | P3 | Docs 마크다운 프리뷰 (편집/미리보기/분할) | `2ba620f` |
 | P3.1 | Folio 브랜딩 + README 작업 관리 | `c02fade` |
 
+## 진행 중
+
+| ID | 요약 | 노트 |
+|----|------|------|
+| P4 | Supabase 연동 | 클라이언트/env 스캐폴드 + `*Supabase` API 추가. UI 전환·스키마는 후속 |
+
 ## 변경 이력
+
+### 0.2.0-wip — 2026-07-27
+
+- `@supabase/ssr`, `@supabase/supabase-js` 추가
+- `.env.local` placeholder + `.gitignore`에 `.env.local` 명시
+- `src/lib/supabase.ts` 브라우저/서버 클라이언트
+- journal/docs/board에 localStorage 유지 + `*Supabase` 함수 추가
 
 ### 0.1.1 — 2026-07-27
 
