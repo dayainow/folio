@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, type ReactNode } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -13,8 +15,48 @@ import {
   Trash2,
   Save,
   Search,
+  Columns2,
+  Eye,
+  Pencil,
 } from 'lucide-react';
 import { loadDocs, saveDoc, deleteDoc, loadCategories, type DocEntry } from '@/lib/docs';
+
+type EditPane = 'edit' | 'preview' | 'split';
+
+function MarkdownPreview({ content }: { content: string }) {
+  if (!content.trim()) {
+    return <p className="text-sm text-gray-400">(빈 문서)</p>;
+  }
+
+  return (
+    <div
+      className={[
+        'text-sm leading-relaxed text-gray-800',
+        '[&_h1]:mt-6 [&_h1]:mb-3 [&_h1]:text-2xl [&_h1]:font-semibold [&_h1]:tracking-tight',
+        '[&_h2]:mt-5 [&_h2]:mb-2 [&_h2]:text-xl [&_h2]:font-semibold',
+        '[&_h3]:mt-4 [&_h3]:mb-2 [&_h3]:text-lg [&_h3]:font-medium',
+        '[&_p]:my-2',
+        '[&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5',
+        '[&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5',
+        '[&_li]:my-0.5',
+        '[&_blockquote]:my-3 [&_blockquote]:border-l-2 [&_blockquote]:border-gray-200 [&_blockquote]:pl-3 [&_blockquote]:text-gray-600',
+        '[&_a]:text-blue-600 [&_a]:underline [&_a]:underline-offset-2',
+        '[&_hr]:my-4 [&_hr]:border-gray-100',
+        '[&_code]:rounded [&_code]:bg-gray-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[12px]',
+        '[&_pre]:my-3 [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:bg-gray-50 [&_pre]:p-3 [&_pre]:ring-1 [&_pre]:ring-gray-100',
+        '[&_pre_code]:bg-transparent [&_pre_code]:p-0',
+        '[&_table]:my-3 [&_table]:w-full [&_table]:border-collapse [&_table]:text-left',
+        '[&_th]:border [&_th]:border-gray-200 [&_th]:bg-gray-50 [&_th]:px-2 [&_th]:py-1.5 [&_th]:font-medium',
+        '[&_td]:border [&_td]:border-gray-200 [&_td]:px-2 [&_td]:py-1.5',
+        '[&_img]:my-3 [&_img]:max-w-full [&_img]:rounded-lg',
+        '[&_del]:text-gray-400',
+        '[&_input]:mr-2',
+      ].join(' ')}
+    >
+      <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+    </div>
+  );
+}
 
 export function DocsPanel() {
   // SSR/CSR 첫 렌더는 동일하게 비워 두고, 마운트 후 localStorage 로드
@@ -30,6 +72,7 @@ export function DocsPanel() {
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
+  const [editPane, setEditPane] = useState<EditPane>('edit');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [category, setCategory] = useState('Dev Guide');
@@ -40,7 +83,13 @@ export function DocsPanel() {
     setContent(doc.content);
     setCategory(doc.category);
     setEditing(false);
+    setEditPane('edit');
   }, []);
+
+  const startEdit = () => {
+    setEditPane('edit');
+    setEditing(true);
+  };
 
   const startNew = () => {
     const newDoc: DocEntry = {
@@ -54,6 +103,7 @@ export function DocsPanel() {
     saveDoc(newDoc);
     refresh();
     selectDoc(newDoc);
+    setEditPane('edit');
     setEditing(true);
   };
 
@@ -62,6 +112,7 @@ export function DocsPanel() {
     saveDoc({ id: selectedId, title, content, category, createdAt: docs.find(d => d.id === selectedId)!.createdAt, updatedAt: new Date().toISOString() });
     refresh();
     setEditing(false);
+    setEditPane('edit');
   };
 
   const doDelete = () => {
@@ -75,6 +126,19 @@ export function DocsPanel() {
     .filter(d => !search || d.title.toLowerCase().includes(search.toLowerCase()) || d.content.toLowerCase().includes(search.toLowerCase()))
     .filter(d => !filterCat || d.category === filterCat)
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+
+  const paneButton = (pane: EditPane, label: string, icon: ReactNode) => (
+    <Button
+      key={pane}
+      size="sm"
+      variant={editPane === pane ? 'default' : 'ghost'}
+      onClick={() => setEditPane(pane)}
+      className={`h-7 gap-1 text-xs ${editPane === pane ? 'bg-gray-900 hover:bg-gray-800' : ''}`}
+    >
+      {icon}
+      {label}
+    </Button>
+  );
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
@@ -128,9 +192,9 @@ export function DocsPanel() {
       <Card className="rounded-2xl border border-gray-100 shadow-sm overflow-hidden min-h-[500px] flex flex-col">
         {selectedId && docs.find(d => d.id === selectedId) ? (
           <>
-            <div className="flex items-center justify-between p-4 border-b border-gray-50">
-              <div className="flex items-center gap-3 flex-1">
-                <FileText className="h-4 w-4 text-gray-400" />
+            <div className="flex items-center justify-between p-4 border-b border-gray-50 gap-3">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <FileText className="h-4 w-4 text-gray-400 shrink-0" />
                 {editing ? (
                   <Input
                     value={title}
@@ -138,10 +202,10 @@ export function DocsPanel() {
                     className="h-8 text-sm border-0 focus-visible:ring-0 px-0"
                   />
                 ) : (
-                  <span className="font-medium">{docs.find(d => d.id === selectedId)?.title}</span>
+                  <span className="font-medium truncate">{docs.find(d => d.id === selectedId)?.title}</span>
                 )}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
                 {editing ? (
                   <>
                     <select value={category} onChange={e => setCategory(e.target.value)} className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white">
@@ -150,12 +214,12 @@ export function DocsPanel() {
                     <Button size="sm" onClick={doSave} className="gap-1 bg-gray-900 hover:bg-gray-800">
                       <Save className="h-3 w-3" /> 저장
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>취소</Button>
+                    <Button size="sm" variant="ghost" onClick={() => { setEditing(false); setEditPane('edit'); }}>취소</Button>
                   </>
                 ) : (
                   <>
                     <Badge variant="outline">{docs.find(d => d.id === selectedId)?.category}</Badge>
-                    <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>편집</Button>
+                    <Button size="sm" variant="ghost" onClick={startEdit}>편집</Button>
                     <Button size="sm" variant="ghost" onClick={doDelete} className="text-red-500 hover:text-red-600">
                       <Trash2 className="h-3 w-3" />
                     </Button>
@@ -163,21 +227,44 @@ export function DocsPanel() {
                 )}
               </div>
             </div>
+
+            {editing && (
+              <div className="px-4 pt-3 flex items-center gap-1">
+                {paneButton('edit', '편집', <Pencil className="h-3 w-3" />)}
+                {paneButton('preview', '미리보기', <Eye className="h-3 w-3" />)}
+                {paneButton('split', '분할', <Columns2 className="h-3 w-3" />)}
+              </div>
+            )}
+
             <div className="flex-1 p-4">
               {editing ? (
-                <Textarea
-                  value={content}
-                  onChange={e => setContent(e.target.value)}
-                  placeholder="마크다운으로 문서를 작성하세요..."
-                  className="min-h-[400px] resize-none border-0 focus-visible:ring-0 text-sm leading-relaxed p-0 font-mono"
-                />
+                editPane === 'split' ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 min-h-[400px]">
+                    <Textarea
+                      value={content}
+                      onChange={e => setContent(e.target.value)}
+                      placeholder="마크다운으로 문서를 작성하세요..."
+                      className="min-h-[400px] resize-none border border-gray-100 rounded-xl text-sm leading-relaxed font-mono"
+                    />
+                    <ScrollArea className="h-[400px] rounded-xl border border-gray-100 p-3">
+                      <MarkdownPreview content={content} />
+                    </ScrollArea>
+                  </div>
+                ) : editPane === 'preview' ? (
+                  <ScrollArea className="h-[450px]">
+                    <MarkdownPreview content={content} />
+                  </ScrollArea>
+                ) : (
+                  <Textarea
+                    value={content}
+                    onChange={e => setContent(e.target.value)}
+                    placeholder="마크다운으로 문서를 작성하세요..."
+                    className="min-h-[400px] resize-none border-0 focus-visible:ring-0 text-sm leading-relaxed p-0 font-mono"
+                  />
+                )
               ) : (
                 <ScrollArea className="h-[450px]">
-                  <div className="prose prose-sm max-w-none">
-                    <pre className="whitespace-pre-wrap font-mono text-sm leading-relaxed text-gray-800">
-                      {content || '(빈 문서)'}
-                    </pre>
-                  </div>
+                  <MarkdownPreview content={content} />
                 </ScrollArea>
               )}
             </div>
