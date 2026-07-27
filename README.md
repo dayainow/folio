@@ -40,9 +40,9 @@ private
 
 ## 작업 관리
 
-- 현재 Phase: Phase 1 (기본 기능)
-- 진행 중: P4 Supabase 연동, P4-2 Supabase DB 스키마 + UI 전환, P5 Jira 연동
-- 완료: P1 Board DnD, P2 Journal 태그 자동완성, P3 Docs 마크다운 프리뷰, P3.1 Folio 브랜딩
-- 다음: -
+- 현재 Phase: Phase 1 완료 (v0.2.0)
+- 진행 중: -
+- 완료: P1 Board DnD, P2 Journal 태그 자동완성, P3 Docs 마크다운 프리뷰, P4 Supabase 연동, P5 Jira 연동
+- 다음: Phase 2 (팀 공유, 고급 기능)
 
 상세 이력은 [VERSION.md](./VERSION.md)를 참고하세요.

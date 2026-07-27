@@ -6,10 +6,10 @@
 
 | 항목 | 값 |
 |------|-----|
-| 버전 | 0.2.0-wip |
-| Phase | Phase 1 (기본 기능) |
-| 진행 중 | P4 Supabase 연동, P4-2 Supabase DB 스키마 + UI 전환, P5 Jira 연동 |
-| 다음 | - |
+| 버전 | 0.2.0 |
+| Phase | Phase 1 완료 |
+| 진행 중 | - |
+| 다음 | Phase 2 (팀 공유, 고급 기능) |
 
 ## 완료 항목
 
@@ -19,16 +19,24 @@
 | P2 | Journal 태그 자동완성 | `99b5ef2` |
 | P3 | Docs 마크다운 프리뷰 (편집/미리보기/분할) | `2ba620f` |
 | P3.1 | Folio 브랜딩 + README 작업 관리 | `c02fade` |
-
-## 진행 중
-
-| ID | 요약 | 노트 |
-|----|------|------|
-| P4 | Supabase 연동 | 스캐폴드 `08dc0f9` |
-| P4-2 | Supabase DB 스키마 + UI 전환 | schema SQL, UI 폴백 |
-| P5 | Jira 연동 | fetchIssues / Board 동기화 / 카드 링크 |
+| P4 | Supabase 클라이언트/env 스캐폴드 | `08dc0f9` |
+| P4-2 | Supabase DB 스키마 + UI 전환(폴백) | `e761ac2` |
+| P5 | Jira 연동 (fetch/동기화/카드 링크) | `48356b4` |
 
 ## 변경 이력
+
+### 0.2.0 — 2026-07-27 (Phase 1 완료)
+
+- Phase 1 기능 세트 마감: P1~P5
+- 코드 정리(불필요 로그 제거, lint 통과), package.json 0.2.0
+
+#### Phase 1 요약
+
+- **P1** Board DnD 컬럼 이동
+- **P2** Journal 태그 자동완성
+- **P3** Docs 마크다운 프리뷰(편집/미리보기/분할)
+- **P4** Supabase 연동(스키마, UI 우선 저장 + localStorage 폴백)
+- **P5** Jira 이슈 fetch·Board 동기화·카드 외부 링크
 
 ### 0.2.0-wip — 2026-07-27 (P5)
 

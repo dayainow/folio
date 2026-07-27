@@ -95,10 +95,7 @@ export async function loadTasksSupabase(): Promise<Task[]> {
     .select('id, title, description, status, priority, tags, created_at, updated_at')
     .order('updated_at', { ascending: false });
 
-  if (error) {
-    console.error('loadTasksSupabase:', error.message);
-    throw error;
-  }
+  if (error) throw error;
 
   return ((data ?? []) as BoardRow[]).map(rowToTask);
 }
@@ -120,10 +117,7 @@ export async function saveTasksSupabase(tasks: Task[]) {
 
   const { error } = await supabase.from('boards').upsert(rows, { onConflict: 'id' });
 
-  if (error) {
-    console.error('saveTasksSupabase:', error.message);
-    throw error;
-  }
+  if (error) throw error;
 }
 
 /** Supabase `boards` 테이블에 단일 태스크를 upsert한다 */
@@ -136,17 +130,13 @@ export async function deleteTaskSupabase(id: string) {
   const { supabase } = await requireUserId();
   const { error } = await supabase.from('boards').delete().eq('id', id);
 
-  if (error) {
-    console.error('deleteTaskSupabase:', error.message);
-    throw error;
-  }
+  if (error) throw error;
 }
 
 export async function saveTaskWithFallback(task: Task) {
   try {
     await saveTaskSupabase(task);
-  } catch (err) {
-    console.warn('saveTaskWithFallback → localStorage', err);
+  } catch {
     const all = loadTasks();
     const idx = all.findIndex(t => t.id === task.id);
     if (idx >= 0) all[idx] = task;
@@ -158,8 +148,7 @@ export async function saveTaskWithFallback(task: Task) {
 export async function saveTasksWithFallback(tasks: Task[]) {
   try {
     await saveTasksSupabase(tasks);
-  } catch (err) {
-    console.warn('saveTasksWithFallback → localStorage', err);
+  } catch {
     saveTasks(tasks);
   }
 }
@@ -167,8 +156,7 @@ export async function saveTasksWithFallback(tasks: Task[]) {
 export async function deleteTaskWithFallback(id: string) {
   try {
     await deleteTaskSupabase(id);
-  } catch (err) {
-    console.warn('deleteTaskWithFallback → localStorage', err);
+  } catch {
     saveTasks(loadTasks().filter(t => t.id !== id));
   }
 }
@@ -177,8 +165,7 @@ export async function deleteTaskWithFallback(id: string) {
 export async function loadTasksWithFallback(): Promise<Task[]> {
   try {
     return await loadTasksSupabase();
-  } catch (err) {
-    console.warn('loadTasksWithFallback → localStorage', err);
+  } catch {
     return loadTasks();
   }
 }

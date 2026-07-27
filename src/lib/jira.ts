@@ -100,7 +100,7 @@ export function mapJiraStatusToBoard(statusName: string, statusCategory?: string
   ) {
     return 'in_progress'
   }
-  // To Do, Open, Backlog, Selected for Development 등
+  // To Do / Open / Backlog 등
   return 'backlog'
 }
 

@@ -59,7 +59,6 @@ function MarkdownPreview({ content }: { content: string }) {
 }
 
 export function DocsPanel() {
-  // SSR/CSR 첫 렌더는 동일하게 비워 두고, 마운트 후 Supabase → localStorage 폴백 로드
   const [docs, setDocs] = useState<DocEntry[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
 

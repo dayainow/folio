@@ -74,10 +74,7 @@ export async function loadJournalsSupabase(): Promise<Record<string, JournalEntr
     .select('id, date, content, tags, created_at, updated_at')
     .order('date', { ascending: false });
 
-  if (error) {
-    console.error('loadJournalsSupabase:', error.message);
-    throw error;
-  }
+  if (error) throw error;
 
   const map: Record<string, JournalEntry> = {};
   for (const row of (data ?? []) as JournalRow[]) {
@@ -101,31 +98,24 @@ export async function saveJournalSupabase(date: string, content: string, tags: s
     { onConflict: 'user_id,date' },
   );
 
-  if (error) {
-    console.error('saveJournalSupabase:', error.message);
-    throw error;
-  }
+  if (error) throw error;
 }
 
 /** Supabase 우선 저장, 실패 시 localStorage 폴백 */
 export async function saveJournalWithFallback(date: string, content: string, tags: string[]) {
   try {
     await saveJournalSupabase(date, content, tags);
-  } catch (err) {
-    console.warn('saveJournalWithFallback → localStorage', err);
+  } catch {
     saveJournal(date, content, tags);
   }
 }
 
-/**
- * localStorage를 먼저 읽고, Supabase 성공 시 그 결과로 덮어쓴다 (Supabase 우선).
- */
+/** localStorage를 먼저 읽고, Supabase 성공 시 그 결과로 덮어쓴다 (Supabase 우선). */
 export async function loadJournalsWithFallback(): Promise<Record<string, JournalEntry>> {
   const local = loadJournals();
   try {
     return await loadJournalsSupabase();
-  } catch (err) {
-    console.warn('loadJournalsWithFallback → localStorage', err);
+  } catch {
     return local;
   }
 }

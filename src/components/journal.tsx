@@ -28,25 +28,31 @@ export function JournalPanel() {
   const [filterTag, setFilterTag] = useState<string | null>(null);
 
   type Day = { content: string; tags: string[] };
-  // SSR/CSR 첫 렌더는 동일하게 비워 두고, 마운트 후 localStorage를 읽어 hydration mismatch 방지
   const [days, setDays] = useState<Record<string, Day>>({});
   const [draft, setDraft] = useState('');
   const [tagsInput, setTagsInput] = useState('');
   const [tagDraft, setTagDraft] = useState('');
   const [ready, setReady] = useState(false);
 
+  const selectDate = useCallback((nextDate: string, map?: Record<string, Day>) => {
+    const source = map ?? days;
+    setDate(nextDate);
+    setDraft(source[nextDate]?.content ?? '');
+    setTagsInput(joinTags(source[nextDate]?.tags ?? []));
+    setTagDraft('');
+  }, [days]);
+
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
-      // localStorage → Supabase 순으로 시도하되, Supabase 성공 시 우선 적용
       const entries = await loadJournalsWithFallback();
       if (cancelled) return;
       const map: Record<string, Day> = {};
       for (const k in entries) map[k] = { content: entries[k].content, tags: entries[k].tags };
       const today = todayStr();
-      setDate(today);
       setDays(map);
+      setDate(today);
       setDraft(map[today]?.content ?? '');
       setTagsInput(joinTags(map[today]?.tags ?? []));
       setReady(true);
@@ -56,15 +62,6 @@ export function JournalPanel() {
       cancelled = true;
     };
   }, []);
-
-  useEffect(() => {
-    if (!ready) return;
-    setDraft(days[date]?.content ?? '');
-    setTagsInput(joinTags(days[date]?.tags ?? []));
-    setTagDraft('');
-    // days는 자동저장으로 갱신되므로 date 전환 시에만 동기화
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [date, ready]);
 
   const currentTags = useMemo(() => parseTags(tagsInput), [tagsInput]);
 
@@ -91,7 +88,6 @@ export function JournalPanel() {
   const commitTagDraft = useCallback(() => {
     const parts = parseTags(tagDraft);
     if (parts.length === 0) {
-      // 쉼표만 있거나 공백이면 비움
       if (tagDraft.includes(',')) setTagDraft('');
       return;
     }
@@ -153,12 +149,12 @@ export function JournalPanel() {
   const prevDay = () => {
     const d = new Date(date);
     d.setDate(d.getDate() - 1);
-    setDate(d.toISOString().slice(0, 10));
+    selectDate(d.toISOString().slice(0, 10));
   };
   const nextDay = () => {
     const d = new Date(date);
     d.setDate(d.getDate() + 1);
-    setDate(d.toISOString().slice(0, 10));
+    selectDate(d.toISOString().slice(0, 10));
   };
 
   return (
@@ -277,7 +273,7 @@ export function JournalPanel() {
                 .map(([d, entry]) => (
                   <button
                     key={d}
-                    onClick={() => setDate(d)}
+                    onClick={() => selectDate(d)}
                     className={`w-full text-left p-2 rounded-xl text-xs transition-colors ${
                       date === d ? 'bg-gray-50 ring-1 ring-gray-200' : 'hover:bg-gray-50'
                     }`}

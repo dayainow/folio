@@ -190,7 +190,6 @@ function DroppableColumn({
 }
 
 export function BoardPanel() {
-  // SSR/CSR 첫 렌더는 동일하게 비워 두고, 마운트 후 Supabase → localStorage 폴백 로드
   const [tasks, setTasks] = useState<Task[]>([]);
   const [search, setSearch] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);

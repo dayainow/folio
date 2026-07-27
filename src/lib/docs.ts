@@ -111,10 +111,7 @@ export async function loadDocsSupabase(): Promise<DocEntry[]> {
     .select('id, title, content, category, created_at, updated_at')
     .order('updated_at', { ascending: false });
 
-  if (error) {
-    console.error('loadDocsSupabase:', error.message);
-    throw error;
-  }
+  if (error) throw error;
 
   return ((data ?? []) as DocRow[]).map(rowToDoc);
 }
@@ -136,10 +133,7 @@ export async function saveDocSupabase(doc: DocEntry) {
     { onConflict: 'id' },
   );
 
-  if (error) {
-    console.error('saveDocSupabase:', error.message);
-    throw error;
-  }
+  if (error) throw error;
 }
 
 /** Supabase `docs` 테이블에서 문서를 삭제한다 */
@@ -147,17 +141,13 @@ export async function deleteDocSupabase(id: string) {
   const { supabase } = await requireUserId();
   const { error } = await supabase.from('docs').delete().eq('id', id);
 
-  if (error) {
-    console.error('deleteDocSupabase:', error.message);
-    throw error;
-  }
+  if (error) throw error;
 }
 
 export async function saveDocWithFallback(doc: DocEntry) {
   try {
     await saveDocSupabase(doc);
-  } catch (err) {
-    console.warn('saveDocWithFallback → localStorage', err);
+  } catch {
     saveDoc(doc);
   }
 }
@@ -165,8 +155,7 @@ export async function saveDocWithFallback(doc: DocEntry) {
 export async function deleteDocWithFallback(id: string) {
   try {
     await deleteDocSupabase(id);
-  } catch (err) {
-    console.warn('deleteDocWithFallback → localStorage', err);
+  } catch {
     deleteDoc(id);
   }
 }
@@ -175,8 +164,7 @@ export async function deleteDocWithFallback(id: string) {
 export async function loadDocsWithFallback(): Promise<DocEntry[]> {
   try {
     return await loadDocsSupabase();
-  } catch (err) {
-    console.warn('loadDocsWithFallback → localStorage', err);
+  } catch {
     return loadDocs();
   }
 }
