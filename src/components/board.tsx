@@ -1,6 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  closestCorners,
+  useSensor,
+  useSensors,
+  useDraggable,
+  useDroppable,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,23 +29,175 @@ import {
 } from 'lucide-react';
 import { loadTasks, saveTasks, type Task, DEFAULT_COLUMNS } from '@/lib/board';
 
+const STATUS_ORDER: Task['status'][] = ['backlog', 'in_progress', 'review', 'done'];
+
 const PRIORITY_COLORS: Record<string, string> = {
   high: 'bg-red-50 text-red-600 border-red-200',
   medium: 'bg-yellow-50 text-yellow-700 border-yellow-200',
   low: 'bg-gray-50 text-gray-600 border-gray-200',
 };
 
+function resolveDropStatus(overId: string | number, tasks: Task[]): Task['status'] | null {
+  const id = String(overId);
+  if (STATUS_ORDER.includes(id as Task['status'])) {
+    return id as Task['status'];
+  }
+  return tasks.find(t => t.id === id)?.status ?? null;
+}
+
+function TaskCardBody({
+  task,
+  showActions = true,
+  onMove,
+  onEdit,
+  onDelete,
+}: {
+  task: Task;
+  showActions?: boolean;
+  onMove?: (direction: 'left' | 'right') => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
+}) {
+  return (
+    <>
+      <div className="flex items-start justify-between gap-2">
+        <div className="text-sm font-medium flex-1 leading-snug">{task.title}</div>
+        {showActions && onMove && (
+          <div className="flex items-center gap-0.5" onPointerDown={e => e.stopPropagation()}>
+            {task.status !== 'backlog' && (
+              <Button variant="ghost" size="icon" onClick={() => onMove('left')} className="h-5 w-5">
+                <ChevronUp className="h-3 w-3" />
+              </Button>
+            )}
+            {task.status !== 'done' && (
+              <Button variant="ghost" size="icon" onClick={() => onMove('right')} className="h-5 w-5">
+                <ChevronDown className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+      {task.description && (
+        <p className="text-xs text-gray-500 mt-1 line-clamp-2">{task.description}</p>
+      )}
+      <div className="flex flex-wrap items-center gap-1.5 mt-2">
+        <Badge variant="outline" className={`text-[10px] px-1 py-0 h-auto ${PRIORITY_COLORS[task.priority]}`}>
+          <CircleDot className="h-2.5 w-2.5 inline mr-0.5" />
+          {task.priority}
+        </Badge>
+        {task.tags.slice(0, 2).map(t => (
+          <Badge key={t} variant="secondary" className="text-[10px] px-1 py-0 h-auto">#{t}</Badge>
+        ))}
+      </div>
+      {showActions && onEdit && onDelete && (
+        <>
+          <Separator className="my-2" />
+          <div className="flex gap-1" onPointerDown={e => e.stopPropagation()}>
+            <Button variant="ghost" size="sm" onClick={onEdit} className="h-7 text-[11px]">편집</Button>
+            <Button variant="ghost" size="sm" onClick={onDelete} className="h-7 text-[11px] text-red-500">삭제</Button>
+          </div>
+        </>
+      )}
+    </>
+  );
+}
+
+function DraggableTaskCard({
+  task,
+  onMove,
+  onEdit,
+  onDelete,
+}: {
+  task: Task;
+  onMove: (direction: 'left' | 'right') => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: task.id,
+    data: { status: task.status },
+  });
+
+  return (
+    <Card
+      ref={setNodeRef}
+      style={{ opacity: isDragging ? 0.4 : undefined }}
+      {...listeners}
+      {...attributes}
+      className="rounded-xl border border-gray-100 bg-white p-3 shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing touch-none"
+    >
+      <TaskCardBody
+        task={task}
+        onMove={onMove}
+        onEdit={onEdit}
+        onDelete={onDelete}
+      />
+    </Card>
+  );
+}
+
+function DroppableColumn({
+  col,
+  count,
+  onAdd,
+  children,
+}: {
+  col: (typeof DEFAULT_COLUMNS)[number];
+  count: number;
+  onAdd: () => void;
+  children: ReactNode;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: col.key });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`rounded-2xl border p-3 ${col.color} min-h-[400px] flex flex-col transition-all ${
+        isOver ? 'border-blue-400 ring-2 ring-blue-200' : 'border-gray-100'
+      }`}
+    >
+      <div className="flex items-center justify-between mb-3 px-1">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold text-gray-700">{col.label}</span>
+          <Badge variant="secondary" className="text-xs">{count}</Badge>
+        </div>
+        <Button variant="ghost" size="icon" onClick={onAdd} className="h-6 w-6">
+          <Plus className="h-3 w-3" />
+        </Button>
+      </div>
+      <ScrollArea className="flex-1">
+        <div className="space-y-2 min-h-[320px]">
+          {children}
+        </div>
+      </ScrollArea>
+    </div>
+  );
+}
+
 export function BoardPanel() {
   const [tasks, setTasks] = useState<Task[]>(() => loadTasks());
   const [search, setSearch] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [form, setForm] = useState<{ title: string; description: string; priority: Task['priority']; tags: string; status: Task['status'] }>({ title: '', description: '', priority: 'medium', tags: '', status: 'backlog' });
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    }),
+  );
 
   const refresh = () => setTasks(loadTasks());
 
   const persist = (t: Task[]) => {
     saveTasks(t);
     refresh();
+  };
+
+  const setTaskStatus = (id: string, status: Task['status']) => {
+    const task = tasks.find(t => t.id === id);
+    if (!task || task.status === status) return;
+    persist(tasks.map(t => t.id === id ? { ...t, status, updatedAt: new Date().toISOString() } : t));
   };
 
   const doSave = () => {
@@ -69,21 +233,40 @@ export function BoardPanel() {
   };
 
   const move = (id: string, direction: 'left' | 'right') => {
-    const order: Task['status'][] = ['backlog', 'in_progress', 'review', 'done'];
     const task = tasks.find(t => t.id === id);
     if (!task) return;
-    const idx = order.indexOf(task.status);
+    const idx = STATUS_ORDER.indexOf(task.status);
     if (direction === 'left' && idx > 0) {
-      persist(tasks.map(t => t.id === id ? { ...t, status: order[idx - 1], updatedAt: new Date().toISOString() } : t));
+      setTaskStatus(id, STATUS_ORDER[idx - 1]);
     }
-    if (direction === 'right' && idx < order.length - 1) {
-      persist(tasks.map(t => t.id === id ? { ...t, status: order[idx + 1], updatedAt: new Date().toISOString() } : t));
+    if (direction === 'right' && idx < STATUS_ORDER.length - 1) {
+      setTaskStatus(id, STATUS_ORDER[idx + 1]);
     }
+  };
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(String(event.active.id));
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+    if (!over) return;
+
+    const nextStatus = resolveDropStatus(over.id, tasks);
+    if (!nextStatus) return;
+    setTaskStatus(String(active.id), nextStatus);
+  };
+
+  const handleDragCancel = () => {
+    setActiveId(null);
   };
 
   const filtered = tasks.filter(t =>
     !search || t.title.toLowerCase().includes(search.toLowerCase()) || t.description.toLowerCase().includes(search.toLowerCase())
   );
+
+  const activeTask = activeId ? tasks.find(t => t.id === activeId) : null;
 
   return (
     <div className="space-y-4">
@@ -140,67 +323,48 @@ export function BoardPanel() {
       ) : null}
 
       {/* Board */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        {DEFAULT_COLUMNS.map(col => {
-          const colTasks = filtered.filter(t => t.status === col.key);
-          return (
-            <div key={col.key} className={`rounded-2xl border border-gray-100 p-3 ${col.color} min-h-[400px] flex flex-col`}>
-              <div className="flex items-center justify-between mb-3 px-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-gray-700">{col.label}</span>
-                  <Badge variant="secondary" className="text-xs">{colTasks.length}</Badge>
-                </div>
-                <Button variant="ghost" size="icon" onClick={() => { setForm({ ...form, status: col.key }); setEditingId(null); }} className="h-6 w-6">
-                  <Plus className="h-3 w-3" />
-                </Button>
-              </div>
-              <ScrollArea className="flex-1">
-                <div className="space-y-2">
-                  {colTasks.length === 0 && (
-                    <div className="px-2 py-6 text-center text-xs text-gray-400">태스크 없음</div>
-                  )}
-                  {colTasks.map(task => (
-                    <Card key={task.id} className="rounded-xl border border-gray-100 bg-white p-3 shadow-sm hover:shadow-md transition-shadow">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="text-sm font-medium flex-1 leading-snug">{task.title}</div>
-                        <div className="flex items-center gap-0.5">
-                          {col.key !== 'backlog' && (
-                            <Button variant="ghost" size="icon" onClick={() => move(task.id, 'left')} className="h-5 w-5">
-                              <ChevronUp className="h-3 w-3" />
-                            </Button>
-                          )}
-                          {col.key !== 'done' && (
-                            <Button variant="ghost" size="icon" onClick={() => move(task.id, 'right')} className="h-5 w-5">
-                              <ChevronDown className="h-3 w-3" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                      {task.description && (
-                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">{task.description}</p>
-                      )}
-                      <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                        <Badge variant="outline" className={`text-[10px] px-1 py-0 h-auto ${PRIORITY_COLORS[task.priority]}`}>
-                          <CircleDot className="h-2.5 w-2.5 inline mr-0.5" />
-                          {task.priority}
-                        </Badge>
-                        {task.tags.slice(0, 2).map(t => (
-                          <Badge key={t} variant="secondary" className="text-[10px] px-1 py-0 h-auto">#{t}</Badge>
-                        ))}
-                      </div>
-                      <Separator className="my-2" />
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="sm" onClick={() => doEdit(task)} className="h-7 text-[11px]">편집</Button>
-                        <Button variant="ghost" size="sm" onClick={() => doDelete(task.id)} className="h-7 text-[11px] text-red-500">삭제</Button>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              </ScrollArea>
-            </div>
-          );
-        })}
-      </div>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          {DEFAULT_COLUMNS.map(col => {
+            const colTasks = filtered.filter(t => t.status === col.key);
+            return (
+              <DroppableColumn
+                key={col.key}
+                col={col}
+                count={colTasks.length}
+                onAdd={() => { setForm({ ...form, status: col.key }); setEditingId(null); }}
+              >
+                {colTasks.length === 0 && (
+                  <div className="px-2 py-6 text-center text-xs text-gray-400">태스크 없음</div>
+                )}
+                {colTasks.map(task => (
+                  <DraggableTaskCard
+                    key={task.id}
+                    task={task}
+                    onMove={direction => move(task.id, direction)}
+                    onEdit={() => doEdit(task)}
+                    onDelete={() => doDelete(task.id)}
+                  />
+                ))}
+              </DroppableColumn>
+            );
+          })}
+        </div>
+
+        <DragOverlay dropAnimation={null}>
+          {activeTask ? (
+            <Card className="rounded-xl border border-gray-100 bg-white p-3 shadow-lg rotate-1 cursor-grabbing">
+              <TaskCardBody task={activeTask} showActions={false} />
+            </Card>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
     </div>
   );
 }
