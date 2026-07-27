@@ -55,6 +55,25 @@ export async function getUser(): Promise<User | null> {
   return data.user
 }
 
+/** 로그인 필수 — user_id 필터용 */
+export async function requireAuthUser() {
+  const supabase = createBrowserSupabaseClient()
+  const { data, error } = await supabase.auth.getUser()
+  if (error) throw error
+  if (!data.user) throw new Error('Supabase 로그인이 필요합니다.')
+  return { supabase, user: data.user, userId: data.user.id }
+}
+
+/** 로그인 여부 (폴백 분기용) */
+export async function isAuthenticated(): Promise<boolean> {
+  try {
+    const user = await getUser()
+    return !!user
+  } catch {
+    return false
+  }
+}
+
 /** 이메일/비밀번호 로그인 */
 export async function signIn(email: string, password: string) {
   const supabase = createBrowserSupabaseClient()

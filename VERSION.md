@@ -7,9 +7,9 @@
 | 항목 | 값 |
 |------|-----|
 | 버전 | 0.2.0 |
-| Phase | Phase 2 시작 |
-| 진행 중 | P4-3 Supabase Auth UI |
-| 다음 | 팀 공유, Obsidian 연동, 고급 검색/필터 |
+| Phase | Phase 2 |
+| 진행 중 | P6 멀티유저 데이터 분리 |
+| 다음 | Obsidian 연동, 고급 검색/필터 |
 
 ## 완료 항목
 
@@ -22,12 +22,21 @@
 | P4 | Supabase 클라이언트/env 스캐폴드 | `08dc0f9` |
 | P4-2 | Supabase DB 스키마 + UI 전환(폴백) | `e761ac2` |
 | P5 | Jira 연동 (fetch/동기화/카드 링크) | `48356b4` |
+| P4-3 | Supabase Auth UI | `916a875` |
 
 ## 진행 중
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| P4-3 | Supabase Auth UI | `/login`, 헤더 세션 표시 |
+| P6 | 멀티유저 데이터 분리 | user_id 필터, 마이그레이션 SQL, 로그인 시 로컬→클라우드 |
+
+## 변경 이력
+
+### 0.2.0+ — 2026-07-27 (P6)
+
+- `docs/supabase-schema-migration.sql` (user_id + RLS)
+- journal/docs/boards 쿼리에 `.eq('user_id', …)` 명시
+- 미로그인 localStorage 전용, 로그인 시 클라우드 + 1회 마이그레이션
 
 ### 0.2.0+ — 2026-07-27 (P4-3 / Phase 2)
 

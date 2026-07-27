@@ -1,6 +1,6 @@
 'use client';
 
-import { createBrowserSupabaseClient } from '@/lib/supabase';
+import { requireAuthUser, isAuthenticated } from '@/lib/supabase';
 
 export interface Task {
   id: string;
@@ -62,14 +62,6 @@ function taskToRow(task: Task, userId: string) {
   };
 }
 
-async function requireUserId() {
-  const supabase = createBrowserSupabaseClient();
-  const { data, error } = await supabase.auth.getUser();
-  if (error) throw error;
-  if (!data.user) throw new Error('Supabase 로그인이 필요합니다.');
-  return { supabase, userId: data.user.id };
-}
-
 export function loadTasks(): Task[] {
   if (typeof window === 'undefined') return [];
   try {
@@ -87,12 +79,13 @@ export function saveTasks(tasks: Task[]) {
 
 export { DEFAULT_COLUMNS };
 
-/** Supabase `boards` 테이블에서 태스크 목록을 불러온다 */
+/** Supabase `boards` — 현재 user_id만 조회 */
 export async function loadTasksSupabase(): Promise<Task[]> {
-  const { supabase } = await requireUserId();
+  const { supabase, userId } = await requireAuthUser();
   const { data, error } = await supabase
     .from('boards')
     .select('id, title, description, status, priority, tags, created_at, updated_at')
+    .eq('user_id', userId)
     .order('updated_at', { ascending: false });
 
   if (error) throw error;
@@ -100,9 +93,9 @@ export async function loadTasksSupabase(): Promise<Task[]> {
   return ((data ?? []) as BoardRow[]).map(rowToTask);
 }
 
-/** Supabase `boards` 테이블에 태스크 목록을 upsert한다 */
+/** Supabase `boards` — user_id 포함 upsert */
 export async function saveTasksSupabase(tasks: Task[]) {
-  const { supabase, userId } = await requireUserId();
+  const { supabase, userId } = await requireAuthUser();
   const now = new Date().toISOString();
   const rows = tasks.map(t =>
     taskToRow(
@@ -120,20 +113,28 @@ export async function saveTasksSupabase(tasks: Task[]) {
   if (error) throw error;
 }
 
-/** Supabase `boards` 테이블에 단일 태스크를 upsert한다 */
+/** Supabase `boards` — 단일 태스크 upsert */
 export async function saveTaskSupabase(task: Task) {
   return saveTasksSupabase([task]);
 }
 
-/** Supabase `boards` 테이블에서 태스크를 삭제한다 */
+/** Supabase `boards` — 본인 레코드만 삭제 */
 export async function deleteTaskSupabase(id: string) {
-  const { supabase } = await requireUserId();
-  const { error } = await supabase.from('boards').delete().eq('id', id);
+  const { supabase, userId } = await requireAuthUser();
+  const { error } = await supabase.from('boards').delete().eq('id', id).eq('user_id', userId);
 
   if (error) throw error;
 }
 
 export async function saveTaskWithFallback(task: Task) {
+  if (!(await isAuthenticated())) {
+    const all = loadTasks();
+    const idx = all.findIndex(t => t.id === task.id);
+    if (idx >= 0) all[idx] = task;
+    else all.push(task);
+    saveTasks(all);
+    return;
+  }
   try {
     await saveTaskSupabase(task);
   } catch {
@@ -146,6 +147,10 @@ export async function saveTaskWithFallback(task: Task) {
 }
 
 export async function saveTasksWithFallback(tasks: Task[]) {
+  if (!(await isAuthenticated())) {
+    saveTasks(tasks);
+    return;
+  }
   try {
     await saveTasksSupabase(tasks);
   } catch {
@@ -154,6 +159,10 @@ export async function saveTasksWithFallback(tasks: Task[]) {
 }
 
 export async function deleteTaskWithFallback(id: string) {
+  if (!(await isAuthenticated())) {
+    saveTasks(loadTasks().filter(t => t.id !== id));
+    return;
+  }
   try {
     await deleteTaskSupabase(id);
   } catch {
@@ -161,8 +170,9 @@ export async function deleteTaskWithFallback(id: string) {
   }
 }
 
-/** Supabase → localStorage 폴백 */
+/** 로그인 시 Supabase(본인), 아니면 localStorage */
 export async function loadTasksWithFallback(): Promise<Task[]> {
+  if (!(await isAuthenticated())) return loadTasks();
   try {
     return await loadTasksSupabase();
   } catch {

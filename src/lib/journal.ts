@@ -1,6 +1,6 @@
 'use client';
 
-import { createBrowserSupabaseClient } from '@/lib/supabase';
+import { requireAuthUser, isAuthenticated } from '@/lib/supabase';
 
 export interface JournalEntry {
   id?: string;
@@ -33,14 +33,6 @@ function rowToEntry(row: JournalRow): JournalEntry {
   };
 }
 
-async function requireUserId() {
-  const supabase = createBrowserSupabaseClient();
-  const { data, error } = await supabase.auth.getUser();
-  if (error) throw error;
-  if (!data.user) throw new Error('Supabase 로그인이 필요합니다.');
-  return { supabase, userId: data.user.id };
-}
-
 export function loadJournals(): Record<string, JournalEntry> {
   if (typeof window === 'undefined') return {};
   try {
@@ -66,12 +58,13 @@ export function getAllTags(entries?: Record<string, { tags: string[] }>): string
   );
 }
 
-/** Supabase `journals` 테이블에서 일지 목록을 불러온다 */
+/** Supabase `journals` — 현재 user_id만 조회 */
 export async function loadJournalsSupabase(): Promise<Record<string, JournalEntry>> {
-  const { supabase } = await requireUserId();
+  const { supabase, userId } = await requireAuthUser();
   const { data, error } = await supabase
     .from('journals')
     .select('id, date, content, tags, created_at, updated_at')
+    .eq('user_id', userId)
     .order('date', { ascending: false });
 
   if (error) throw error;
@@ -83,9 +76,9 @@ export async function loadJournalsSupabase(): Promise<Record<string, JournalEntr
   return map;
 }
 
-/** Supabase `journals` 테이블에 일지를 upsert한다 */
+/** Supabase `journals` — user_id 포함 upsert */
 export async function saveJournalSupabase(date: string, content: string, tags: string[]) {
-  const { supabase, userId } = await requireUserId();
+  const { supabase, userId } = await requireAuthUser();
   const now = new Date().toISOString();
   const { error } = await supabase.from('journals').upsert(
     {
@@ -101,8 +94,12 @@ export async function saveJournalSupabase(date: string, content: string, tags: s
   if (error) throw error;
 }
 
-/** Supabase 우선 저장, 실패 시 localStorage 폴백 */
+/** 로그인 시 Supabase, 아니면 localStorage */
 export async function saveJournalWithFallback(date: string, content: string, tags: string[]) {
+  if (!(await isAuthenticated())) {
+    saveJournal(date, content, tags);
+    return;
+  }
   try {
     await saveJournalSupabase(date, content, tags);
   } catch {
@@ -110,9 +107,10 @@ export async function saveJournalWithFallback(date: string, content: string, tag
   }
 }
 
-/** localStorage를 먼저 읽고, Supabase 성공 시 그 결과로 덮어쓴다 (Supabase 우선). */
+/** 로그인 시 Supabase(본인 데이터), 아니면 localStorage */
 export async function loadJournalsWithFallback(): Promise<Record<string, JournalEntry>> {
   const local = loadJournals();
+  if (!(await isAuthenticated())) return local;
   try {
     return await loadJournalsSupabase();
   } catch {

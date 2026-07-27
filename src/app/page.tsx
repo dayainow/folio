@@ -9,6 +9,7 @@ import { JournalPanel } from '@/components/journal';
 import { DocsPanel } from '@/components/docs';
 import { BoardPanel } from '@/components/board';
 import { createBrowserSupabaseClient, signOut } from '@/lib/supabase';
+import { migrateLocalDataOnLogin } from '@/lib/migrate';
 
 export default function Home() {
   const [email, setEmail] = useState<string | null>(null);
@@ -25,11 +26,17 @@ export default function Home() {
         if (cancelled) return;
         setEmail(data.user?.email ?? null);
         setAuthReady(true);
+        if (data.user) {
+          void migrateLocalDataOnLogin().catch(() => undefined);
+        }
         const {
           data: { subscription },
-        } = supabase.auth.onAuthStateChange((_event, session) => {
+        } = supabase.auth.onAuthStateChange((event, session) => {
           setEmail(session?.user?.email ?? null);
           setAuthReady(true);
+          if (event === 'SIGNED_IN' && session?.user) {
+            void migrateLocalDataOnLogin().catch(() => undefined);
+          }
         });
         unsubscribe = () => subscription.unsubscribe();
       } catch {
