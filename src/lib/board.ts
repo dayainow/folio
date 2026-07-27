@@ -11,6 +11,8 @@ export interface Task {
   tags: string[];
   createdAt: string;
   updatedAt: string;
+  jiraKey?: string;
+  jiraUrl?: string;
 }
 
 const STORAGE_KEY = 'workspace_tasks';

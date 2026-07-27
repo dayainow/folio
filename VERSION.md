@@ -8,8 +8,8 @@
 |------|-----|
 | 버전 | 0.2.0-wip |
 | Phase | Phase 1 (기본 기능) |
-| 진행 중 | P4 Supabase 연동, P4-2 Supabase DB 스키마 + UI 전환 |
-| 다음 | P5 Jira 연동 |
+| 진행 중 | P4 Supabase 연동, P4-2 Supabase DB 스키마 + UI 전환, P5 Jira 연동 |
+| 다음 | - |
 
 ## 완료 항목
 
@@ -25,9 +25,17 @@
 | ID | 요약 | 노트 |
 |----|------|------|
 | P4 | Supabase 연동 | 스캐폴드 `08dc0f9` |
-| P4-2 | Supabase DB 스키마 + UI 전환 | schema SQL, journal/docs/board Supabase 우선+폴백 |
+| P4-2 | Supabase DB 스키마 + UI 전환 | schema SQL, UI 폴백 |
+| P5 | Jira 연동 | fetchIssues / Board 동기화 / 카드 링크 |
 
 ## 변경 이력
+
+### 0.2.0-wip — 2026-07-27 (P5)
+
+- `src/lib/jira.ts` Jira Cloud REST 클라이언트 (fetch/create/transition)
+- `GET /api/jira/issues` 서버 프록시
+- Board **Jira 동기화** 버튼 + 카드 Jira 키/외부 링크
+- `.env.local` Jira placeholder
 
 ### 0.2.0-wip — 2026-07-27 (P4-2)
 

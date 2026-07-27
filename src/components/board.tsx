@@ -26,6 +26,8 @@ import {
   CircleDot,
   ChevronUp,
   ChevronDown,
+  RefreshCw,
+  ExternalLink,
 } from 'lucide-react';
 import { loadTasksWithFallback, saveTasksWithFallback, deleteTaskWithFallback, type Task, DEFAULT_COLUMNS } from '@/lib/board';
 
@@ -89,6 +91,19 @@ function TaskCardBody({
           <Badge key={t} variant="secondary" className="text-[10px] px-1 py-0 h-auto">#{t}</Badge>
         ))}
       </div>
+      {task.jiraKey && (
+        <div className="mt-2" onPointerDown={e => e.stopPropagation()}>
+          <a
+            href={task.jiraUrl || '#'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-[11px] text-blue-600 hover:text-blue-700 hover:underline"
+          >
+            {task.jiraKey}
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        </div>
+      )}
       {showActions && onEdit && onDelete && (
         <>
           <Separator className="my-2" />
@@ -181,6 +196,8 @@ export function BoardPanel() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [form, setForm] = useState<{ title: string; description: string; priority: Task['priority']; tags: string; status: Task['status'] }>({ title: '', description: '', priority: 'medium', tags: '', status: 'backlog' });
+  const [jiraSyncing, setJiraSyncing] = useState(false);
+  const [jiraMessage, setJiraMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -206,6 +223,46 @@ export function BoardPanel() {
     }
     await saveTasksWithFallback(next);
     setTasks(next);
+  };
+
+  const syncFromJira = async () => {
+    setJiraSyncing(true);
+    setJiraMessage(null);
+    try {
+      const res = await fetch('/api/jira/issues');
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Jira 동기화 실패');
+      }
+      const jiraTasks = (data.tasks ?? []) as Task[];
+      const byJiraKey = new Map(
+        tasks.filter(t => t.jiraKey).map(t => [t.jiraKey!, t]),
+      );
+      const mergedJira = jiraTasks.map(jt => {
+        const existing = byJiraKey.get(jt.jiraKey!);
+        return existing
+          ? {
+              ...existing,
+              title: jt.title,
+              description: jt.description,
+              status: jt.status,
+              priority: jt.priority,
+              tags: jt.tags,
+              jiraKey: jt.jiraKey,
+              jiraUrl: jt.jiraUrl,
+              updatedAt: new Date().toISOString(),
+            }
+          : jt;
+      });
+      const nonJira = tasks.filter(t => !t.jiraKey);
+      const next = [...nonJira, ...mergedJira];
+      await persist(next);
+      setJiraMessage(`Jira에서 ${jiraTasks.length}건 동기화했습니다.`);
+    } catch (err) {
+      setJiraMessage(err instanceof Error ? err.message : 'Jira 동기화 실패');
+    } finally {
+      setJiraSyncing(false);
+    }
   };
 
   const setTaskStatus = async (id: string, status: Task['status']) => {
@@ -285,15 +342,30 @@ export function BoardPanel() {
   return (
     <div className="space-y-4">
       {/* Toolbar */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 max-w-sm min-w-[180px]">
           <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-gray-400" />
           <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="태스크 검색..." className="pl-8 h-8 text-xs" />
         </div>
+        <Button
+          onClick={() => void syncFromJira()}
+          size="sm"
+          variant="outline"
+          disabled={jiraSyncing}
+          className="gap-1"
+        >
+          <RefreshCw className={`h-3 w-3 ${jiraSyncing ? 'animate-spin' : ''}`} />
+          {jiraSyncing ? '동기화 중…' : 'Jira 동기화'}
+        </Button>
         <Button onClick={() => { setForm({ ...form, status: 'backlog' }); setEditingId(null); }} size="sm" className="gap-1 bg-gray-900 hover:bg-gray-800">
           <Plus className="h-3 w-3" /> 새 태스크
         </Button>
       </div>
+      {jiraMessage && (
+        <p className={`text-xs ${jiraMessage.includes('실패') || jiraMessage.includes('없습니다') || jiraMessage.includes('Error') || jiraMessage.includes('Jira API') ? 'text-red-500' : 'text-gray-500'}`}>
+          {jiraMessage}
+        </p>
+      )}
 
       {/* Editor */}
       {editingId || form.title ? (
