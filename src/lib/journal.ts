@@ -25,3 +25,11 @@ export function saveJournal(date: string, content: string, tags: string[]) {
   all[date] = { date, content, tags, updatedAt: new Date().toISOString() };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
 }
+
+/** 저장된 일지들에서 중복 없는 태그 목록을 정렬해 반환 */
+export function getAllTags(entries?: Record<string, { tags: string[] }>): string[] {
+  const all = entries ?? loadJournals();
+  return Array.from(new Set(Object.values(all).flatMap(e => e.tags ?? []))).sort((a, b) =>
+    a.localeCompare(b, 'ko'),
+  );
+}

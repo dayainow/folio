@@ -1,17 +1,26 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo, type KeyboardEvent, type ChangeEvent } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Save, ChevronLeft, ChevronRight } from 'lucide-react';
-import { saveJournal, loadJournals } from '@/lib/journal';
+import { saveJournal, loadJournals, getAllTags } from '@/lib/journal';
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function parseTags(input: string): string[] {
+  return input.split(',').map(s => s.trim()).filter(Boolean);
+}
+
+function joinTags(tags: string[]): string {
+  return tags.join(', ');
 }
 
 export function JournalPanel() {
@@ -27,26 +36,100 @@ export function JournalPanel() {
   });
 
   const content = days[date]?.content ?? '';
-  const tagsValue = (days[date]?.tags ?? []).join(', ');
+  const tagsValue = joinTags(days[date]?.tags ?? []);
   const [draft, setDraft] = useState(content);
   const [tagsInput, setTagsInput] = useState(tagsValue);
+  const [tagDraft, setTagDraft] = useState('');
+
+  useEffect(() => {
+    setDraft(days[date]?.content ?? '');
+    setTagsInput(joinTags(days[date]?.tags ?? []));
+    setTagDraft('');
+    // days는 자동저장으로 갱신되므로 date 전환 시에만 동기화
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [date]);
+
+  const currentTags = useMemo(() => parseTags(tagsInput), [tagsInput]);
+
+  const addTags = useCallback((incoming: string[]) => {
+    if (incoming.length === 0) return;
+    setTagsInput(prev => {
+      const existing = parseTags(prev);
+      const next = [...existing];
+      for (const raw of incoming) {
+        const tag = raw.trim();
+        if (!tag) continue;
+        if (!next.some(t => t.toLowerCase() === tag.toLowerCase())) {
+          next.push(tag);
+        }
+      }
+      return joinTags(next);
+    });
+  }, []);
+
+  const removeTag = useCallback((tag: string) => {
+    setTagsInput(prev => joinTags(parseTags(prev).filter(t => t !== tag)));
+  }, []);
+
+  const commitTagDraft = useCallback(() => {
+    const parts = parseTags(tagDraft);
+    if (parts.length === 0) {
+      // 쉼표만 있거나 공백이면 비움
+      if (tagDraft.includes(',')) setTagDraft('');
+      return;
+    }
+    addTags(parts);
+    setTagDraft('');
+  }, [tagDraft, addTags]);
+
+  const handleTagDraftChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value.includes(',')) {
+      const parts = parseTags(value);
+      const endsWithComma = value.trimEnd().endsWith(',');
+      if (parts.length > 0) {
+        addTags(endsWithComma ? parts : parts.slice(0, -1));
+        setTagDraft(endsWithComma ? '' : parts[parts.length - 1] ?? '');
+        return;
+      }
+      setTagDraft('');
+      return;
+    }
+    setTagDraft(value);
+  };
+
+  const handleTagKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      commitTagDraft();
+    }
+  };
 
   const save = useCallback(() => {
-    const tags = tagsInput.split(',').map(s => s.trim()).filter(Boolean);
+    const tags = parseTags(tagsInput);
     saveJournal(date, draft, tags);
     setDays(prev => ({ ...prev, [date]: { content: draft, tags } }));
   }, [date, draft, tagsInput]);
 
   useEffect(() => {
     const t = setInterval(() => {
-      const tags = tagsInput.split(',').map(s => s.trim()).filter(Boolean);
+      const tags = parseTags(tagsInput);
       saveJournal(date, draft, tags);
       setDays(prev => ({ ...prev, [date]: { content: draft, tags } }));
     }, 2000);
     return () => clearInterval(t);
   }, [date, draft, tagsInput]);
 
-  const allTags = Array.from(new Set(Object.values(days).flatMap(d => d.tags))).sort();
+  const allTags = useMemo(() => getAllTags(days), [days]);
+
+  const suggestions = useMemo(() => {
+    const q = tagDraft.trim().toLowerCase();
+    return allTags.filter(tag => {
+      if (currentTags.some(t => t.toLowerCase() === tag.toLowerCase())) return false;
+      if (!q) return true;
+      return tag.toLowerCase().includes(q);
+    });
+  }, [allTags, currentTags, tagDraft]);
 
   const prevDay = () => {
     const d = new Date(date);
@@ -89,13 +172,56 @@ export function JournalPanel() {
         </div>
         <div className="px-4 pb-4">
           <Separator className="mb-3" />
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-gray-400">태그:</span>
-            {(tagsInput.split(',').map(t => t.trim()).filter(Boolean)).map(tag => (
-              <Badge key={tag} variant="secondary" className="text-xs cursor-pointer hover:bg-gray-200" onClick={() => setTagsInput(tagsInput.split(',').map(t => t.trim()).filter(t => t !== tag).join(', '))}>
-                #{tag} ×
-              </Badge>
-            ))}
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-gray-400">태그:</span>
+              {currentTags.map(tag => (
+                <Badge
+                  key={tag}
+                  variant="secondary"
+                  className="text-xs cursor-pointer hover:bg-gray-200"
+                  onClick={() => removeTag(tag)}
+                >
+                  #{tag} ×
+                </Badge>
+              ))}
+              {currentTags.length === 0 && (
+                <span className="text-xs text-gray-300">없음</span>
+              )}
+            </div>
+            <Input
+              value={tagDraft}
+              onChange={handleTagDraftChange}
+              onKeyDown={handleTagKeyDown}
+              onBlur={commitTagDraft}
+              placeholder="태그 입력 후 Enter 또는 쉼표"
+              className="h-8 text-xs"
+            />
+            {allTags.length > 0 && (
+              <div className="space-y-1.5">
+                <span className="text-[11px] text-gray-400">기존 태그 {tagDraft.trim() ? '자동완성' : '제안'}</span>
+                <div className="flex flex-wrap gap-1">
+                  {suggestions.length === 0 ? (
+                    <span className="text-[11px] text-gray-300">추가할 태그 없음</span>
+                  ) : (
+                    suggestions.map(tag => (
+                      <button
+                        key={tag}
+                        type="button"
+                        onMouseDown={e => {
+                          e.preventDefault();
+                          addTags([tag]);
+                          setTagDraft('');
+                        }}
+                        className="text-xs px-2 py-1 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-600 transition-colors"
+                      >
+                        #{tag}
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </Card>
