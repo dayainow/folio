@@ -1,4 +1,5 @@
 import { createBrowserClient, createServerClient } from '@supabase/ssr'
+import type { User } from '@supabase/supabase-js'
 
 function getSupabaseEnv() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -44,6 +45,37 @@ export async function createServerSupabaseClient() {
       },
     },
   })
+}
+
+/** 현재 로그인 사용자 */
+export async function getUser(): Promise<User | null> {
+  const supabase = createBrowserSupabaseClient()
+  const { data, error } = await supabase.auth.getUser()
+  if (error) throw error
+  return data.user
+}
+
+/** 이메일/비밀번호 로그인 */
+export async function signIn(email: string, password: string) {
+  const supabase = createBrowserSupabaseClient()
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+  if (error) throw error
+  return data
+}
+
+/** 이메일/비밀번호 회원가입 */
+export async function signUp(email: string, password: string) {
+  const supabase = createBrowserSupabaseClient()
+  const { data, error } = await supabase.auth.signUp({ email, password })
+  if (error) throw error
+  return data
+}
+
+/** 로그아웃 */
+export async function signOut() {
+  const supabase = createBrowserSupabaseClient()
+  const { error } = await supabase.auth.signOut()
+  if (error) throw error
 }
 
 /** @deprecated 이름 호환용 — 브라우저 클라이언트를 반환 */

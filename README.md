@@ -7,6 +7,7 @@
 - 일지 (Journal): 날짜별 업무 일지, 태그, 자동 저장
 - 문서 (Docs): 공통 문서, 카테고리, 검색, 마크다운 프리뷰
 - 일정 (Board): 칸반 (Backlog, In Progress, Review, Done) + Jira 동기화
+- 로그인 (`/login`): Supabase Auth UI
 
 ## 스택
 
@@ -27,6 +28,7 @@ npm run dev
 1. `.env.local`에 프로젝트 URL / anon key를 넣는다.
 2. [docs/supabase-schema.sql](./docs/supabase-schema.sql)을 SQL Editor에서 실행한다.
 3. UI는 Supabase 저장을 우선하고, 실패 시 localStorage로 폴백한다.
+4. `/login`에서 이메일 로그인·회원가입·비밀번호 재설정 (P4-3).
 
 ### Jira (P5)
 
@@ -40,9 +42,9 @@ private
 
 ## 작업 관리
 
-- 현재 Phase: Phase 1 완료 (v0.2.0)
-- 진행 중: -
+- 현재 Phase: Phase 2 (팀 공유, 고급 기능)
+- 진행 중: P4-3 Supabase Auth UI
 - 완료: P1 Board DnD, P2 Journal 태그 자동완성, P3 Docs 마크다운 프리뷰, P4 Supabase 연동, P5 Jira 연동
-- 다음: Phase 2 (팀 공유, 고급 기능)
+- 다음: 팀 공유, Obsidian 연동, 고급 검색/필터
 
 상세 이력은 [VERSION.md](./VERSION.md)를 참고하세요.

@@ -7,9 +7,9 @@
 | 항목 | 값 |
 |------|-----|
 | 버전 | 0.2.0 |
-| Phase | Phase 1 완료 |
-| 진행 중 | - |
-| 다음 | Phase 2 (팀 공유, 고급 기능) |
+| Phase | Phase 2 시작 |
+| 진행 중 | P4-3 Supabase Auth UI |
+| 다음 | 팀 공유, Obsidian 연동, 고급 검색/필터 |
 
 ## 완료 항목
 
@@ -23,7 +23,17 @@
 | P4-2 | Supabase DB 스키마 + UI 전환(폴백) | `e761ac2` |
 | P5 | Jira 연동 (fetch/동기화/카드 링크) | `48356b4` |
 
-## 변경 이력
+## 진행 중
+
+| ID | 요약 | 노트 |
+|----|------|------|
+| P4-3 | Supabase Auth UI | `/login`, 헤더 세션 표시 |
+
+### 0.2.0+ — 2026-07-27 (P4-3 / Phase 2)
+
+- `/login` Supabase Auth UI (로그인·회원가입·비밀번호 재설정)
+- 헤더 로그인 상태 / 로그아웃
+- `getUser` / `signIn` / `signUp` / `signOut` 헬퍼
 
 ### 0.2.0 — 2026-07-27 (Phase 1 완료)
 
