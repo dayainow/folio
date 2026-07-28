@@ -29,12 +29,14 @@ import {
   RefreshCw,
   ExternalLink,
   Star,
+  GitBranch,
 } from 'lucide-react';
 import { loadTasksWithFallback, saveTasksWithFallback, deleteTaskWithFallback, type Task, DEFAULT_COLUMNS } from '@/lib/board';
 import { loadJournalsWithFallback } from '@/lib/journal';
 import { loadFavorites, saveFavorites, toggleFavorite } from '@/lib/favorites';
 import { TagCloud, buildTagCounts } from '@/components/tag-cloud';
 import { recordBoardStatusChange } from '@/lib/analytics';
+import { fetchIntegrationsStatus, notifyChannels } from '@/lib/notify-client';
 
 const STATUS_ORDER: Task['status'][] = ['backlog', 'in_progress', 'review', 'done'];
 
@@ -56,18 +58,24 @@ function TaskCardBody({
   task,
   showActions = true,
   favorite = false,
+  githubEnabled = false,
+  githubBusy = false,
   onMove,
   onEdit,
   onDelete,
   onToggleFavorite,
+  onCreateGithub,
 }: {
   task: Task;
   showActions?: boolean;
   favorite?: boolean;
+  githubEnabled?: boolean;
+  githubBusy?: boolean;
   onMove?: (direction: 'left' | 'right') => void;
   onEdit?: () => void;
   onDelete?: () => void;
   onToggleFavorite?: () => void;
+  onCreateGithub?: () => void;
 }) {
   return (
     <>
@@ -128,11 +136,37 @@ function TaskCardBody({
           </a>
         </div>
       )}
+      {task.githubUrl && (
+        <div className="mt-1.5" onPointerDown={e => e.stopPropagation()}>
+          <a
+            href={task.githubUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-[11px] text-gray-700 dark:text-gray-300 hover:underline"
+          >
+            <GitBranch className="h-3 w-3" />
+            #{task.githubIssueNumber ?? 'issue'}
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        </div>
+      )}
       {showActions && onEdit && onDelete && (
         <>
           <Separator className="my-2" />
-          <div className="flex gap-1" onPointerDown={e => e.stopPropagation()}>
+          <div className="flex flex-wrap gap-1" onPointerDown={e => e.stopPropagation()}>
             <Button variant="ghost" size="sm" onClick={onEdit} className="h-7 text-[11px]">편집</Button>
+            {githubEnabled && !task.githubUrl && onCreateGithub && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onCreateGithub}
+                disabled={githubBusy}
+                className="h-7 text-[11px] gap-1"
+              >
+                <GitBranch className="h-3 w-3" />
+                {githubBusy ? '생성 중…' : 'GitHub'}
+              </Button>
+            )}
             <Button variant="ghost" size="sm" onClick={onDelete} className="h-7 text-[11px] text-red-500">삭제</Button>
           </div>
         </>
@@ -144,17 +178,23 @@ function TaskCardBody({
 function DraggableTaskCard({
   task,
   favorite,
+  githubEnabled,
+  githubBusy,
   onMove,
   onEdit,
   onDelete,
   onToggleFavorite,
+  onCreateGithub,
 }: {
   task: Task;
   favorite: boolean;
+  githubEnabled: boolean;
+  githubBusy: boolean;
   onMove: (direction: 'left' | 'right') => void;
   onEdit: () => void;
   onDelete: () => void;
   onToggleFavorite: () => void;
+  onCreateGithub: () => void;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: task.id,
@@ -172,10 +212,13 @@ function DraggableTaskCard({
       <TaskCardBody
         task={task}
         favorite={favorite}
+        githubEnabled={githubEnabled}
+        githubBusy={githubBusy}
         onMove={onMove}
         onEdit={onEdit}
         onDelete={onDelete}
         onToggleFavorite={onToggleFavorite}
+        onCreateGithub={onCreateGithub}
       />
     </Card>
   );
@@ -236,18 +279,30 @@ export function BoardPanel({
   const [form, setForm] = useState<{ title: string; description: string; priority: Task['priority']; tags: string; status: Task['status'] }>({ title: '', description: '', priority: 'medium', tags: '', status: 'backlog' });
   const [jiraSyncing, setJiraSyncing] = useState(false);
   const [jiraMessage, setJiraMessage] = useState<string | null>(null);
+  const [githubEnabled, setGithubEnabled] = useState(false);
+  const [notifyOnDone, setNotifyOnDone] = useState(true);
+  const [hasNotifyChannel, setHasNotifyChannel] = useState(false);
+  const [githubBusyId, setGithubBusyId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [next, journals] = await Promise.all([
+      const [next, journals, status] = await Promise.all([
         loadTasksWithFallback(),
         loadJournalsWithFallback().catch(() => ({})),
+        fetchIntegrationsStatus().catch(() => ({
+          slack: false,
+          discord: false,
+          github: false,
+          githubRepo: null,
+        })),
       ]);
       if (cancelled) return;
       setTasks(next);
       setFavorites(loadFavorites());
       setJournalTagSources(Object.values(journals).map(j => ({ tags: j.tags })));
+      setGithubEnabled(status.github);
+      setHasNotifyChannel(status.slack || status.discord);
     })();
     return () => {
       cancelled = true;
@@ -332,6 +387,46 @@ export function BoardPanel({
     if (!task || task.status === status) return;
     recordBoardStatusChange(id, status);
     await persist(tasks.map(t => t.id === id ? { ...t, status, updatedAt: new Date().toISOString() } : t));
+
+    if (status === 'done' && notifyOnDone && hasNotifyChannel) {
+      void notifyChannels(`✅ Folio 태스크 완료 · ${task.title}`);
+    }
+  };
+
+  const linkGitHubIssue = async (task: Task) => {
+    if (!githubEnabled) return;
+    setGithubBusyId(task.id);
+    setJiraMessage(null);
+    try {
+      const res = await fetch('/api/github/issues', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: task.title,
+          body: task.description || `Created from Folio board task \`${task.id}\``,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'GitHub 이슈 생성 실패');
+      const issue = data.issue as { number: number; htmlUrl: string };
+      await persist(
+        tasks.map(t =>
+          t.id === task.id
+            ? {
+                ...t,
+                githubIssueNumber: issue.number,
+                githubUrl: issue.htmlUrl,
+                updatedAt: new Date().toISOString(),
+              }
+            : t,
+        ),
+      );
+      setJiraMessage(`GitHub Issue #${issue.number} 연결됨`);
+    } catch (err) {
+      setJiraMessage(err instanceof Error ? err.message : 'GitHub 이슈 생성 실패');
+    } finally {
+      setGithubBusyId(null);
+    }
   };
 
   const doSave = async () => {
@@ -436,6 +531,23 @@ export function BoardPanel({
           <RefreshCw className={`h-3 w-3 ${jiraSyncing ? 'animate-spin' : ''}`} />
           {jiraSyncing ? '동기화 중…' : 'Jira 동기화'}
         </Button>
+        {githubEnabled && (
+          <span className="text-[11px] text-gray-400 inline-flex items-center gap-1">
+            <GitBranch className="h-3.5 w-3.5" />
+            GitHub 연동됨
+          </span>
+        )}
+        {hasNotifyChannel && (
+          <label className="inline-flex items-center gap-1.5 text-[11px] text-gray-500 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={notifyOnDone}
+              onChange={e => setNotifyOnDone(e.target.checked)}
+              className="rounded border-gray-300"
+            />
+            완료 시 알림
+          </label>
+        )}
         <Button onClick={() => { setForm({ ...form, status: 'backlog' }); setEditingId(null); }} size="sm" className="gap-1 bg-gray-900 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white">
           <Plus className="h-3 w-3" /> 새 태스크
         </Button>
@@ -515,10 +627,13 @@ export function BoardPanel({
                 <TaskCardBody
                   task={task}
                   favorite
+                  githubEnabled={githubEnabled}
+                  githubBusy={githubBusyId === task.id}
                   onMove={direction => move(task.id, direction)}
                   onEdit={() => doEdit(task)}
                   onDelete={() => doDelete(task.id)}
                   onToggleFavorite={() => handleToggleFavorite(task.id)}
+                  onCreateGithub={() => void linkGitHubIssue(task)}
                 />
               </Card>
             ))}
@@ -551,10 +666,13 @@ export function BoardPanel({
                     key={task.id}
                     task={task}
                     favorite={favorites.includes(task.id)}
+                    githubEnabled={githubEnabled}
+                    githubBusy={githubBusyId === task.id}
                     onMove={direction => move(task.id, direction)}
                     onEdit={() => doEdit(task)}
                     onDelete={() => doDelete(task.id)}
                     onToggleFavorite={() => handleToggleFavorite(task.id)}
+                    onCreateGithub={() => void linkGitHubIssue(task)}
                   />
                 ))}
               </DroppableColumn>

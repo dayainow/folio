@@ -8,8 +8,8 @@
 |------|-----|
 | 버전 | 0.4.0-wip |
 | Phase | Phase 3 |
-| 진행 중 | P11 고급 분석 |
-| 다음 | Slack/Discord 알림, GitHub 연동 |
+| 진행 중 | P12 외부 연동 |
+| 다음 | Phase 3 마무리 |
 
 ## 완료 항목
 
@@ -28,14 +28,21 @@
 | P8 | 통합 검색 | `1abb47c` |
 | P9 | 고급 기능 (태그·날짜·다크모드·즐겨찾기) | `94ea5ea` |
 | P10 | 팀 초대/공유 + Jira search/jql | `afb7af5` |
+| P11 | 고급 분석 (recharts) | `9754d7b` |
 
 ## 진행 중
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| P11 | 고급 분석 | Journal/Board 차트 (recharts), 기간 필터 |
+| P12 | 외부 연동 | Slack/Discord 웹훅, GitHub Issues |
 
 ## 변경 이력
+
+### 0.4.0-wip — 2026-07-28 (P12)
+
+- `slack.ts` / `discord.ts` / `github.ts` + `/api/notify`, `/api/github/issues`
+- Journal 옵션 알림, Board 완료 알림·GitHub Issue 링크
+- 웹훅/토큰 미설정 시 스킵 또는 UI 숨김
 
 ### 0.4.0-wip — 2026-07-28 (P11)
 

@@ -13,6 +13,8 @@ export interface Task {
   updatedAt: string;
   jiraKey?: string;
   jiraUrl?: string;
+  githubIssueNumber?: number;
+  githubUrl?: string;
 }
 
 const STORAGE_KEY = 'workspace_tasks';
@@ -127,34 +129,32 @@ export async function deleteTaskSupabase(id: string) {
 }
 
 export async function saveTaskWithFallback(task: Task) {
+  // GitHub 링크 등 확장 필드는 항상 로컬에도 보존
+  const all = loadTasks();
+  const idx = all.findIndex(t => t.id === task.id);
+  if (idx >= 0) all[idx] = task;
+  else all.push(task);
+  saveTasks(all);
+
   if (!(await isAuthenticated())) {
-    const all = loadTasks();
-    const idx = all.findIndex(t => t.id === task.id);
-    if (idx >= 0) all[idx] = task;
-    else all.push(task);
-    saveTasks(all);
     return;
   }
   try {
     await saveTaskSupabase(task);
   } catch {
-    const all = loadTasks();
-    const idx = all.findIndex(t => t.id === task.id);
-    if (idx >= 0) all[idx] = task;
-    else all.push(task);
-    saveTasks(all);
+    /* already saved locally */
   }
 }
 
 export async function saveTasksWithFallback(tasks: Task[]) {
+  saveTasks(tasks);
   if (!(await isAuthenticated())) {
-    saveTasks(tasks);
     return;
   }
   try {
     await saveTasksSupabase(tasks);
   } catch {
-    saveTasks(tasks);
+    /* already saved locally */
   }
 }
 
@@ -170,12 +170,26 @@ export async function deleteTaskWithFallback(id: string) {
   }
 }
 
-/** 로그인 시 Supabase(본인), 아니면 localStorage */
+/** 로그인 시 Supabase(본인), 아니면 localStorage.
+ * GitHub/Jira 링크 필드는 로컬에 보조 저장해 병합한다. */
 export async function loadTasksWithFallback(): Promise<Task[]> {
-  if (!(await isAuthenticated())) return loadTasks();
+  const local = loadTasks();
+  if (!(await isAuthenticated())) return local;
   try {
-    return await loadTasksSupabase();
+    const cloud = await loadTasksSupabase();
+    const localById = new Map(local.map(t => [t.id, t]));
+    return cloud.map(t => {
+      const loc = localById.get(t.id);
+      if (!loc) return t;
+      return {
+        ...t,
+        jiraKey: t.jiraKey ?? loc.jiraKey,
+        jiraUrl: t.jiraUrl ?? loc.jiraUrl,
+        githubIssueNumber: loc.githubIssueNumber ?? t.githubIssueNumber,
+        githubUrl: loc.githubUrl ?? t.githubUrl,
+      };
+    });
   } catch {
-    return loadTasks();
+    return local;
   }
 }

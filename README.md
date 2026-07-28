@@ -4,9 +4,9 @@
 
 ## Pages
 
-- 일지 (Journal): 날짜별 업무 일지, 태그, 자동 저장, 날짜 범위 필터, **통계**
+- 일지 (Journal): 날짜별 업무 일지, 태그, 자동 저장, 날짜 범위 필터, 통계, Slack/Discord 알림(옵션)
 - 문서 (Docs): 공통 문서, 카테고리, 검색, 마크다운 프리뷰
-- 일정 (Board): 칸반 + Jira 동기화 + 즐겨찾기 + **분석**
+- 일정 (Board): 칸반 + Jira/GitHub + 즐겨찾기 + 분석 + 완료 알림
 - 로그인 (`/login`): Supabase Auth UI
 - 팀: 초대·멤버·공유 (P10)
 
@@ -15,7 +15,7 @@
 - Next.js 16 + React 19
 - Tailwind v4 + shadcn/ui
 - localStorage + Supabase (user_id 분리, 팀 RLS)
-- Jira Cloud REST API (`/rest/api/3/search/jql`)
+- Jira / GitHub / Slack / Discord 웹훅
 
 ## 시작
 
@@ -23,6 +23,8 @@
 npm run dev
 # http://localhost:3000
 ```
+
+환경변수 예시는 [docs/env.example](./docs/env.example)를 참고해 `.env.local`에 복사한다.
 
 ### Supabase (P4 / P6 / P10)
 
@@ -34,10 +36,16 @@ npm run dev
 
 ### Jira (P5 / P10)
 
-1. `.env.local`에 `JIRA_API_TOKEN`, `JIRA_EMAIL`, `JIRA_DOMAIN`, `JIRA_PROJECT_KEY`를 넣는다.
-2. 일정 탭의 **Jira 동기화**로 이슈를 불러온다 (`POST /rest/api/3/search/jql`).
-3. API: `GET/POST /api/jira/issues` (조회·생성·transition).
-4. 상태 매핑: To Do → backlog, In Progress → in_progress, Review → review, Done → done
+1. `JIRA_API_TOKEN`, `JIRA_EMAIL`, `JIRA_DOMAIN`, `JIRA_PROJECT_KEY`
+2. 일정 탭 **Jira 동기화** (`POST /rest/api/3/search/jql`)
+
+### Slack / Discord / GitHub (P12)
+
+1. `SLACK_WEBHOOK_URL` / `DISCORD_WEBHOOK_URL` — 없으면 알림 조용히 스킵
+2. 일지: 「저장 시 Slack/Discord 알림」 체크 후 저장
+3. 보드: 「완료 시 알림」 체크 시 Done 전환 알림
+4. `GITHUB_TOKEN` + `GITHUB_REPO` (`owner/repo`) — 없으면 GitHub 버튼 숨김
+5. 보드 카드 **GitHub** 으로 Issue 생성·링크
 
 ## License
 
@@ -46,8 +54,8 @@ private
 ## 작업 관리
 
 - 현재 Phase: Phase 3 (팀 협업, 고급 분석, 외부 연동)
-- 진행 중: P11 고급 분석
-- 완료: Phase 1~2 (P1~P9), Phase 3 P10 팀 초대/공유
-- 다음: Slack/Discord 알림, GitHub 연동
+- 진행 중: P12 외부 연동
+- 완료: Phase 1~3 P11 (P1~P11)
+- 다음: Phase 3 마무리
 
 상세 이력은 [VERSION.md](./VERSION.md)를 참고하세요.

@@ -13,6 +13,7 @@ import { saveJournalWithFallback, loadJournalsWithFallback, getAllTags } from '@
 import { loadTasksWithFallback } from '@/lib/board';
 import { readObsidianMarkdownFiles } from '@/lib/obsidian';
 import { TagCloud, buildTagCounts } from '@/components/tag-cloud';
+import { fetchIntegrationsStatus, notifyChannels } from '@/lib/notify-client';
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -76,6 +77,8 @@ export function JournalPanel({
   const [ready, setReady] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importMsg, setImportMsg] = useState<string | null>(null);
+  const [notifyOnSave, setNotifyOnSave] = useState(false);
+  const [hasNotifyChannel, setHasNotifyChannel] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const selectDate = useCallback((nextDate: string, map?: Record<string, Day>) => {
@@ -116,6 +119,12 @@ export function JournalPanel({
     selectDate(focusDate);
     onFocusHandled?.();
   }, [focusDate, ready, selectDate, onFocusHandled]);
+
+  useEffect(() => {
+    void fetchIntegrationsStatus().then(s => {
+      setHasNotifyChannel(s.slack || s.discord);
+    });
+  }, []);
 
   const currentTags = useMemo(() => parseTags(tagsInput), [tagsInput]);
 
@@ -172,11 +181,18 @@ export function JournalPanel({
     }
   };
 
-  const save = useCallback(async () => {
+  const save = useCallback(async (opts?: { notify?: boolean }) => {
     const tags = parseTags(tagsInput);
     await saveJournalWithFallback(date, draft, tags);
     setDays(prev => ({ ...prev, [date]: { content: draft, tags } }));
-  }, [date, draft, tagsInput]);
+
+    if (!opts?.notify || !hasNotifyChannel) return;
+
+    const preview = draft.trim().slice(0, 120).replace(/\s+/g, ' ');
+    await notifyChannels(
+      `📓 Folio 일지 저장 · ${date}${preview ? `\n${preview}${draft.trim().length > 120 ? '…' : ''}` : ''}`,
+    );
+  }, [date, draft, tagsInput, hasNotifyChannel]);
 
   useEffect(() => {
     if (!ready) return;
@@ -330,11 +346,24 @@ export function JournalPanel({
               <Upload className="h-4 w-4" />
               {importing ? '가져오는 중…' : 'Obsidian 가져오기'}
             </Button>
-            <Button onClick={save} size="sm" className="gap-2 bg-gray-900 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white">
+            <Button onClick={() => void save({ notify: notifyOnSave })} size="sm" className="gap-2 bg-gray-900 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white">
               <Save className="h-4 w-4" /> 저장
             </Button>
           </div>
         </div>
+        {hasNotifyChannel && (
+          <div className="px-4 pt-2">
+            <label className="inline-flex items-center gap-2 text-[11px] text-gray-500 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={notifyOnSave}
+                onChange={e => setNotifyOnSave(e.target.checked)}
+                className="rounded border-gray-300"
+              />
+              저장 시 Slack/Discord 알림
+            </label>
+          </div>
+        )}
         {importMsg && (
           <p className="px-4 pt-2 text-[11px] text-gray-500">{importMsg}</p>
         )}
