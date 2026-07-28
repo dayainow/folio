@@ -6,10 +6,10 @@
 
 | 항목 | 값 |
 |------|-----|
-| 버전 | 0.4.1-wip |
-| Phase | Phase 4 |
-| 진행 중 | P13 배포 자동화 |
-| 다음 | 상태 기반 저장 토글, 성능/접근성, 문서화 |
+| 버전 | 0.5.0-wip |
+| Phase | Phase 4 + Beacon 연동 |
+| 진행 중 | 프로세스 연동 규약 정리 |
+| 다음 | 프로세스 탭 (project.json → Gate/Timeline) |
 
 ## 완료 항목
 
@@ -31,13 +31,21 @@
 | P11 | 고급 분석 (recharts) | `9754d7b` |
 | P12 | Slack/Discord/GitHub 외부 연동 | `49ef9b2` |
 
+| P13 | 배포 자동화 | `24d4c02` |
+
 ## 진행 중
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| P13 | 배포 자동화 | Vercel · Docker Compose · GitHub Actions CI |
+| — | 프로세스 연동 규약 정리 | `PROCESS.md` — folio ↔ beacon 경로·읽기 전용 |
 
 ## 변경 이력
+
+### 0.5.0-wip — 2026-07-28 (프로세스 연동 규약)
+
+- `PROCESS.md`: Beacon 프로젝트 루트 / `.beacon` 경로, 탭 구조, 읽기 전용 원칙
+- 향후 연동 순서: project.json → Gate/P0–P4 → Timeline → 산출물 체크리스트
+- folio와 beacon-project-os 리포 분리 운영 명시
 
 ### 0.4.1-wip — 2026-07-28 (P13 / Phase 4)
 

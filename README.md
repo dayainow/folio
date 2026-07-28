@@ -78,17 +78,18 @@ private
 
 ## 작업 관리
 
-- 현재 Phase: Phase 4 (배포·상태 저장·성능·문서화)
-- 진행 중: P13 배포 자동화
-- 완료: Phase 1~3 (P1~P12), v0.4.0
-- 다음: 상태 기반 저장 토글, 성능/접근성, 문서화 강화
+- 현재 Phase: Phase 4 (배포·상태 저장·성능·문서화) + Beacon 프로세스 연동
+- 진행 중: 프로세스 연동 규약 정리
+- 완료: Phase 1~3 (P1~P12), P13 배포 자동화 (v0.4.1-wip)
+- 다음: `.beacon/project.json` 읽기 → 프로세스 탭 UI, 상태 기반 저장 토글
 
-상세 이력은 [VERSION.md](./VERSION.md)를 참고하세요.
+상세 이력은 [VERSION.md](./VERSION.md), 연동 규약은 [PROCESS.md](./PROCESS.md)를 참고하세요.
 
 ## Phase 4 계획
 
-- **P13** 배포 자동화 (Vercel / Docker / CI) ← 진행 중
+- P13 배포 자동화 (Vercel / Docker / CI)
+- **프로세스 연동 규약 정리** (folio ↔ beacon-project-os) ← 진행 중
+- 프로세스 탭 (읽기 전용 `.beacon` 임베딩)
 - 상태 기반 저장 — 로컬/클라우드 전환 토글 UI
 - 성능/접근성 — 캐시, 로딩, 키보드 네비게이션
 - 문서화 강화 — API 문서, 사용자 가이드
-- (이후) 실시간 협업, PWA, AI 요약
