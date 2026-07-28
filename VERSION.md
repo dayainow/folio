@@ -6,10 +6,10 @@
 
 | 항목 | 값 |
 |------|-----|
-| 버전 | 0.5.0-wip |
-| Phase | Phase 4 + Beacon 연동 |
-| 진행 중 | P14-2 상태 기반 저장 토글 |
-| 다음 | 성능/접근성 · 문서화 |
+| 버전 | **0.5.0** |
+| Phase | Phase 4 완료 |
+| 진행 중 | — |
+| 다음 | Phase 5 (성능·접근성·문서화 강화) |
 
 ## 완료 항목
 
@@ -30,16 +30,25 @@
 | P10 | 팀 초대/공유 + Jira search/jql | `afb7af5` |
 | P11 | 고급 분석 (recharts) | `9754d7b` |
 | P12 | Slack/Discord/GitHub 외부 연동 | `49ef9b2` |
-
-| P13 | 배포 자동화 | `24d4c02` |
+| P13 | 배포 자동화 (Vercel / Docker / CI) | `24d4c02` |
+| — | 프로세스 연동 규약 (`PROCESS.md`) | `0194147` |
+| P14 | 프로세스 탭 UI (Gate / Timeline / 산출물) | `93a6d97` |
+| P14 | beacon.db WAL 읽기 수정 | `0574210` |
+| P14-2 | 상태 기반 저장 토글 (local / cloud / beacon) | `ffa70d8` |
 
 ## 진행 중
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| P14-2 | 상태 기반 저장 토글 | local / cloud / beacon (`storage.ts`) |
+| — | — | Phase 4 완료 |
 
 ## 변경 이력
+
+### 0.5.0 — 2026-07-29 (Phase 4 완료)
+
+- 정식 릴리즈 **0.5.0**
+- Phase 4 완료: P13 배포 · PROCESS 규약 · P14 프로세스 탭 · P14-2 저장 모드 토글
+- README: Phase 1~4 완료, Phase 5 계획, Beacon 연동 사용법
 
 ### 0.5.0-wip — 2026-07-29 (P14-2 저장 모드 토글)
 

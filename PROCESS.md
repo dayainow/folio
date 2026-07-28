@@ -44,22 +44,24 @@ Beacon CLI가 추가로 만드는 산출물도 동일하게 **읽기만** 허용
 
 ## 편집 금지 원칙
 
-- Folio UI·API·마이그레이션은 `.beacon/**` 및 Beacon 생성 파일을 **업데이트하지 않는다**.
+- Folio UI·API는 Beacon CLI 원본(`.beacon/project.json`, `beacon.db` 등)을 **업데이트하지 않는다**.
 - 프로세스 변경은 **Beacon CLI / beacon-project-os** 측에서만 수행한다.
-- Folio는 캐시·표시용 파생 상태만 메모리(또는 Folio 전용 스토리지)에 둘 수 있으며, `.beacon`에 다시 쓰지 않는다.
+- 예외: 저장 모드가 Beacon일 때 Folio는 **`.beacon/cache/folio-*.json`에만** Journal/Docs/Board 캐시를 기록한다 (CLI 원본과 분리).
 
-## 향후 연동 순서
+## 연동 구현 상태
 
 1. **`.beacon/project.json` 읽기** — ✅ P14
 2. **Gate / P0–P4 상태 요약** — ✅ P14 (`beacon.db` 스냅샷)
 3. **Timeline 요약** — ✅ P14
 4. **산출물 체크리스트** — ✅ P14
+5. **저장 모드 Beacon 캐시** — ✅ P14-2 (`.beacon/cache`만)
 
 구현:
 
 - `/api/beacon/summary` — Node에서 `BEACON_PROJECT_ROOT` 또는 `cwd` 아래 `.beacon` 읽기
+- `/api/beacon/available`, `/api/beacon/folio` — 가용성 · Folio 캐시 R/W
 - 브라우저 File System Access API — 서버 FS가 없을 때 `.beacon` 폴더 선택
-- `sql.js`로 `beacon.db` Timeline / 최신 스냅샷 파싱 (읽기 전용)
+- 서버: `node:sqlite` (WAL), 브라우저: `sql.js`
 
 ## 리포 관계 (요약)
 
@@ -75,3 +77,4 @@ folio                 →  프로세스 탭 UI (임베딩)
 
 - 2026-07-28: 초안 — 경로·탭·읽기 전용·연동 순서 정리
 - 2026-07-28: P14 — 프로세스 탭 UI (`/api/beacon/summary`, sql.js, 폴더 선택)
+- 2026-07-29: P14-2 — `.beacon/cache/folio-*.json` 저장 모드 / Phase 4(0.5.0) 완료

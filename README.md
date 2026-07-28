@@ -1,6 +1,6 @@
 # Folio
 
-프로젝트의 기록을 남기는 개발자 워크스페이스. **v0.5.0-wip** (Phase 4 + Beacon)
+프로젝트의 기록을 남기는 개발자 워크스페이스. **v0.5.0** (Phase 4 완료)
 
 ## Pages
 
@@ -11,6 +11,7 @@
 - 로그인 (`/login`): Supabase Auth UI
 - 팀: 초대·멤버·공유
 - 통합 검색: ⌘/Ctrl+K
+- 저장 모드: 헤더에서 로컬 / 클라우드 / Beacon 전환
 
 ## 스택
 
@@ -18,6 +19,7 @@
 - Tailwind v4 + shadcn/ui
 - localStorage + Supabase (user_id 분리, 팀 RLS)
 - Jira / GitHub / Slack / Discord 웹훅
+- Beacon 프로세스 연동 (읽기 전용 + Folio 캐시)
 
 ## 시작 (로컬)
 
@@ -43,6 +45,25 @@ npm run lint && npm run typecheck && npm run test && npm run build
 ### Jira / Slack / Discord / GitHub
 
 [docs/env.example](./docs/env.example) 참고. 미설정 시 해당 기능은 스킵되거나 UI에서 숨겨진다.
+
+## Beacon 연동 사용법
+
+상세 규약: **[PROCESS.md](./PROCESS.md)**
+
+1. **프로젝트 루트에서 Beacon 초기화** (beacon-project-os CLI)
+   ```bash
+   beacon init --root /path/to/project
+   beacon open --root /path/to/project   # 스캔 → .beacon/beacon.db
+   ```
+2. **Folio 환경변수** (선택) — `.env.local`
+   ```bash
+   BEACON_PROJECT_ROOT=/path/to/project
+   ```
+   미설정 시 `process.cwd()`를 루트로 사용한다.
+3. **프로세스 탭** — Gate(P0–P4) · Timeline · 산출물 체크리스트 (읽기 전용)
+   - 서버가 `.beacon`을 못 읽으면 「Beacon 프로젝트를 초기화하세요」와 폴더 선택 UI가 뜬다.
+4. **저장 모드 Beacon** — 헤더 토글에서 Beacon 선택 시 Journal/Docs/Board는
+   `.beacon/cache/folio-*.json`에만 저장한다. `project.json` / `beacon.db` 등 CLI 원본은 수정하지 않는다.
 
 ## 배포
 
@@ -79,18 +100,26 @@ private
 
 ## 작업 관리
 
-- 현재 Phase: Phase 4 (배포·상태 저장·성능·문서화) + Beacon 프로세스 연동
-- 완료: Phase 1~3 (P1~P12), P13 배포 자동화, P14 프로세스 탭
-- 진행 중: **P14-2 상태 기반 저장 토글** (로컬 / 클라우드 / Beacon)
-- 다음: 성능/접근성, 문서화 강화
+- 현재 Phase: **Phase 4 완료** (v0.5.0)
+- 완료: Phase 1~4 (P1~P14-2, 배포·Beacon 연동·저장 모드 포함)
+- 진행 중: —
+- 다음: **Phase 5** (성능·접근성·문서화 강화)
 
 상세 이력은 [VERSION.md](./VERSION.md), 연동 규약은 [PROCESS.md](./PROCESS.md)를 참고하세요.
 
-## Phase 4 계획
+## Phase 요약
 
-- P13 배포 자동화 (Vercel / Docker / CI) ✅
-- 프로세스 연동 규약 정리 (folio ↔ beacon-project-os) ✅
-- P14 프로세스 탭 (읽기 전용 `.beacon` 임베딩) ✅
-- **P14-2 상태 기반 저장** — 로컬/클라우드/Beacon 토글 ← 진행 중
-- 성능/접근성 — 캐시, 로딩, 키보드 네비게이션
-- 문서화 강화 — API 문서, 사용자 가이드
+| Phase | 내용 | 상태 |
+|-------|------|------|
+| 1 | 기본 Journal / Docs / Board + 브랜딩 | ✅ |
+| 2 | Supabase · Auth · Jira · 멀티유저 | ✅ |
+| 3 | Obsidian · 검색 · 팀 · 분석 · 외부 알림 | ✅ |
+| 4 | 배포 · Beacon 프로세스 · 저장 모드 토글 | ✅ |
+| 5 | 성능 · 접근성 · 문서화 강화 | 다음 |
+
+## Phase 5 계획
+
+- 성능 — 캐시 전략, 로딩 상태, 번들/리스트 가상화 검토
+- 접근성 — 키보드 네비게이션, 포커스·ARIA, 대비 점검
+- 문서화 — API/환경변수 사용자 가이드, 운영 체크리스트
+- (선택) Beacon export API · Vercel에서의 프로세스 연동 고도화
