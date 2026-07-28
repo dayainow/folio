@@ -125,14 +125,18 @@ type JiraSearchResponse = {
   }>
 }
 
-/** 프로젝트 이슈 목록 조회 */
+/** 프로젝트 이슈 목록 조회 (POST /rest/api/3/search/jql) */
 export async function fetchIssues(projectKey?: string): Promise<JiraIssue[]> {
   const { projectKey: defaultKey, browseBase } = getJiraConfig()
   const key = projectKey || defaultKey
-  const jql = encodeURIComponent(`project = "${key}" ORDER BY updated DESC`)
-  const data = await jiraFetch<JiraSearchResponse>(
-    `/search?jql=${jql}&maxResults=50&fields=summary,description,status,priority,issuetype`,
-  )
+  const data = await jiraFetch<JiraSearchResponse>('/search/jql', {
+    method: 'POST',
+    body: JSON.stringify({
+      jql: `project = "${key}" ORDER BY updated DESC`,
+      maxResults: 50,
+      fields: ['summary', 'description', 'status', 'priority', 'issuetype'],
+    }),
+  })
 
   return (data.issues ?? []).map(issue => {
     const statusName = issue.fields.status?.name ?? 'To Do'
@@ -205,10 +209,13 @@ type TransitionsResponse = {
   transitions?: Array<{ id: string; name: string; to?: { name?: string } }>
 }
 
-/** 이슈 상태 전환 (상태 이름 또는 transition 이름 매칭) */
-export async function transitionIssue(issueId: string, status: string): Promise<void> {
-  const target = status.toLowerCase().trim()
-  const data = await jiraFetch<TransitionsResponse>(`/issue/${issueId}/transitions`)
+/** 이슈 상태 전환 (transition 이름 또는 대상 상태 이름 매칭) */
+export async function transitionIssue(
+  issueIdOrKey: string,
+  transitionName: string,
+): Promise<void> {
+  const target = transitionName.toLowerCase().trim()
+  const data = await jiraFetch<TransitionsResponse>(`/issue/${issueIdOrKey}/transitions`)
   const match = (data.transitions ?? []).find(t => {
     const name = t.name.toLowerCase()
     const toName = (t.to?.name ?? '').toLowerCase()
@@ -216,10 +223,10 @@ export async function transitionIssue(issueId: string, status: string): Promise<
   })
 
   if (!match) {
-    throw new Error(`전환 가능한 transition을 찾지 못했습니다: ${status}`)
+    throw new Error(`전환 가능한 transition을 찾지 못했습니다: ${transitionName}`)
   }
 
-  await jiraFetch(`/issue/${issueId}/transitions`, {
+  await jiraFetch(`/issue/${issueIdOrKey}/transitions`, {
     method: 'POST',
     body: JSON.stringify({ transition: { id: match.id } }),
   })

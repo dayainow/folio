@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -10,8 +10,11 @@ import { DocsPanel } from '@/components/docs';
 import { BoardPanel } from '@/components/board';
 import { GlobalSearch, type SearchNavigatePayload } from '@/components/global-search';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { TeamSwitcher } from '@/components/team-switcher';
+import { TeamSidebar } from '@/components/team-sidebar';
 import { createBrowserSupabaseClient, signOut } from '@/lib/supabase';
 import { migrateLocalDataOnLogin } from '@/lib/migrate';
+import { getActiveTeamId } from '@/lib/team';
 
 type TabValue = 'journal' | 'docs' | 'board';
 
@@ -22,6 +25,16 @@ export default function Home() {
   const [focusJournalDate, setFocusJournalDate] = useState<string | null>(null);
   const [focusDocId, setFocusDocId] = useState<string | null>(null);
   const [focusTaskId, setFocusTaskId] = useState<string | null>(null);
+  const [activeTeamId, setActiveTeamIdState] = useState<string | null>(null);
+  const [teamPanelOpen, setTeamPanelOpen] = useState(false);
+
+  const handleActiveTeamChange = useCallback((teamId: string | null) => {
+    setActiveTeamIdState(teamId);
+  }, []);
+
+  useEffect(() => {
+    setActiveTeamIdState(getActiveTeamId());
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -45,6 +58,10 @@ export default function Home() {
           if (event === 'SIGNED_IN' && session?.user) {
             void migrateLocalDataOnLogin().catch(() => undefined);
           }
+          if (event === 'SIGNED_OUT') {
+            setActiveTeamIdState(null);
+            setTeamPanelOpen(false);
+          }
         });
         unsubscribe = () => subscription.unsubscribe();
       } catch {
@@ -66,6 +83,7 @@ export default function Home() {
     try {
       await signOut();
       setEmail(null);
+      setActiveTeamIdState(null);
     } catch {
       setEmail(null);
     }
@@ -109,6 +127,14 @@ export default function Home() {
         <div className="flex items-center gap-3">
           <span className="text-xs text-muted-foreground hidden sm:inline">프로젝트의 기록</span>
           <ThemeToggle />
+          {authReady && email && (
+            <TeamSwitcher
+              enabled
+              activeTeamId={activeTeamId}
+              onActiveTeamChange={handleActiveTeamChange}
+              onOpenManage={() => setTeamPanelOpen(true)}
+            />
+          )}
           {authReady && (
             email ? (
               <div className="flex items-center gap-2">
@@ -133,6 +159,13 @@ export default function Home() {
           )}
         </div>
       </header>
+
+      <TeamSidebar
+        open={teamPanelOpen}
+        onClose={() => setTeamPanelOpen(false)}
+        activeTeamId={activeTeamId}
+        onActiveTeamChange={handleActiveTeamChange}
+      />
 
       <main className="flex-1 p-6 max-w-6xl mx-auto w-full">
         <GlobalSearch onNavigate={handleSearchNavigate} />

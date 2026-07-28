@@ -6,10 +6,10 @@
 
 | 항목 | 값 |
 |------|-----|
-| 버전 | 0.3.0-wip |
-| Phase | Phase 2 |
-| 진행 중 | P9 고급 기능 |
-| 다음 | Phase 3 (팀 협업, 고급 분석) |
+| 버전 | 0.4.0-wip |
+| Phase | Phase 3 |
+| 진행 중 | P10 팀 초대/공유 |
+| 다음 | 고급 분석, Slack/Discord·GitHub 연동 |
 
 ## 완료 항목
 
@@ -26,14 +26,22 @@
 | P6 | 멀티유저 데이터 분리 | `b49d2ea` |
 | P7 | Obsidian 마크다운 가져오기 | `1d82a5e` |
 | P8 | 통합 검색 | `1abb47c` |
+| P9 | 고급 기능 (태그·날짜·다크모드·즐겨찾기) | `94ea5ea` |
 
 ## 진행 중
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| P9 | 고급 기능 | 태그 클라우드, 날짜 범위, 다크모드, Board 즐겨찾기 |
+| P10 | 팀 초대/공유 | teams/invitations/shared_* + Jira search/jql |
 
 ## 변경 이력
+
+### 0.4.0-wip — 2026-07-28 (P10 / Phase 3)
+
+- `docs/supabase-schema-team.sql`: teams, members, invitations, shared_docs/boards + RLS
+- `src/lib/team.ts`: create/invite/accept/list/share API
+- 팀 선택 드롭다운 + 팀 관리 사이드바/초대 UI
+- Jira: `POST /rest/api/3/search/jql`, createIssue, transitionIssue + API POST
 
 ### 0.3.0-wip — 2026-07-28 (P9)
 
