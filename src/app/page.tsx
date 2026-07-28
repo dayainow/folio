@@ -11,6 +11,7 @@ import { BoardPanel } from '@/components/board';
 import { BeaconPanel } from '@/components/beacon';
 import { GlobalSearch, type SearchNavigatePayload } from '@/components/global-search';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { StorageModeToggle } from '@/components/storage-mode-toggle';
 import { TeamSwitcher } from '@/components/team-switcher';
 import { TeamSidebar } from '@/components/team-sidebar';
 import { JournalAnalyticsPanel, BoardAnalyticsPanel } from '@/components/analytics';
@@ -127,6 +128,7 @@ export default function Home() {
         </div>
         <div className="flex items-center gap-3">
           <span className="text-xs text-muted-foreground hidden sm:inline">프로젝트의 기록</span>
+          <StorageModeToggle />
           <ThemeToggle />
           {authReady && email && (
             <TeamSwitcher

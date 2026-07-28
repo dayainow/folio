@@ -1,6 +1,7 @@
 'use client';
 
-import { requireAuthUser, isAuthenticated } from '@/lib/supabase';
+import { requireAuthUser } from '@/lib/supabase';
+import { loadWithFallback, saveWithFallback } from '@/lib/storage';
 
 export interface JournalEntry {
   id?: string;
@@ -94,26 +95,28 @@ export async function saveJournalSupabase(date: string, content: string, tags: s
   if (error) throw error;
 }
 
-/** 로그인 시 Supabase, 아니면 localStorage */
+/** 저장 모드(local/cloud/beacon)에 따라 분기 — `storage.ts` */
 export async function saveJournalWithFallback(date: string, content: string, tags: string[]) {
-  if (!(await isAuthenticated())) {
-    saveJournal(date, content, tags);
-    return;
-  }
-  try {
-    await saveJournalSupabase(date, content, tags);
-  } catch {
-    saveJournal(date, content, tags);
-  }
+  const entry = { date, content, tags, updatedAt: new Date().toISOString() }
+  const next = { ...loadJournals(), [date]: entry }
+
+  await saveWithFallback(next, 'journal', {
+    localSave: () => {
+      if (typeof window === 'undefined') return
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+    },
+    cloudSave: async () => {
+      await saveJournalSupabase(date, content, tags)
+    },
+  })
 }
 
-/** 로그인 시 Supabase(본인 데이터), 아니면 localStorage */
+/** 저장 모드에 따라 로드 */
 export async function loadJournalsWithFallback(): Promise<Record<string, JournalEntry>> {
-  const local = loadJournals();
-  if (!(await isAuthenticated())) return local;
-  try {
-    return await loadJournalsSupabase();
-  } catch {
-    return local;
-  }
+  return loadWithFallback({
+    type: 'journal',
+    localLoad: loadJournals,
+    cloudLoad: loadJournalsSupabase,
+    emptyBeacon: {},
+  })
 }

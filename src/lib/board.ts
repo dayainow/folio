@@ -1,6 +1,7 @@
 'use client';
 
-import { requireAuthUser, isAuthenticated } from '@/lib/supabase';
+import { requireAuthUser } from '@/lib/supabase';
+import { getStorageMode, loadWithFallback, saveWithFallback } from '@/lib/storage';
 
 export interface Task {
   id: string;
@@ -129,67 +130,77 @@ export async function deleteTaskSupabase(id: string) {
 }
 
 export async function saveTaskWithFallback(task: Task) {
-  // GitHub 링크 등 확장 필드는 항상 로컬에도 보존
   const all = loadTasks();
   const idx = all.findIndex(t => t.id === task.id);
-  if (idx >= 0) all[idx] = task;
-  else all.push(task);
-  saveTasks(all);
+  const next = [...all];
+  if (idx >= 0) next[idx] = task;
+  else next.push(task);
 
-  if (!(await isAuthenticated())) {
-    return;
-  }
-  try {
-    await saveTaskSupabase(task);
-  } catch {
-    /* already saved locally */
+  const result = await saveWithFallback(next, 'board', {
+    localSave: () => saveTasks(next),
+    cloudSave: async () => {
+      await saveTaskSupabase(task);
+    },
+  });
+  // Jira/GitHub 확장 필드는 클라우드 성공 시에도 로컬 미러 유지
+  if (result.mode === 'cloud' && !result.usedFallback) {
+    saveTasks(next);
   }
 }
 
 export async function saveTasksWithFallback(tasks: Task[]) {
-  saveTasks(tasks);
-  if (!(await isAuthenticated())) {
-    return;
-  }
-  try {
-    await saveTasksSupabase(tasks);
-  } catch {
-    /* already saved locally */
+  const result = await saveWithFallback(tasks, 'board', {
+    localSave: () => saveTasks(tasks),
+    cloudSave: async () => {
+      await saveTasksSupabase(tasks);
+    },
+  });
+  if (result.mode === 'cloud' && !result.usedFallback) {
+    saveTasks(tasks);
   }
 }
 
 export async function deleteTaskWithFallback(id: string) {
-  if (!(await isAuthenticated())) {
-    saveTasks(loadTasks().filter(t => t.id !== id));
-    return;
-  }
-  try {
-    await deleteTaskSupabase(id);
-  } catch {
-    saveTasks(loadTasks().filter(t => t.id !== id));
+  const next = loadTasks().filter(t => t.id !== id);
+  const result = await saveWithFallback(next, 'board', {
+    localSave: () => saveTasks(next),
+    cloudSave: async () => {
+      await deleteTaskSupabase(id);
+    },
+  });
+  if (result.mode === 'cloud' && !result.usedFallback) {
+    saveTasks(next);
   }
 }
 
-/** 로그인 시 Supabase(본인), 아니면 localStorage.
- * GitHub/Jira 링크 필드는 로컬에 보조 저장해 병합한다. */
+/** 저장 모드에 따라 로드. 클라우드 시 로컬 Jira/GitHub 필드 병합 */
 export async function loadTasksWithFallback(): Promise<Task[]> {
+  const mode = getStorageMode();
   const local = loadTasks();
-  if (!(await isAuthenticated())) return local;
-  try {
-    const cloud = await loadTasksSupabase();
-    const localById = new Map(local.map(t => [t.id, t]));
-    return cloud.map(t => {
-      const loc = localById.get(t.id);
-      if (!loc) return t;
-      return {
-        ...t,
-        jiraKey: t.jiraKey ?? loc.jiraKey,
-        jiraUrl: t.jiraUrl ?? loc.jiraUrl,
-        githubIssueNumber: loc.githubIssueNumber ?? t.githubIssueNumber,
-        githubUrl: loc.githubUrl ?? t.githubUrl,
-      };
-    });
-  } catch {
-    return local;
+
+  if (mode === 'cloud') {
+    try {
+      const cloud = await loadTasksSupabase();
+      const localById = new Map(local.map(t => [t.id, t]));
+      return cloud.map(t => {
+        const loc = localById.get(t.id);
+        if (!loc) return t;
+        return {
+          ...t,
+          jiraKey: t.jiraKey ?? loc.jiraKey,
+          jiraUrl: t.jiraUrl ?? loc.jiraUrl,
+          githubIssueNumber: loc.githubIssueNumber ?? t.githubIssueNumber,
+          githubUrl: loc.githubUrl ?? t.githubUrl,
+        };
+      });
+    } catch {
+      return local;
+    }
   }
+
+  return loadWithFallback({
+    type: 'board',
+    localLoad: loadTasks,
+    emptyBeacon: [],
+  });
 }

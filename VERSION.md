@@ -8,8 +8,8 @@
 |------|-----|
 | 버전 | 0.5.0-wip |
 | Phase | Phase 4 + Beacon 연동 |
-| 진행 중 | P14 프로세스 탭 UI |
-| 다음 | 상태 기반 저장 토글 · 성능/접근성 |
+| 진행 중 | P14-2 상태 기반 저장 토글 |
+| 다음 | 성능/접근성 · 문서화 |
 
 ## 완료 항목
 
@@ -37,9 +37,17 @@
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| P14 | 프로세스 탭 UI | `beacon.ts` · `BeaconPanel` · `/api/beacon/summary` |
+| P14-2 | 상태 기반 저장 토글 | local / cloud / beacon (`storage.ts`) |
 
 ## 변경 이력
+
+### 0.5.0-wip — 2026-07-29 (P14-2 저장 모드 토글)
+
+- `src/lib/storage.ts`: get/setStorageMode, saveWithFallback, Beacon 캐시 API 클라이언트
+- 헤더 `StorageModeToggle`: 로컬 / 클라우드 / Beacon (`.beacon` 있을 때만 Beacon 활성)
+- Journal/Docs/Board `*WithFallback`이 저장 모드에 따라 분기
+- `/api/beacon/available`, `/api/beacon/folio` — Folio 데이터는 `.beacon/cache/folio-*.json`에만 기록
+- `BEACON_PROJECT_ROOT` placeholder (`.env.local` / `docs/env.example`)
 
 ### 0.5.0-wip — 2026-07-29 (P14 WAL 읽기 수정)
 

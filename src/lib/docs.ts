@@ -1,6 +1,7 @@
 'use client';
 
-import { requireAuthUser, isAuthenticated } from '@/lib/supabase';
+import { requireAuthUser } from '@/lib/supabase';
+import { loadWithFallback, saveWithFallback } from '@/lib/storage';
 
 export interface DocEntry {
   id: string;
@@ -140,35 +141,48 @@ export async function deleteDocSupabase(id: string) {
 }
 
 export async function saveDocWithFallback(doc: DocEntry) {
-  if (!(await isAuthenticated())) {
-    saveDoc(doc);
-    return;
-  }
-  try {
-    await saveDocSupabase(doc);
-  } catch {
-    saveDoc(doc);
-  }
+  const now = new Date().toISOString();
+  const updated: DocEntry = {
+    ...doc,
+    createdAt: doc.createdAt || now,
+    updatedAt: now,
+  };
+  const all = loadDocs();
+  const idx = all.findIndex(d => d.id === updated.id);
+  const next = [...all];
+  if (idx >= 0) next[idx] = updated;
+  else next.push(updated);
+
+  await saveWithFallback(next, 'docs', {
+    localSave: () => {
+      if (typeof window === 'undefined') return;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    },
+    cloudSave: async () => {
+      await saveDocSupabase(updated);
+    },
+  });
 }
 
 export async function deleteDocWithFallback(id: string) {
-  if (!(await isAuthenticated())) {
-    deleteDoc(id);
-    return;
-  }
-  try {
-    await deleteDocSupabase(id);
-  } catch {
-    deleteDoc(id);
-  }
+  const next = loadDocs().filter(d => d.id !== id);
+  await saveWithFallback(next, 'docs', {
+    localSave: () => {
+      if (typeof window === 'undefined') return;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    },
+    cloudSave: async () => {
+      await deleteDocSupabase(id);
+    },
+  });
 }
 
-/** 로그인 시 Supabase(본인), 아니면 localStorage */
+/** 저장 모드에 따라 로드 */
 export async function loadDocsWithFallback(): Promise<DocEntry[]> {
-  if (!(await isAuthenticated())) return loadDocs();
-  try {
-    return await loadDocsSupabase();
-  } catch {
-    return loadDocs();
-  }
+  return loadWithFallback({
+    type: 'docs',
+    localLoad: loadDocs,
+    cloudLoad: loadDocsSupabase,
+    emptyBeacon: [],
+  });
 }
