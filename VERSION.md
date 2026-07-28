@@ -41,6 +41,11 @@
 
 ## 변경 이력
 
+### 0.5.0-wip — 2026-07-29 (P14 WAL 읽기 수정)
+
+- 서버 `beacon.db` 읽기를 `node:sqlite`로 전환 (WAL 반영). sql.js는 브라우저 폴더 선택용
+- `.gitignore`에 `.beacon/` 추가
+
 ### 0.5.0-wip — 2026-07-28 (P14 프로세스 탭)
 
 - `src/lib/beacon.ts`: project.json / beacon.db(sql.js) 읽기, Gate·Timeline·산출물 요약

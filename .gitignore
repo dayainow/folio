@@ -24,6 +24,9 @@
 .DS_Store
 *.pem
 
+# Beacon local state (CLI 원본 — Folio는 읽기만)
+.beacon/
+
 # debug
 npm-debug.log*
 yarn-debug.log*

@@ -217,7 +217,11 @@ function rowToTimeline(eventJson: string, fallbackId: string): TimelineItem | nu
   }
 }
 
-/** sql.js로 beacon.db 바이트에서 Timeline / 최신 스냅샷 추출 */
+function emptyDbPayload(): BeaconDbPayload {
+  return { timeline: [], latestSnapshot: null, snapshotCount: 0 }
+}
+
+/** sql.js로 beacon.db 바이트에서 Timeline / 최신 스냅샷 추출 (브라우저·파일 선택용) */
 export async function parseBeaconDbBytes(bytes: Uint8Array): Promise<BeaconDbPayload> {
   const SQL = await initSql()
   const db = new SQL.Database(bytes)
@@ -262,6 +266,85 @@ export async function parseBeaconDbBytes(bytes: Uint8Array): Promise<BeaconDbPay
   }
 }
 
+/**
+ * 서버: node:sqlite 로 경로 직접 열기 (WAL 반영).
+ * Beacon CLI가 WAL 모드로 쓰므로 sql.js로 메인 파일만 읽으면 스냅샷이 비어 보일 수 있다.
+ */
+async function readBeaconDbFromPath(filePath: string): Promise<BeaconDbPayload | null> {
+  try {
+    // Node 22+ built-in. @types/node 20에는 타입이 없어 동적 로드한다.
+    const sqlite = (await import(
+      // @ts-expect-error node:sqlite is available at runtime on Node 22+
+      'node:sqlite'
+    )) as {
+      DatabaseSync: new (
+        path: string,
+        options?: { readOnly?: boolean },
+      ) => {
+        prepare: (sql: string) => {
+          all: (...params: unknown[]) => unknown[]
+          get: (...params: unknown[]) => unknown
+        }
+        exec: (sql: string) => void
+        close: () => void
+      }
+    }
+    const db = new sqlite.DatabaseSync(filePath, { readOnly: true })
+    try {
+      try {
+        db.exec('PRAGMA wal_checkpoint(PASSIVE)')
+      } catch {
+        // ignore
+      }
+
+      const timeline: TimelineItem[] = []
+      try {
+        const rows = db
+          .prepare(
+            `SELECT id, event_json FROM timeline_events ORDER BY occurred_at_ms DESC, id DESC LIMIT 80`,
+          )
+          .all() as Array<{ id: number | string; event_json: string }>
+        for (const row of rows) {
+          const item = rowToTimeline(row.event_json, String(row.id))
+          if (item) timeline.push(item)
+        }
+      } catch {
+        // 테이블 없음
+      }
+
+      let latestSnapshot: BeaconSnapshotLike | null = null
+      let snapshotCount = 0
+      try {
+        const countRow = db.prepare(`SELECT COUNT(*) AS c FROM project_snapshots`).get() as
+          | { c: number }
+          | undefined
+        snapshotCount = Number(countRow?.c ?? 0)
+        const snapRow = db
+          .prepare(`SELECT snapshot_json FROM project_snapshots ORDER BY id DESC LIMIT 1`)
+          .get() as { snapshot_json: string } | undefined
+        if (snapRow?.snapshot_json) {
+          latestSnapshot = JSON.parse(snapRow.snapshot_json) as BeaconSnapshotLike
+        }
+      } catch {
+        // 테이블 없음
+      }
+
+      return { timeline, latestSnapshot, snapshotCount }
+    } finally {
+      db.close()
+    }
+  } catch {
+    // node:sqlite 없거나 파일 잠금 → 바이트 폴백
+    try {
+      const { readFile } = await import('node:fs/promises')
+      const buf = await readFile(filePath)
+      return parseBeaconDbBytes(new Uint8Array(buf))
+    } catch {
+      return null
+    }
+  }
+}
+
 /** 서버: `.beacon/beacon.db` 읽기. 클라이언트: bytes/file 옵션. */
 export async function readBeaconDb(options?: {
   root?: string
@@ -280,16 +363,16 @@ export async function readBeaconDb(options?: {
     return null
   }
 
-  const { readFile } = await import('node:fs/promises')
   const path = await import('node:path')
+  const { access } = await import('node:fs/promises')
   const root = options?.root ?? defaultBeaconRoot()
   const filePath = path.join(root, '.beacon', 'beacon.db')
   try {
-    const buf = await readFile(filePath)
-    return parseBeaconDbBytes(new Uint8Array(buf))
+    await access(filePath)
   } catch {
-    return null
+    return emptyDbPayload()
   }
+  return readBeaconDbFromPath(filePath)
 }
 
 function emptyStages(): StageSummary[] {
