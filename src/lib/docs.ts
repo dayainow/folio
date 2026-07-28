@@ -91,8 +91,10 @@ export function deleteDoc(id: string) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
 }
 
-export function loadCategories(): string[] {
-  return [...DEFAULT_CATEGORIES];
+export function loadCategories(docs?: DocEntry[]): string[] {
+  const source = docs ?? (typeof window !== 'undefined' ? loadDocs() : []);
+  const fromDocs = source.map(d => d.category).filter(Boolean);
+  return Array.from(new Set([...DEFAULT_CATEGORIES, 'Obsidian Import', ...fromDocs]));
 }
 
 /** Supabase `docs` — 현재 user_id만 조회 */

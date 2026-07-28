@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useMemo, type KeyboardEvent, type ChangeEvent } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef, type KeyboardEvent, type ChangeEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -8,8 +8,9 @@ import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Save, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, Save, ChevronLeft, ChevronRight, Upload } from 'lucide-react';
 import { saveJournalWithFallback, loadJournalsWithFallback, getAllTags } from '@/lib/journal';
+import { readObsidianMarkdownFiles } from '@/lib/obsidian';
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -33,6 +34,9 @@ export function JournalPanel() {
   const [tagsInput, setTagsInput] = useState('');
   const [tagDraft, setTagDraft] = useState('');
   const [ready, setReady] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importMsg, setImportMsg] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const selectDate = useCallback((nextDate: string, map?: Record<string, Day>) => {
     const source = map ?? days;
@@ -157,6 +161,50 @@ export function JournalPanel() {
     selectDate(d.toISOString().slice(0, 10));
   };
 
+  const importObsidian = async (e: ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files?.length) return;
+    setImporting(true);
+    setImportMsg(null);
+    try {
+      const notes = await readObsidianMarkdownFiles(files, 'journal');
+      let imported = 0;
+      let skipped = 0;
+      let noDate = 0;
+      const nextMap = { ...days };
+
+      for (const note of notes) {
+        if (!note.date) {
+          noDate += 1;
+          continue;
+        }
+        const existing = nextMap[note.date];
+        if (existing?.content?.trim()) {
+          skipped += 1;
+          continue;
+        }
+        const tags = note.tags;
+        await saveJournalWithFallback(note.date, note.content, tags);
+        nextMap[note.date] = { content: note.content, tags };
+        imported += 1;
+      }
+
+      setDays(nextMap);
+      if (nextMap[date]) {
+        setDraft(nextMap[date].content);
+        setTagsInput(joinTags(nextMap[date].tags));
+      }
+      setImportMsg(
+        notes.length === 0
+          ? '가져올 .md 파일이 없습니다.'
+          : `${imported}개 가져옴${skipped ? `, 기존 ${skipped}건 스킵` : ''}${noDate ? `, 날짜 없음 ${noDate}건` : ''}`,
+      );
+    } finally {
+      setImporting(false);
+      e.target.value = '';
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
       <Card className="rounded-2xl border border-gray-100 shadow-sm">
@@ -173,10 +221,34 @@ export function JournalPanel() {
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
-          <Button onClick={save} size="sm" className="gap-2 bg-gray-900 hover:bg-gray-800">
-            <Save className="h-4 w-4" /> 저장
-          </Button>
+          <div className="flex items-center gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept=".md,text/markdown"
+              className="hidden"
+              onChange={importObsidian}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              disabled={importing}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload className="h-4 w-4" />
+              {importing ? '가져오는 중…' : 'Obsidian 가져오기'}
+            </Button>
+            <Button onClick={save} size="sm" className="gap-2 bg-gray-900 hover:bg-gray-800">
+              <Save className="h-4 w-4" /> 저장
+            </Button>
+          </div>
         </div>
+        {importMsg && (
+          <p className="px-4 pt-2 text-[11px] text-gray-500">{importMsg}</p>
+        )}
         <div className="p-4">
           <Textarea
             value={draft}

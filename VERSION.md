@@ -6,10 +6,10 @@
 
 | 항목 | 값 |
 |------|-----|
-| 버전 | 0.2.0 |
+| 버전 | 0.2.1 |
 | Phase | Phase 2 |
-| 진행 중 | P6 멀티유저 데이터 분리 |
-| 다음 | Obsidian 연동, 고급 검색/필터 |
+| 진행 중 | P7 Obsidian 연동 |
+| 다음 | 고급 검색/필터 |
 
 ## 완료 항목
 
@@ -23,14 +23,22 @@
 | P4-2 | Supabase DB 스키마 + UI 전환(폴백) | `e761ac2` |
 | P5 | Jira 연동 (fetch/동기화/카드 링크) | `48356b4` |
 | P4-3 | Supabase Auth UI | `916a875` |
+| P6 | 멀티유저 데이터 분리 | `b49d2ea` |
 
 ## 진행 중
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| P6 | 멀티유저 데이터 분리 | user_id 필터, 마이그레이션 SQL, 로그인 시 로컬→클라우드 |
+| P7 | Obsidian 연동 | Journals/Docs .md 가져오기, 태그·날짜 파싱 (브라우저 File API) |
 
 ## 변경 이력
+
+### 0.2.1 — 2026-07-28 (P7)
+
+- `src/lib/obsidian.ts`: frontmatter/파일명 날짜·제목·태그 파싱
+- Docs/Journal에 **Obsidian 가져오기** (다중 .md)
+- Docs: 카테고리 `Obsidian Import`, 제목 충돌 시 `(2)` suffix
+- Journal: 날짜 추출 후 저장, 기존 일자 스킵
 
 ### 0.2.0+ — 2026-07-27 (P6)
 

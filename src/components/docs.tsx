@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, type ReactNode } from 'react';
+import { useState, useCallback, useEffect, useRef, type ReactNode, type ChangeEvent } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Button } from '@/components/ui/button';
@@ -18,8 +18,10 @@ import {
   Columns2,
   Eye,
   Pencil,
+  Upload,
 } from 'lucide-react';
 import { loadDocsWithFallback, saveDocWithFallback, deleteDocWithFallback, loadCategories, type DocEntry } from '@/lib/docs';
+import { readObsidianMarkdownFiles, uniqueDocTitle } from '@/lib/obsidian';
 
 type EditPane = 'edit' | 'preview' | 'split';
 
@@ -73,7 +75,7 @@ export function DocsPanel() {
       const next = await loadDocsWithFallback();
       if (cancelled) return;
       setDocs(next);
-      setCategories(loadCategories());
+      setCategories(loadCategories(next));
     })();
     return () => {
       cancelled = true;
@@ -87,6 +89,9 @@ export function DocsPanel() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [category, setCategory] = useState('Dev Guide');
+  const [importing, setImporting] = useState(false);
+  const [importMsg, setImportMsg] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const selectDoc = useCallback((doc: DocEntry) => {
     setSelectedId(doc.id);
@@ -140,6 +145,55 @@ export function DocsPanel() {
     await refresh();
   };
 
+  const importObsidian = async (e: ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files?.length) return;
+    setImporting(true);
+    setImportMsg(null);
+    try {
+      const notes = await readObsidianMarkdownFiles(files, 'docs');
+      const existingTitles = new Set(docs.map(d => d.title.toLowerCase()));
+      let imported = 0;
+      let renamed = 0;
+      const now = new Date().toISOString();
+
+      for (const note of notes) {
+        const titleBase = note.title || note.fileName.replace(/\.md$/i, '');
+        const hadConflict = existingTitles.has(titleBase.toLowerCase());
+        const finalTitle = uniqueDocTitle(titleBase, existingTitles);
+        if (hadConflict) renamed += 1;
+        existingTitles.add(finalTitle.toLowerCase());
+
+        const body =
+          note.tags.length > 0
+            ? `${note.content}\n\n<!-- tags: ${note.tags.map(t => `#${t}`).join(' ')} -->`
+            : note.content;
+
+        await saveDocWithFallback({
+          id: crypto.randomUUID(),
+          title: finalTitle,
+          content: body,
+          category: 'Obsidian Import',
+          createdAt: now,
+          updatedAt: now,
+        });
+        imported += 1;
+      }
+
+      const next = await loadDocsWithFallback();
+      setDocs(next);
+      setCategories(loadCategories(next));
+      setImportMsg(
+        notes.length === 0
+          ? '가져올 .md 파일이 없습니다.'
+          : `${imported}개 가져옴${renamed > 0 ? ` (이름 충돌 ${renamed}건 → (2) suffix)` : ''}`,
+      );
+    } finally {
+      setImporting(false);
+      e.target.value = '';
+    }
+  };
+
   const filtered = docs
     .filter(d => !search || d.title.toLowerCase().includes(search.toLowerCase()) || d.content.toLowerCase().includes(search.toLowerCase()))
     .filter(d => !filterCat || d.category === filterCat)
@@ -166,6 +220,26 @@ export function DocsPanel() {
           <Button onClick={startNew} size="sm" className="w-full gap-2 bg-gray-900 hover:bg-gray-800">
             <Plus className="h-4 w-4" /> 새 문서
           </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept=".md,text/markdown"
+            className="hidden"
+            onChange={importObsidian}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full gap-2"
+            disabled={importing}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Upload className="h-4 w-4" />
+            {importing ? '가져오는 중…' : 'Obsidian 가져오기'}
+          </Button>
+          {importMsg && <p className="text-[11px] text-gray-500 px-0.5">{importMsg}</p>}
           <div className="relative">
             <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-gray-400" />
             <Input
