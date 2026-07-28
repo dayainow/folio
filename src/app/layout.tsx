@@ -17,6 +17,8 @@ export const metadata: Metadata = {
   description: "프로젝트의 기록 — 브라우저에 저장되는 개인 워크스페이스",
 };
 
+const themeInitScript = `(function(){try{if(localStorage.getItem('folio_theme')==='dark'){document.documentElement.classList.add('dark');}}catch(e){}})();`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -24,10 +26,14 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="ko"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
+      <body className="min-h-full flex flex-col bg-background text-foreground">{children}</body>
     </html>
   );
 }

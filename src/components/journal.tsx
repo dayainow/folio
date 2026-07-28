@@ -10,10 +10,41 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Save, ChevronLeft, ChevronRight, Upload } from 'lucide-react';
 import { saveJournalWithFallback, loadJournalsWithFallback, getAllTags } from '@/lib/journal';
+import { loadTasksWithFallback } from '@/lib/board';
 import { readObsidianMarkdownFiles } from '@/lib/obsidian';
+import { TagCloud, buildTagCounts } from '@/components/tag-cloud';
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function toDateStr(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function startOfWeek(d: Date) {
+  const x = new Date(d);
+  const day = x.getDay();
+  const diff = day === 0 ? -6 : 1 - day; // Monday start
+  x.setDate(x.getDate() + diff);
+  return x;
+}
+
+function endOfWeek(d: Date) {
+  const s = startOfWeek(d);
+  s.setDate(s.getDate() + 6);
+  return s;
+}
+
+function startOfMonth(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth(), 1);
+}
+
+function endOfMonth(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth() + 1, 0);
 }
 
 function parseTags(input: string): string[] {
@@ -33,6 +64,9 @@ export function JournalPanel({
 } = {}) {
   const [date, setDate] = useState(todayStr);
   const [filterTag, setFilterTag] = useState<string | null>(null);
+  const [rangeStart, setRangeStart] = useState('');
+  const [rangeEnd, setRangeEnd] = useState('');
+  const [boardTagSources, setBoardTagSources] = useState<Array<{ tags: string[] }>>([]);
 
   type Day = { content: string; tags: string[] };
   const [days, setDays] = useState<Record<string, Day>>({});
@@ -56,12 +90,16 @@ export function JournalPanel({
     let cancelled = false;
 
     (async () => {
-      const entries = await loadJournalsWithFallback();
+      const [entries, tasks] = await Promise.all([
+        loadJournalsWithFallback(),
+        loadTasksWithFallback().catch(() => []),
+      ]);
       if (cancelled) return;
       const map: Record<string, Day> = {};
       for (const k in entries) map[k] = { content: entries[k].content, tags: entries[k].tags };
       const today = todayStr();
       setDays(map);
+      setBoardTagSources(tasks.map(t => ({ tags: t.tags })));
       setDate(today);
       setDraft(map[today]?.content ?? '');
       setTagsInput(joinTags(map[today]?.tags ?? []));
@@ -153,6 +191,45 @@ export function JournalPanel({
 
   const allTags = useMemo(() => getAllTags(days), [days]);
 
+  const cloudTags = useMemo(() => {
+    const journalSources = Object.values(days).map(d => ({ tags: d.tags }));
+    return buildTagCounts([...journalSources, ...boardTagSources]);
+  }, [days, boardTagSources]);
+
+  const applyQuickRange = (kind: 'today' | 'week' | 'month') => {
+    const now = new Date();
+    if (kind === 'today') {
+      const t = todayStr();
+      setRangeStart(t);
+      setRangeEnd(t);
+      selectDate(t);
+      return;
+    }
+    if (kind === 'week') {
+      setRangeStart(toDateStr(startOfWeek(now)));
+      setRangeEnd(toDateStr(endOfWeek(now)));
+      return;
+    }
+    setRangeStart(toDateStr(startOfMonth(now)));
+    setRangeEnd(toDateStr(endOfMonth(now)));
+  };
+
+  const clearRange = () => {
+    setRangeStart('');
+    setRangeEnd('');
+  };
+
+  const recentEntries = useMemo(() => {
+    return Object.entries(days)
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .filter(([d]) => {
+        if (filterTag && !days[d].tags?.includes(filterTag)) return false;
+        if (rangeStart && d < rangeStart) return false;
+        if (rangeEnd && d > rangeEnd) return false;
+        return true;
+      });
+  }, [days, filterTag, rangeStart, rangeEnd]);
+
   const suggestions = useMemo(() => {
     const q = tagDraft.trim().toLowerCase();
     return allTags.filter(tag => {
@@ -219,8 +296,8 @@ export function JournalPanel({
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
-      <Card className="rounded-2xl border border-gray-100 shadow-sm">
-        <div className="flex items-center justify-between p-4 border-b border-gray-50">
+      <Card className="rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm bg-card">
+        <div className="flex items-center justify-between p-4 border-b border-gray-50 dark:border-gray-800">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={prevDay} className="h-8 w-8">
               <ChevronLeft className="h-4 w-4" />
@@ -253,7 +330,7 @@ export function JournalPanel({
               <Upload className="h-4 w-4" />
               {importing ? '가져오는 중…' : 'Obsidian 가져오기'}
             </Button>
-            <Button onClick={save} size="sm" className="gap-2 bg-gray-900 hover:bg-gray-800">
+            <Button onClick={save} size="sm" className="gap-2 bg-gray-900 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white">
               <Save className="h-4 w-4" /> 저장
             </Button>
           </div>
@@ -278,7 +355,7 @@ export function JournalPanel({
                 <Badge
                   key={tag}
                   variant="secondary"
-                  className="text-xs cursor-pointer hover:bg-gray-200"
+                  className="text-xs cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700"
                   onClick={() => removeTag(tag)}
                 >
                   #{tag} ×
@@ -312,7 +389,7 @@ export function JournalPanel({
                           addTags([tag]);
                           setTagDraft('');
                         }}
-                        className="text-xs px-2 py-1 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-600 transition-colors"
+                        className="text-xs px-2 py-1 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors"
                       >
                         #{tag}
                       </button>
@@ -326,43 +403,79 @@ export function JournalPanel({
       </Card>
 
       <div className="space-y-4">
-        <Card className="rounded-2xl border border-gray-100 shadow-sm p-4">
-          <h3 className="text-sm font-semibold mb-3">태그 목록</h3>
-          <ScrollArea className="h-32">
-            <div className="flex flex-wrap gap-1">
-              {allTags.length === 0 && <span className="text-xs text-gray-400">아직 태그 없음</span>}
-              {allTags.map(tag => (
-                <button
-                  key={tag}
-                  onClick={() => setFilterTag(filterTag === tag ? null : tag)}
-                  className={`text-xs px-2 py-1 rounded-lg transition-colors ${
-                    filterTag === tag ? 'bg-gray-900 text-white' : 'bg-gray-50 hover:bg-gray-100 text-gray-600'
-                  }`}
-                >
-                  #{tag}
-                </button>
-              ))}
+        <Card className="rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-4 bg-card">
+          <h3 className="text-sm font-semibold mb-3">날짜 범위</h3>
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            <Button type="button" size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => applyQuickRange('today')}>
+              오늘
+            </Button>
+            <Button type="button" size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => applyQuickRange('week')}>
+              이번 주
+            </Button>
+            <Button type="button" size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => applyQuickRange('month')}>
+              이번 달
+            </Button>
+            {(rangeStart || rangeEnd) && (
+              <Button type="button" size="sm" variant="ghost" className="h-7 text-[11px]" onClick={clearRange}>
+                초기화
+              </Button>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[10px] text-gray-400 block mb-1">시작</label>
+              <Input
+                type="date"
+                value={rangeStart}
+                onChange={e => setRangeStart(e.target.value)}
+                className="h-8 text-xs"
+              />
             </div>
+            <div>
+              <label className="text-[10px] text-gray-400 block mb-1">종료</label>
+              <Input
+                type="date"
+                value={rangeEnd}
+                onChange={e => setRangeEnd(e.target.value)}
+                className="h-8 text-xs"
+              />
+            </div>
+          </div>
+        </Card>
+
+        <Card className="rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-4 bg-card">
+          <h3 className="text-sm font-semibold mb-3">태그 클라우드</h3>
+          <ScrollArea className="h-36">
+            <TagCloud
+              tags={cloudTags}
+              selected={filterTag}
+              onSelect={setFilterTag}
+            />
           </ScrollArea>
         </Card>
 
-        <Card className="rounded-2xl border border-gray-100 shadow-sm p-4">
-          <h3 className="text-sm font-semibold mb-3">최근 기록</h3>
+        <Card className="rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-4 bg-card">
+          <h3 className="text-sm font-semibold mb-3">
+            최근 기록
+            {(rangeStart || rangeEnd || filterTag) && (
+              <span className="ml-2 text-[11px] font-normal text-gray-400">
+                {recentEntries.length}건
+              </span>
+            )}
+          </h3>
           <ScrollArea className="h-64">
             <div className="space-y-2">
-              {Object.entries(days)
-                .sort((a, b) => b[0].localeCompare(a[0]))
-                .filter(([d]) => !filterTag || days[d].tags?.includes(filterTag))
-                .slice(0, 20)
-                .map(([d, entry]) => (
+              {recentEntries.slice(0, 20).map(([d, entry]) => (
                   <button
                     key={d}
                     onClick={() => selectDate(d)}
                     className={`w-full text-left p-2 rounded-xl text-xs transition-colors ${
-                      date === d ? 'bg-gray-50 ring-1 ring-gray-200' : 'hover:bg-gray-50'
+                      date === d
+                        ? 'bg-gray-50 dark:bg-gray-800 ring-1 ring-gray-200 dark:ring-gray-700'
+                        : 'hover:bg-gray-50 dark:hover:bg-gray-800/60'
                     }`}
                   >
-                    <div className="font-medium text-gray-700">{d}</div>
+                    <div className="font-medium text-gray-700 dark:text-gray-200">{d}</div>
                     <div className="text-gray-400 truncate mt-0.5">{entry.content.slice(0, 60) || '(빈 일지)'}</div>
                     <div className="flex gap-1 mt-1">
                       {entry.tags.slice(0, 3).map(t => (
@@ -371,8 +484,8 @@ export function JournalPanel({
                     </div>
                   </button>
                 ))}
-              {Object.keys(days).length === 0 && (
-                <span className="text-xs text-gray-400">아직 기록 없음</span>
+              {recentEntries.length === 0 && (
+                <span className="text-xs text-gray-400">조건에 맞는 기록 없음</span>
               )}
             </div>
           </ScrollArea>
