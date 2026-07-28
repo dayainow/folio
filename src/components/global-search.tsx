@@ -4,6 +4,7 @@ import {
   useCallback,
   useEffect,
   useId,
+  useMemo,
   useRef,
   useState,
   type KeyboardEvent,
@@ -130,14 +131,12 @@ export function GlobalSearch({ onNavigate }: GlobalSearchProps) {
 
   useEffect(() => {
     const q = query.trim();
-    if (!q) {
-      setResults({ journals: [], docs: [], tasks: [] });
-      setLoading(false);
-      return;
-    }
+    if (!q) return;
 
-    setLoading(true);
     const id = ++requestId.current;
+    const startTimer = window.setTimeout(() => {
+      setLoading(true);
+    }, 0);
     const timer = window.setTimeout(() => {
       void searchAll(q).then(next => {
         if (requestId.current !== id) return;
@@ -148,7 +147,10 @@ export function GlobalSearch({ onNavigate }: GlobalSearchProps) {
       });
     }, 300);
 
-    return () => window.clearTimeout(timer);
+    return () => {
+      window.clearTimeout(startTimer);
+      window.clearTimeout(timer);
+    };
   }, [query]);
 
   useEffect(() => {
@@ -168,6 +170,8 @@ export function GlobalSearch({ onNavigate }: GlobalSearchProps) {
     onNavigate(payload);
     setOpen(false);
     setQuery('');
+    setResults({ journals: [], docs: [], tasks: [] });
+    setLoading(false);
     inputRef.current?.blur();
   };
 
@@ -194,28 +198,40 @@ export function GlobalSearch({ onNavigate }: GlobalSearchProps) {
 
   const showPanel = open && query.trim().length > 0;
 
-  let flatOffset = 0;
-
-  const renderGroup = <T,>(
-    source: SearchSource,
-    label: string,
-    items: T[],
-    render: (item: T, index: number, active: boolean) => ReactNode,
-  ) => {
-    if (items.length === 0) return null;
-    const start = flatOffset;
-    flatOffset += items.length;
-    return (
-      <div key={source}>
-        <SectionLabel>
-          {label} · {items.length}
-        </SectionLabel>
-        <div className="px-1 pb-1 space-y-0.5">
-          {items.map((item, i) => render(item, start + i, activeIndex === start + i))}
-        </div>
-      </div>
+  const resultGroups = useMemo(() => {
+    const groups: Array<{
+      source: SearchSource;
+      label: string;
+      startIndex: number;
+      items: SearchNavigatePayload[];
+    }> = [];
+    let start = 0;
+    const push = (
+      source: SearchSource,
+      label: string,
+      items: SearchNavigatePayload[],
+    ) => {
+      if (items.length === 0) return;
+      groups.push({ source, label, startIndex: start, items });
+      start += items.length;
+    };
+    push(
+      'journal',
+      '일지',
+      results.journals.map(hit => ({ source: 'journal' as const, hit })),
     );
-  };
+    push(
+      'docs',
+      '문서',
+      results.docs.map(hit => ({ source: 'docs' as const, hit })),
+    );
+    push(
+      'board',
+      '일정',
+      results.tasks.map(hit => ({ source: 'board' as const, hit })),
+    );
+    return groups;
+  }, [results]);
 
   return (
     <div className="relative w-full max-w-xl mb-4" id={panelId}>
@@ -225,8 +241,13 @@ export function GlobalSearch({ onNavigate }: GlobalSearchProps) {
           ref={inputRef}
           value={query}
           onChange={e => {
-            setQuery(e.target.value);
+            const value = e.target.value;
+            setQuery(value);
             setOpen(true);
+            if (!value.trim()) {
+              setResults({ journals: [], docs: [], tasks: [] });
+              setLoading(false);
+            }
           }}
           onFocus={() => {
             if (query.trim()) setOpen(true);
@@ -248,7 +269,7 @@ export function GlobalSearch({ onNavigate }: GlobalSearchProps) {
         <div
           id={`${panelId}-list`}
           role="listbox"
-          className="absolute left-0 right-0 top-[calc(100%+6px)] z-40 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-lg shadow-gray-200/60"
+          className="absolute left-0 right-0 top-[calc(100%+6px)] z-40 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-lg shadow-gray-200/60 dark:border-gray-800 dark:bg-background"
         >
           {loading ? (
             <div className="flex items-center gap-2 px-4 py-6 text-sm text-gray-400">
@@ -260,41 +281,58 @@ export function GlobalSearch({ onNavigate }: GlobalSearchProps) {
           ) : (
             <ScrollArea className="max-h-[min(420px,60vh)]">
               <div className="py-1">
-                {renderGroup('journal', '일지', results.journals, (hit, index, active) => (
-                  <ResultRow
-                    key={`j-${hit.id}`}
-                    icon={<BookOpen className="h-3.5 w-3.5" />}
-                    title={hit.title}
-                    preview={hit.preview}
-                    meta={formatDate(hit.date)}
-                    active={active}
-                    onHover={() => setActiveIndex(index)}
-                    onClick={() => select({ source: 'journal', hit })}
-                  />
-                ))}
-                {renderGroup('docs', '문서', results.docs, (hit, index, active) => (
-                  <ResultRow
-                    key={`d-${hit.id}`}
-                    icon={<FileText className="h-3.5 w-3.5" />}
-                    title={hit.title}
-                    preview={hit.preview}
-                    meta={formatDate(hit.updatedAt)}
-                    active={active}
-                    onHover={() => setActiveIndex(index)}
-                    onClick={() => select({ source: 'docs', hit })}
-                  />
-                ))}
-                {renderGroup('board', '일정', results.tasks, (hit, index, active) => (
-                  <ResultRow
-                    key={`t-${hit.id}`}
-                    icon={<Kanban className="h-3.5 w-3.5" />}
-                    title={hit.title}
-                    preview={hit.preview}
-                    meta={formatDate(hit.updatedAt)}
-                    active={active}
-                    onHover={() => setActiveIndex(index)}
-                    onClick={() => select({ source: 'board', hit })}
-                  />
+                {resultGroups.map(group => (
+                  <div key={group.source}>
+                    <SectionLabel>
+                      {group.label} · {group.items.length}
+                    </SectionLabel>
+                    <div className="px-1 pb-1 space-y-0.5">
+                      {group.items.map((item, i) => {
+                        const index = group.startIndex + i;
+                        const active = activeIndex === index;
+                        if (item.source === 'journal') {
+                          return (
+                            <ResultRow
+                              key={`j-${item.hit.id}`}
+                              icon={<BookOpen className="h-3.5 w-3.5" />}
+                              title={item.hit.title}
+                              preview={item.hit.preview}
+                              meta={formatDate(item.hit.date)}
+                              active={active}
+                              onHover={() => setActiveIndex(index)}
+                              onClick={() => select(item)}
+                            />
+                          );
+                        }
+                        if (item.source === 'docs') {
+                          return (
+                            <ResultRow
+                              key={`d-${item.hit.id}`}
+                              icon={<FileText className="h-3.5 w-3.5" />}
+                              title={item.hit.title}
+                              preview={item.hit.preview}
+                              meta={formatDate(item.hit.updatedAt)}
+                              active={active}
+                              onHover={() => setActiveIndex(index)}
+                              onClick={() => select(item)}
+                            />
+                          );
+                        }
+                        return (
+                          <ResultRow
+                            key={`t-${item.hit.id}`}
+                            icon={<Kanban className="h-3.5 w-3.5" />}
+                            title={item.hit.title}
+                            preview={item.hit.preview}
+                            meta={formatDate(item.hit.updatedAt)}
+                            active={active}
+                            onHover={() => setActiveIndex(index)}
+                            onClick={() => select(item)}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
                 ))}
               </div>
             </ScrollArea>

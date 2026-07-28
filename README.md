@@ -1,6 +1,6 @@
 # Folio
 
-프로젝트의 기록을 남기는 개발자 워크스페이스.
+프로젝트의 기록을 남기는 개발자 워크스페이스. **v0.4.0** (Phase 1~3 완료)
 
 ## Pages
 
@@ -8,7 +8,8 @@
 - 문서 (Docs): 공통 문서, 카테고리, 검색, 마크다운 프리뷰
 - 일정 (Board): 칸반 + Jira/GitHub + 즐겨찾기 + 분석 + 완료 알림
 - 로그인 (`/login`): Supabase Auth UI
-- 팀: 초대·멤버·공유 (P10)
+- 팀: 초대·멤버·공유
+- 통합 검색: ⌘/Ctrl+K
 
 ## 스택
 
@@ -20,32 +21,46 @@
 ## 시작
 
 ```bash
+cp docs/env.example .env.local   # 값 채우기
+npm install
 npm run dev
 # http://localhost:3000
 ```
 
-환경변수 예시는 [docs/env.example](./docs/env.example)를 참고해 `.env.local`에 복사한다.
+환경변수 설명은 [docs/env.example](./docs/env.example)를 참고한다.
 
-### Supabase (P4 / P6 / P10)
+### Supabase
 
-1. `.env.local`에 프로젝트 URL / anon key를 넣는다.
-2. [docs/supabase-schema.sql](./docs/supabase-schema.sql) 또는 [docs/supabase-schema-migration.sql](./docs/supabase-schema-migration.sql) 실행.
-3. 팀 기능은 [docs/supabase-schema-team.sql](./docs/supabase-schema-team.sql) 추가 실행.
-4. 로그인 사용자 데이터는 `user_id`로 분리 (RLS). 미로그인은 localStorage.
-5. `/login`에서 이메일 로그인·회원가입·비밀번호 재설정.
+1. `.env.local`에 URL / anon key
+2. [docs/supabase-schema.sql](./docs/supabase-schema.sql) 또는 [docs/supabase-schema-migration.sql](./docs/supabase-schema-migration.sql)
+3. 팀: [docs/supabase-schema-team.sql](./docs/supabase-schema-team.sql)
 
-### Jira (P5 / P10)
+### Jira / Slack / Discord / GitHub
 
-1. `JIRA_API_TOKEN`, `JIRA_EMAIL`, `JIRA_DOMAIN`, `JIRA_PROJECT_KEY`
-2. 일정 탭 **Jira 동기화** (`POST /rest/api/3/search/jql`)
+[docs/env.example](./docs/env.example)의 해당 섹션을 채운다. 웹훅·토큰이 없으면 관련 기능은 스킵되거나 UI에서 숨겨진다.
 
-### Slack / Discord / GitHub (P12)
+## 배포
 
-1. `SLACK_WEBHOOK_URL` / `DISCORD_WEBHOOK_URL` — 없으면 알림 조용히 스킵
-2. 일지: 「저장 시 Slack/Discord 알림」 체크 후 저장
-3. 보드: 「완료 시 알림」 체크 시 Done 전환 알림
-4. `GITHUB_TOKEN` + `GITHUB_REPO` (`owner/repo`) — 없으면 GitHub 버튼 숨김
-5. 보드 카드 **GitHub** 으로 Issue 생성·링크
+### Vercel
+
+1. GitHub 저장소를 [Vercel](https://vercel.com)에 Import
+2. Environment Variables에 `docs/env.example` 목록을 등록 (서버 전용 키는 Production/Preview에만)
+3. Deploy — Next.js 기본 설정으로 동작
+4. Supabase Auth Redirect URL에 `https://<project>.vercel.app/**` 추가
+
+```bash
+npx vercel          # 미리보기
+npx vercel --prod   # 프로덕션
+```
+
+### Docker
+
+```bash
+docker build -t folio .
+docker run --rm -p 3000:3000 --env-file .env.local folio
+```
+
+이미지는 Next.js `output: 'standalone'` 빌드를 사용한다. (`Dockerfile` 참고)
 
 ## License
 
@@ -53,9 +68,17 @@ private
 
 ## 작업 관리
 
-- 현재 Phase: Phase 3 (팀 협업, 고급 분석, 외부 연동)
-- 진행 중: P12 외부 연동
-- 완료: Phase 1~3 P11 (P1~P11)
-- 다음: Phase 3 마무리
+- 현재 Phase: **Phase 1~3 완료** (v0.4.0)
+- 진행 중: 없음
+- 완료: P1~P12 (Board DnD, 태그, 마크다운, Supabase/Auth, Jira, 멀티유저, Obsidian, 검색, 고급 UX, 팀, 분석, 외부 연동)
+- 다음: Phase 4 (아래)
 
 상세 이력은 [VERSION.md](./VERSION.md)를 참고하세요.
+
+## Phase 4 계획
+
+- 실시간 협업 (Presence, 공유 보드 동시 편집)
+- 모바일/PWA, 오프라인 동기화 고도화
+- 알림 규칙 엔진 (필터·스케줄)
+- AI 일지 요약 / 보드 추천
+- 관리자 콘솔·감사 로그

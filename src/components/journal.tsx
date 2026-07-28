@@ -116,8 +116,11 @@ export function JournalPanel({
 
   useEffect(() => {
     if (!focusDate || !ready) return;
-    selectDate(focusDate);
-    onFocusHandled?.();
+    const handle = window.setTimeout(() => {
+      selectDate(focusDate);
+      onFocusHandled?.();
+    }, 0);
+    return () => window.clearTimeout(handle);
   }, [focusDate, ready, selectDate, onFocusHandled]);
 
   useEffect(() => {

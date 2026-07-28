@@ -100,7 +100,10 @@ export function TeamSidebar({
 
   useEffect(() => {
     if (!open) return;
-    void refresh();
+    const handle = window.setTimeout(() => {
+      void refresh();
+    }, 0);
+    return () => window.clearTimeout(handle);
   }, [open, refresh]);
 
   const handleCreate = async () => {

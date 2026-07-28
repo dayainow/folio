@@ -92,9 +92,13 @@ export function JournalAnalyticsPanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const changeRange = (next: AnalyticsRange) => {
+    setRange(next);
+    setLoading(true);
+  };
+
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
     void getJournalAnalytics(range)
       .then(next => {
         if (!cancelled) {
@@ -143,7 +147,7 @@ export function JournalAnalyticsPanel() {
           <h2 className="text-sm font-semibold">일지 통계</h2>
           <p className="text-[11px] text-gray-400 mt-0.5">작성 추이 · 태그 빈도</p>
         </div>
-        <RangePicker value={range} onChange={setRange} />
+        <RangePicker value={range} onChange={changeRange} />
       </div>
 
       {error && <p className="text-xs text-red-500">{error}</p>}
@@ -280,9 +284,13 @@ export function BoardAnalyticsPanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const changeRange = (next: AnalyticsRange) => {
+    setRange(next);
+    setLoading(true);
+  };
+
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
     void getBoardAnalytics(range)
       .then(next => {
         if (!cancelled) {
@@ -317,7 +325,7 @@ export function BoardAnalyticsPanel() {
           <h2 className="text-sm font-semibold">보드 분석</h2>
           <p className="text-[11px] text-gray-400 mt-0.5">컬럼 분포 · 상태 변경 히트맵 · 완료 시간</p>
         </div>
-        <RangePicker value={range} onChange={setRange} />
+        <RangePicker value={range} onChange={changeRange} />
       </div>
 
       {error && <p className="text-xs text-red-500">{error}</p>}

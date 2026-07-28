@@ -313,18 +313,21 @@ export function BoardPanel({
     if (!focusTaskId) return;
     if (tasks.length === 0) return;
     const task = tasks.find(t => t.id === focusTaskId);
-    if (task) {
-      setEditingId(task.id);
-      setForm({
-        title: task.title,
-        description: task.description,
-        priority: task.priority,
-        tags: task.tags.join(', '),
-        status: task.status,
-      });
-      setSearch('');
-    }
-    onFocusHandled?.();
+    const handle = window.setTimeout(() => {
+      if (task) {
+        setEditingId(task.id);
+        setForm({
+          title: task.title,
+          description: task.description,
+          priority: task.priority,
+          tags: task.tags.join(', '),
+          status: task.status,
+        });
+        setSearch('');
+      }
+      onFocusHandled?.();
+    }, 0);
+    return () => window.clearTimeout(handle);
   }, [focusTaskId, tasks, onFocusHandled]);
 
   const sensors = useSensors(

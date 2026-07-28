@@ -1,12 +1,12 @@
 {
   "name": "workspace",
-  "version": "0.4.0-wip",
+  "version": "0.4.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint . --max-warnings 0"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

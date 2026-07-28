@@ -26,15 +26,13 @@ export default function Home() {
   const [focusJournalDate, setFocusJournalDate] = useState<string | null>(null);
   const [focusDocId, setFocusDocId] = useState<string | null>(null);
   const [focusTaskId, setFocusTaskId] = useState<string | null>(null);
-  const [activeTeamId, setActiveTeamIdState] = useState<string | null>(null);
+  const [activeTeamId, setActiveTeamIdState] = useState<string | null>(() =>
+    typeof window !== 'undefined' ? getActiveTeamId() : null,
+  );
   const [teamPanelOpen, setTeamPanelOpen] = useState(false);
 
   const handleActiveTeamChange = useCallback((teamId: string | null) => {
     setActiveTeamIdState(teamId);
-  }, []);
-
-  useEffect(() => {
-    setActiveTeamIdState(getActiveTeamId());
   }, []);
 
   useEffect(() => {

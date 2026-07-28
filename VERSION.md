@@ -6,10 +6,10 @@
 
 | 항목 | 값 |
 |------|-----|
-| 버전 | 0.4.0-wip |
-| Phase | Phase 3 |
-| 진행 중 | P12 외부 연동 |
-| 다음 | Phase 3 마무리 |
+| 버전 | 0.4.0 |
+| Phase | Phase 1~3 완료 |
+| 진행 중 | 없음 |
+| 다음 | Phase 4 (실시간 협업, PWA, AI 요약 등) |
 
 ## 완료 항목
 
@@ -29,14 +29,19 @@
 | P9 | 고급 기능 (태그·날짜·다크모드·즐겨찾기) | `94ea5ea` |
 | P10 | 팀 초대/공유 + Jira search/jql | `afb7af5` |
 | P11 | 고급 분석 (recharts) | `9754d7b` |
+| P12 | Slack/Discord/GitHub 외부 연동 | `49ef9b2` |
 
 ## 진행 중
 
-| ID | 요약 | 노트 |
-|----|------|------|
-| P12 | 외부 연동 | Slack/Discord 웹훅, GitHub Issues |
+없음 (Phase 3 완료)
 
 ## 변경 이력
+
+### 0.4.0 — 2026-07-28 (Phase 3 완료)
+
+- Phase 3 마무리: P10 팀 · P11 분석 · P12 외부 연동 포함 정식 릴리즈
+- README 배포(Vercel/Docker) · Phase 4 계획 · `docs/env.example` 정리
+- lint `--max-warnings 0` 통과, Docker standalone 빌드 지원
 
 ### 0.4.0-wip — 2026-07-28 (P12)
 

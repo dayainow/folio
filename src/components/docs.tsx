@@ -111,12 +111,15 @@ export function DocsPanel({
   useEffect(() => {
     if (!focusDocId || docs.length === 0) return;
     const doc = docs.find(d => d.id === focusDocId);
-    if (doc) {
-      selectDoc(doc);
-      setFilterCat(null);
-      setSearch('');
-    }
-    onFocusHandled?.();
+    const handle = window.setTimeout(() => {
+      if (doc) {
+        selectDoc(doc);
+        setFilterCat(null);
+        setSearch('');
+      }
+      onFocusHandled?.();
+    }, 0);
+    return () => window.clearTimeout(handle);
   }, [focusDocId, docs, selectDoc, onFocusHandled]);
 
   const startEdit = () => {

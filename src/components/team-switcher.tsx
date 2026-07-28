@@ -29,9 +29,11 @@ export function TeamSwitcher({
 
   useEffect(() => {
     if (!enabled) {
-      setTeams([]);
-      setReady(true);
-      return;
+      const handle = window.setTimeout(() => {
+        setTeams([]);
+        setReady(true);
+      }, 0);
+      return () => window.clearTimeout(handle);
     }
     let cancelled = false;
     (async () => {
