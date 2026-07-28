@@ -6,10 +6,10 @@
 
 | 항목 | 값 |
 |------|-----|
-| 버전 | 0.2.1 |
+| 버전 | 0.2.2 |
 | Phase | Phase 2 |
-| 진행 중 | P7 Obsidian 연동 |
-| 다음 | 고급 검색/필터 |
+| 진행 중 | P8 통합 검색 |
+| 다음 | P9 고급 기능 (필터, 태그 클라우드 등) |
 
 ## 완료 항목
 
@@ -24,14 +24,22 @@
 | P5 | Jira 연동 (fetch/동기화/카드 링크) | `48356b4` |
 | P4-3 | Supabase Auth UI | `916a875` |
 | P6 | 멀티유저 데이터 분리 | `b49d2ea` |
+| P7 | Obsidian 마크다운 가져오기 | `1d82a5e` |
 
 ## 진행 중
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| P7 | Obsidian 연동 | Journals/Docs .md 가져오기, 태그·날짜 파싱 (브라우저 File API) |
+| P8 | 통합 검색 | Journal/Docs/Board, Cmd+K, 디바운스 300ms |
 
 ## 변경 이력
+
+### 0.2.2 — 2026-07-28 (P8)
+
+- `src/lib/search.ts`: `searchAll` + relevance(제목 > 태그 > 내용)
+- `src/components/global-search.tsx`: 탭 상단 검색, 그룹 결과 패널
+- 결과 클릭 시 해당 탭 이동 + 상세 포커스
+- Cmd/Ctrl+K 검색 포커스
 
 ### 0.2.1 — 2026-07-28 (P7)
 

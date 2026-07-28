@@ -24,7 +24,13 @@ function joinTags(tags: string[]): string {
   return tags.join(', ');
 }
 
-export function JournalPanel() {
+export function JournalPanel({
+  focusDate,
+  onFocusHandled,
+}: {
+  focusDate?: string | null;
+  onFocusHandled?: () => void;
+} = {}) {
   const [date, setDate] = useState(todayStr);
   const [filterTag, setFilterTag] = useState<string | null>(null);
 
@@ -66,6 +72,12 @@ export function JournalPanel() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!focusDate || !ready) return;
+    selectDate(focusDate);
+    onFocusHandled?.();
+  }, [focusDate, ready, selectDate, onFocusHandled]);
 
   const currentTags = useMemo(() => parseTags(tagsInput), [tagsInput]);
 

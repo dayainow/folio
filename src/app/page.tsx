@@ -8,12 +8,19 @@ import { cn } from '@/lib/utils';
 import { JournalPanel } from '@/components/journal';
 import { DocsPanel } from '@/components/docs';
 import { BoardPanel } from '@/components/board';
+import { GlobalSearch, type SearchNavigatePayload } from '@/components/global-search';
 import { createBrowserSupabaseClient, signOut } from '@/lib/supabase';
 import { migrateLocalDataOnLogin } from '@/lib/migrate';
+
+type TabValue = 'journal' | 'docs' | 'board';
 
 export default function Home() {
   const [email, setEmail] = useState<string | null>(null);
   const [authReady, setAuthReady] = useState(false);
+  const [tab, setTab] = useState<TabValue>('journal');
+  const [focusJournalDate, setFocusJournalDate] = useState<string | null>(null);
+  const [focusDocId, setFocusDocId] = useState<string | null>(null);
+  const [focusTaskId, setFocusTaskId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -61,6 +68,21 @@ export default function Home() {
     } catch {
       setEmail(null);
     }
+  };
+
+  const handleSearchNavigate = (payload: SearchNavigatePayload) => {
+    if (payload.source === 'journal') {
+      setTab('journal');
+      setFocusJournalDate(payload.hit.date);
+      return;
+    }
+    if (payload.source === 'docs') {
+      setTab('docs');
+      setFocusDocId(payload.hit.id);
+      return;
+    }
+    setTab('board');
+    setFocusTaskId(payload.hit.id);
   };
 
   return (
@@ -113,7 +135,13 @@ export default function Home() {
 
       {/* Main */}
       <main className="flex-1 p-6 max-w-6xl mx-auto w-full">
-        <Tabs defaultValue="journal" className="w-full">
+        <GlobalSearch onNavigate={handleSearchNavigate} />
+
+        <Tabs
+          value={tab}
+          onValueChange={v => setTab(v as TabValue)}
+          className="w-full"
+        >
           <TabsList className="bg-gray-50 border border-gray-100 p-1 rounded-xl mb-6 w-fit">
             <TabsTrigger value="journal" className="gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
               📓 일지
@@ -127,13 +155,22 @@ export default function Home() {
           </TabsList>
 
           <TabsContent value="journal" className="mt-0">
-            <JournalPanel />
+            <JournalPanel
+              focusDate={focusJournalDate}
+              onFocusHandled={() => setFocusJournalDate(null)}
+            />
           </TabsContent>
           <TabsContent value="docs" className="mt-0">
-            <DocsPanel />
+            <DocsPanel
+              focusDocId={focusDocId}
+              onFocusHandled={() => setFocusDocId(null)}
+            />
           </TabsContent>
           <TabsContent value="board" className="mt-0">
-            <BoardPanel />
+            <BoardPanel
+              focusTaskId={focusTaskId}
+              onFocusHandled={() => setFocusTaskId(null)}
+            />
           </TabsContent>
         </Tabs>
       </main>

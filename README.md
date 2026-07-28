@@ -44,8 +44,8 @@ private
 ## 작업 관리
 
 - 현재 Phase: Phase 2 (팀 공유, 고급 기능)
-- 진행 중: P7 Obsidian 연동
-- 완료: P1 Board DnD, P2 Journal 태그 자동완성, P3 Docs 마크다운 프리뷰, P4 Supabase 연동, P4-3 Auth UI, P5 Jira 연동, P6 멀티유저 데이터 분리
-- 다음: 고급 검색/필터
+- 진행 중: P8 통합 검색
+- 완료: P1 Board DnD, P2 Journal 태그 자동완성, P3 Docs 마크다운 프리뷰, P4 Supabase 연동, P4-3 Auth UI, P5 Jira 연동, P6 멀티유저 데이터 분리, P7 Obsidian 연동
+- 다음: P9 고급 기능 (필터, 태그 클라우드 등)
 
 상세 이력은 [VERSION.md](./VERSION.md)를 참고하세요.

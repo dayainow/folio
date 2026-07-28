@@ -189,7 +189,13 @@ function DroppableColumn({
   );
 }
 
-export function BoardPanel() {
+export function BoardPanel({
+  focusTaskId,
+  onFocusHandled,
+}: {
+  focusTaskId?: string | null;
+  onFocusHandled?: () => void;
+} = {}) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [search, setSearch] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -208,6 +214,24 @@ export function BoardPanel() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!focusTaskId) return;
+    if (tasks.length === 0) return;
+    const task = tasks.find(t => t.id === focusTaskId);
+    if (task) {
+      setEditingId(task.id);
+      setForm({
+        title: task.title,
+        description: task.description,
+        priority: task.priority,
+        tags: task.tags.join(', '),
+        status: task.status,
+      });
+      setSearch('');
+    }
+    onFocusHandled?.();
+  }, [focusTaskId, tasks, onFocusHandled]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {

@@ -60,7 +60,13 @@ function MarkdownPreview({ content }: { content: string }) {
   );
 }
 
-export function DocsPanel() {
+export function DocsPanel({
+  focusDocId,
+  onFocusHandled,
+}: {
+  focusDocId?: string | null;
+  onFocusHandled?: () => void;
+} = {}) {
   const [docs, setDocs] = useState<DocEntry[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
 
@@ -101,6 +107,17 @@ export function DocsPanel() {
     setEditing(false);
     setEditPane('edit');
   }, []);
+
+  useEffect(() => {
+    if (!focusDocId || docs.length === 0) return;
+    const doc = docs.find(d => d.id === focusDocId);
+    if (doc) {
+      selectDoc(doc);
+      setFilterCat(null);
+      setSearch('');
+    }
+    onFocusHandled?.();
+  }, [focusDocId, docs, selectDoc, onFocusHandled]);
 
   const startEdit = () => {
     setEditPane('edit');
