@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { JournalPanel } from '@/components/journal';
 import { DocsPanel } from '@/components/docs';
 import { BoardPanel } from '@/components/board';
+import { BeaconPanel } from '@/components/beacon';
 import { GlobalSearch, type SearchNavigatePayload } from '@/components/global-search';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { TeamSwitcher } from '@/components/team-switcher';
@@ -16,8 +17,9 @@ import { JournalAnalyticsPanel, BoardAnalyticsPanel } from '@/components/analyti
 import { createBrowserSupabaseClient, signOut } from '@/lib/supabase';
 import { migrateLocalDataOnLogin } from '@/lib/migrate';
 import { getActiveTeamId } from '@/lib/team';
+import { Activity } from 'lucide-react';
 
-type TabValue = 'journal' | 'docs' | 'board';
+type TabValue = 'journal' | 'docs' | 'board' | 'process';
 
 export default function Home() {
   const [email, setEmail] = useState<string | null>(null);
@@ -184,6 +186,10 @@ export default function Home() {
             <TabsTrigger value="board" className="gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:shadow-sm">
               📋 일정
             </TabsTrigger>
+            <TabsTrigger value="process" className="gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:shadow-sm">
+              <Activity className="h-3.5 w-3.5" />
+              프로세스
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="journal" className="mt-0">
@@ -245,6 +251,9 @@ export default function Home() {
                 <BoardAnalyticsPanel />
               </TabsContent>
             </Tabs>
+          </TabsContent>
+          <TabsContent value="process" className="mt-0">
+            <BeaconPanel />
           </TabsContent>
         </Tabs>
       </main>

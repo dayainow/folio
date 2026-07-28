@@ -8,8 +8,8 @@
 |------|-----|
 | 버전 | 0.5.0-wip |
 | Phase | Phase 4 + Beacon 연동 |
-| 진행 중 | 프로세스 연동 규약 정리 |
-| 다음 | 프로세스 탭 (project.json → Gate/Timeline) |
+| 진행 중 | P14 프로세스 탭 UI |
+| 다음 | 상태 기반 저장 토글 · 성능/접근성 |
 
 ## 완료 항목
 
@@ -37,9 +37,16 @@
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| — | 프로세스 연동 규약 정리 | `PROCESS.md` — folio ↔ beacon 경로·읽기 전용 |
+| P14 | 프로세스 탭 UI | `beacon.ts` · `BeaconPanel` · `/api/beacon/summary` |
 
 ## 변경 이력
+
+### 0.5.0-wip — 2026-07-28 (P14 프로세스 탭)
+
+- `src/lib/beacon.ts`: project.json / beacon.db(sql.js) 읽기, Gate·Timeline·산출물 요약
+- `src/components/beacon.tsx` + 홈 탭 **프로세스** (Activity)
+- `/api/beacon/summary` 서버 FS 읽기, 브라우저 폴더 선택(File System Access) 폴백
+- 데이터 없음: 「Beacon 프로젝트를 초기화하세요」
 
 ### 0.5.0-wip — 2026-07-28 (프로세스 연동 규약)
 

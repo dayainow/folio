@@ -27,7 +27,7 @@
 | 일정 | Board |
 | **프로세스** | Beacon 상태 읽기 전용 뷰 |
 
-현재 구현은 일지/문서/일정(+통계·분석 서브탭)이며, **프로세스** 탭은 아래 연동 순서에 따라 추가한다.
+현재 구현은 일지/문서/일정(+통계·분석)과 **프로세스** 탭(`BeaconPanel`)이다.
 
 ## 프로세스 탭이 읽는 파일 / DB
 
@@ -50,15 +50,16 @@ Beacon CLI가 추가로 만드는 산출물도 동일하게 **읽기만** 허용
 
 ## 향후 연동 순서
 
-1. **`.beacon/project.json` 읽기** — 프로젝트명, 활성 phase, 갱신 시각
-2. **Gate / P0–P4 상태 요약** — `beacon.db` 또는 project.json 기반 게이트·단계 표시
-3. **Timeline 요약** — 최근 이벤트·마일스톤 목록
-4. **산출물 체크리스트** — 필수 산출물 존재 여부(읽기 스캔)
+1. **`.beacon/project.json` 읽기** — ✅ P14
+2. **Gate / P0–P4 상태 요약** — ✅ P14 (`beacon.db` 스냅샷)
+3. **Timeline 요약** — ✅ P14
+4. **산출물 체크리스트** — ✅ P14
 
-구현 시 권장:
+구현:
 
-- Node 서버 라우트 또는 로컬 전용 모드에서 파일시스템 접근
-- Vercel 등 서버리스에서는 프로젝트 루트 마운트가 없으므로, **로컬/자가호스팅** 우선 또는 Beacon export API 연동을 별도 검토
+- `/api/beacon/summary` — Node에서 `BEACON_PROJECT_ROOT` 또는 `cwd` 아래 `.beacon` 읽기
+- 브라우저 File System Access API — 서버 FS가 없을 때 `.beacon` 폴더 선택
+- `sql.js`로 `beacon.db` Timeline / 최신 스냅샷 파싱 (읽기 전용)
 
 ## 리포 관계 (요약)
 
@@ -73,3 +74,4 @@ folio                 →  프로세스 탭 UI (임베딩)
 ## 변경 이력
 
 - 2026-07-28: 초안 — 경로·탭·읽기 전용·연동 순서 정리
+- 2026-07-28: P14 — 프로세스 탭 UI (`/api/beacon/summary`, sql.js, 폴더 선택)

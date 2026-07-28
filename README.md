@@ -1,12 +1,13 @@
 # Folio
 
-프로젝트의 기록을 남기는 개발자 워크스페이스. **v0.4.1-wip** (Phase 4)
+프로젝트의 기록을 남기는 개발자 워크스페이스. **v0.5.0-wip** (Phase 4 + Beacon)
 
 ## Pages
 
 - 일지 (Journal): 날짜별 업무 일지, 태그, 자동 저장, 날짜 범위 필터, 통계, Slack/Discord 알림(옵션)
 - 문서 (Docs): 공통 문서, 카테고리, 검색, 마크다운 프리뷰
 - 일정 (Board): 칸반 + Jira/GitHub + 즐겨찾기 + 분석 + 완료 알림
+- **프로세스**: Beacon `.beacon` 읽기 전용 (Gate / Timeline / 산출물)
 - 로그인 (`/login`): Supabase Auth UI
 - 팀: 초대·멤버·공유
 - 통합 검색: ⌘/Ctrl+K
@@ -79,17 +80,17 @@ private
 ## 작업 관리
 
 - 현재 Phase: Phase 4 (배포·상태 저장·성능·문서화) + Beacon 프로세스 연동
-- 진행 중: 프로세스 연동 규약 정리
-- 완료: Phase 1~3 (P1~P12), P13 배포 자동화 (v0.4.1-wip)
-- 다음: `.beacon/project.json` 읽기 → 프로세스 탭 UI, 상태 기반 저장 토글
+- 완료: Phase 1~3 (P1~P12), P13 배포 자동화, 프로세스 연동 규약 (`PROCESS.md`)
+- 진행 중: **P14 프로세스 탭 UI** (project.json · Gate · Timeline · 산출물)
+- 다음: 상태 기반 저장 토글, 성능/접근성, 문서화 강화
 
 상세 이력은 [VERSION.md](./VERSION.md), 연동 규약은 [PROCESS.md](./PROCESS.md)를 참고하세요.
 
 ## Phase 4 계획
 
-- P13 배포 자동화 (Vercel / Docker / CI)
-- **프로세스 연동 규약 정리** (folio ↔ beacon-project-os) ← 진행 중
-- 프로세스 탭 (읽기 전용 `.beacon` 임베딩)
+- P13 배포 자동화 (Vercel / Docker / CI) ✅
+- 프로세스 연동 규약 정리 (folio ↔ beacon-project-os) ✅
+- **P14 프로세스 탭** (읽기 전용 `.beacon` 임베딩) ← 진행 중
 - 상태 기반 저장 — 로컬/클라우드 전환 토글 UI
 - 성능/접근성 — 캐시, 로딩, 키보드 네비게이션
 - 문서화 강화 — API 문서, 사용자 가이드
