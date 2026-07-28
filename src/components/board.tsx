@@ -34,6 +34,7 @@ import { loadTasksWithFallback, saveTasksWithFallback, deleteTaskWithFallback, t
 import { loadJournalsWithFallback } from '@/lib/journal';
 import { loadFavorites, saveFavorites, toggleFavorite } from '@/lib/favorites';
 import { TagCloud, buildTagCounts } from '@/components/tag-cloud';
+import { recordBoardStatusChange } from '@/lib/analytics';
 
 const STATUS_ORDER: Task['status'][] = ['backlog', 'in_progress', 'review', 'done'];
 
@@ -329,6 +330,7 @@ export function BoardPanel({
   const setTaskStatus = async (id: string, status: Task['status']) => {
     const task = tasks.find(t => t.id === id);
     if (!task || task.status === status) return;
+    recordBoardStatusChange(id, status);
     await persist(tasks.map(t => t.id === id ? { ...t, status, updatedAt: new Date().toISOString() } : t));
   };
 

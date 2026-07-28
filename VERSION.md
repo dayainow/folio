@@ -8,8 +8,8 @@
 |------|-----|
 | 버전 | 0.4.0-wip |
 | Phase | Phase 3 |
-| 진행 중 | P10 팀 초대/공유 |
-| 다음 | 고급 분석, Slack/Discord·GitHub 연동 |
+| 진행 중 | P11 고급 분석 |
+| 다음 | Slack/Discord 알림, GitHub 연동 |
 
 ## 완료 항목
 
@@ -27,14 +27,22 @@
 | P7 | Obsidian 마크다운 가져오기 | `1d82a5e` |
 | P8 | 통합 검색 | `1abb47c` |
 | P9 | 고급 기능 (태그·날짜·다크모드·즐겨찾기) | `94ea5ea` |
+| P10 | 팀 초대/공유 + Jira search/jql | `afb7af5` |
 
 ## 진행 중
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| P10 | 팀 초대/공유 | teams/invitations/shared_* + Jira search/jql |
+| P11 | 고급 분석 | Journal/Board 차트 (recharts), 기간 필터 |
 
 ## 변경 이력
+
+### 0.4.0-wip — 2026-07-28 (P11)
+
+- `src/lib/analytics.ts`: 일지/보드 통계 + 기간 조회 + 폴백
+- `src/components/analytics.tsx`: 라인/파이/바/히트맵
+- Journal 서브탭 일지/통계, Board 서브탭 일정/분석
+- `recharts` 의존성, 보드 상태 변경 이벤트 기록
 
 ### 0.4.0-wip — 2026-07-28 (P10 / Phase 3)
 

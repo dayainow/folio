@@ -12,6 +12,7 @@ import { GlobalSearch, type SearchNavigatePayload } from '@/components/global-se
 import { ThemeToggle } from '@/components/theme-toggle';
 import { TeamSwitcher } from '@/components/team-switcher';
 import { TeamSidebar } from '@/components/team-sidebar';
+import { JournalAnalyticsPanel, BoardAnalyticsPanel } from '@/components/analytics';
 import { createBrowserSupabaseClient, signOut } from '@/lib/supabase';
 import { migrateLocalDataOnLogin } from '@/lib/migrate';
 import { getActiveTeamId } from '@/lib/team';
@@ -188,10 +189,31 @@ export default function Home() {
           </TabsList>
 
           <TabsContent value="journal" className="mt-0">
-            <JournalPanel
-              focusDate={focusJournalDate}
-              onFocusHandled={() => setFocusJournalDate(null)}
-            />
+            <Tabs defaultValue="journal-write" className="w-full">
+              <TabsList className="bg-transparent border-0 p-0 mb-4 h-auto gap-1">
+                <TabsTrigger
+                  value="journal-write"
+                  className="rounded-lg px-3 h-8 text-xs data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800"
+                >
+                  일지
+                </TabsTrigger>
+                <TabsTrigger
+                  value="journal-stats"
+                  className="rounded-lg px-3 h-8 text-xs data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800"
+                >
+                  통계
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="journal-write" className="mt-0">
+                <JournalPanel
+                  focusDate={focusJournalDate}
+                  onFocusHandled={() => setFocusJournalDate(null)}
+                />
+              </TabsContent>
+              <TabsContent value="journal-stats" className="mt-0">
+                <JournalAnalyticsPanel />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
           <TabsContent value="docs" className="mt-0">
             <DocsPanel
@@ -200,10 +222,31 @@ export default function Home() {
             />
           </TabsContent>
           <TabsContent value="board" className="mt-0">
-            <BoardPanel
-              focusTaskId={focusTaskId}
-              onFocusHandled={() => setFocusTaskId(null)}
-            />
+            <Tabs defaultValue="board-kanban" className="w-full">
+              <TabsList className="bg-transparent border-0 p-0 mb-4 h-auto gap-1">
+                <TabsTrigger
+                  value="board-kanban"
+                  className="rounded-lg px-3 h-8 text-xs data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800"
+                >
+                  일정
+                </TabsTrigger>
+                <TabsTrigger
+                  value="board-analytics"
+                  className="rounded-lg px-3 h-8 text-xs data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800"
+                >
+                  분석
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="board-kanban" className="mt-0">
+                <BoardPanel
+                  focusTaskId={focusTaskId}
+                  onFocusHandled={() => setFocusTaskId(null)}
+                />
+              </TabsContent>
+              <TabsContent value="board-analytics" className="mt-0">
+                <BoardAnalyticsPanel />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
         </Tabs>
       </main>

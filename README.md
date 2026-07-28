@@ -4,9 +4,9 @@
 
 ## Pages
 
-- 일지 (Journal): 날짜별 업무 일지, 태그, 자동 저장, 날짜 범위 필터
+- 일지 (Journal): 날짜별 업무 일지, 태그, 자동 저장, 날짜 범위 필터, **통계**
 - 문서 (Docs): 공통 문서, 카테고리, 검색, 마크다운 프리뷰
-- 일정 (Board): 칸반 + Jira 동기화 + 즐겨찾기
+- 일정 (Board): 칸반 + Jira 동기화 + 즐겨찾기 + **분석**
 - 로그인 (`/login`): Supabase Auth UI
 - 팀: 초대·멤버·공유 (P10)
 
@@ -46,8 +46,8 @@ private
 ## 작업 관리
 
 - 현재 Phase: Phase 3 (팀 협업, 고급 분석, 외부 연동)
-- 진행 중: P10 팀 초대/공유
-- 완료: Phase 1~2 (P1~P9)
-- 다음: 고급 분석, Slack/Discord·GitHub 연동
+- 진행 중: P11 고급 분석
+- 완료: Phase 1~2 (P1~P9), Phase 3 P10 팀 초대/공유
+- 다음: Slack/Discord 알림, GitHub 연동
 
 상세 이력은 [VERSION.md](./VERSION.md)를 참고하세요.
