@@ -6,10 +6,10 @@
 
 | 항목 | 값 |
 |------|-----|
-| 버전 | 0.4.0 |
-| Phase | Phase 1~3 완료 |
-| 진행 중 | 없음 |
-| 다음 | Phase 4 (실시간 협업, PWA, AI 요약 등) |
+| 버전 | 0.4.1-wip |
+| Phase | Phase 4 |
+| 진행 중 | P13 배포 자동화 |
+| 다음 | 상태 기반 저장 토글, 성능/접근성, 문서화 |
 
 ## 완료 항목
 
@@ -33,9 +33,17 @@
 
 ## 진행 중
 
-없음 (Phase 3 완료)
+| ID | 요약 | 노트 |
+|----|------|------|
+| P13 | 배포 자동화 | Vercel · Docker Compose · GitHub Actions CI |
 
 ## 변경 이력
+
+### 0.4.1-wip — 2026-07-28 (P13 / Phase 4)
+
+- `vercel.json`, 멀티스테이지 `Dockerfile`, `.dockerignore`, `docker-compose.yml`
+- `.github/workflows/ci.yml` (lint / typecheck / test / build)
+- `docs/DEPLOY.md` 상세 배포·브랜치 전략 가이드
 
 ### 0.4.0 — 2026-07-28 (Phase 3 완료)
 

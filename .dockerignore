@@ -1,0 +1,42 @@
+# Git / IDE
+.git
+.github
+.cursor
+.vscode
+.idea
+
+# Dependencies & build
+node_modules
+.next
+out
+build
+coverage
+*.tsbuildinfo
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+docs/env.example
+
+# Docs / misc (not needed in image context beyond COPY . .)
+README.md
+VERSION.md
+AGENTS.md
+CLAUDE.md
+**/*.md
+!docs/env.example
+
+# Tests / logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+*.pem
+.DS_Store
+.vercel
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore

@@ -1,0 +1,39 @@
+# Folio local / self-hosted stack
+# 사용: cp docs/env.example .env.local && docker compose up --build
+
+services:
+  folio:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-https://placeholder.supabase.co}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-placeholder-anon-key}
+    image: folio:local
+    container_name: folio
+    ports:
+      - "${FOLIO_PORT:-3000}:3000"
+    env_file:
+      - .env.local
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      # 런타임 서버 시크릿은 .env.local 에서 주입
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
+      JIRA_API_TOKEN: ${JIRA_API_TOKEN:-}
+      JIRA_EMAIL: ${JIRA_EMAIL:-}
+      JIRA_DOMAIN: ${JIRA_DOMAIN:-}
+      JIRA_PROJECT_KEY: ${JIRA_PROJECT_KEY:-}
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
+      DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:-}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      GITHUB_REPO: ${GITHUB_REPO:-}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 25s
