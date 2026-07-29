@@ -2,7 +2,7 @@
 
 import { requireAuthUser } from '@/lib/supabase';
 import { loadWithFallback, saveWithFallback } from '@/lib/storage';
-import { getLocalJson, setLocalJson } from '@/lib/local-cache';
+import { getLocalJson, setLocalJson, flushLocalJson } from '@/lib/local-cache';
 import { cachedQuery, invalidateQueryCache } from '@/lib/query-cache';
 
 export interface JournalEntry {
@@ -45,6 +45,7 @@ export function saveJournal(date: string, content: string, tags: string[]) {
   const all = loadJournals();
   all[date] = { date, content, tags, updatedAt: new Date().toISOString() };
   setLocalJson(STORAGE_KEY, all);
+  flushLocalJson(STORAGE_KEY);
 }
 
 /** 저장된 일지들에서 중복 없는 태그 목록을 정렬해 반환 */
@@ -96,13 +97,16 @@ export async function saveJournalSupabase(date: string, content: string, tags: s
 
 /** 저장 모드(local/cloud/beacon)에 따라 분기 — `storage.ts` */
 export async function saveJournalWithFallback(date: string, content: string, tags: string[]) {
-  const entry = { date, content, tags, updatedAt: new Date().toISOString() };
-  const next = { ...loadJournals(), [date]: entry };
+  const entry: JournalEntry = { date, content, tags, updatedAt: new Date().toISOString() };
 
-  await saveWithFallback(next, 'journal', {
+  // 로컬 저장 시점에 최신 map과 merge — 수동/자동 저장 경쟁 시 stale 스냅샷 덮어쓰기 방지
+  await saveWithFallback(entry, 'journal', {
     localSave: () => {
+      const next = { ...loadJournals(), [date]: entry };
       setLocalJson(STORAGE_KEY, next);
+      flushLocalJson(STORAGE_KEY);
     },
+    resolveRemoteData: () => ({ ...loadJournals(), [date]: entry }),
     cloudSave: async () => {
       await saveJournalSupabase(date, content, tags);
     },

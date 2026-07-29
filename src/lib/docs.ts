@@ -2,7 +2,7 @@
 
 import { requireAuthUser } from '@/lib/supabase';
 import { loadWithFallback, saveWithFallback } from '@/lib/storage';
-import { getLocalJson, setLocalJson } from '@/lib/local-cache';
+import { getLocalJson, setLocalJson, flushLocalJson } from '@/lib/local-cache';
 import { cachedQuery, invalidateQueryCache } from '@/lib/query-cache';
 
 export interface DocEntry {
@@ -162,6 +162,7 @@ export async function saveDocWithFallback(doc: DocEntry) {
   await saveWithFallback(next, 'docs', {
     localSave: () => {
       setLocalJson(STORAGE_KEY, next);
+      flushLocalJson(STORAGE_KEY);
     },
     cloudSave: async () => {
       await saveDocSupabase(updated);
@@ -174,6 +175,7 @@ export async function deleteDocWithFallback(id: string) {
   await saveWithFallback(next, 'docs', {
     localSave: () => {
       setLocalJson(STORAGE_KEY, next);
+      flushLocalJson(STORAGE_KEY);
     },
     cloudSave: async () => {
       await deleteDocSupabase(id);

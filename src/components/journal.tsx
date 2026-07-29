@@ -8,8 +8,8 @@ import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Save, ChevronLeft, ChevronRight, Upload } from 'lucide-react';
-import { saveJournalWithFallback, loadJournalsWithFallback, getAllTags } from '@/lib/journal';
+import { Calendar, Save, Check, Loader2, ChevronLeft, ChevronRight, Upload } from 'lucide-react';
+import { saveJournal, saveJournalWithFallback, loadJournalsWithFallback, getAllTags } from '@/lib/journal';
 import { loadTasksWithFallback } from '@/lib/board';
 import { readObsidianMarkdownFiles } from '@/lib/obsidian';
 import { TagCloud, buildTagCounts } from '@/components/tag-cloud';
@@ -78,7 +78,9 @@ export const JournalPanel = memo(function JournalPanel({
   const [importMsg, setImportMsg] = useState<string | null>(null);
   const [notifyOnSave, setNotifyOnSave] = useState(false);
   const [hasNotifyChannel, setHasNotifyChannel] = useState(false);
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const saveFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const selectDate = useCallback((nextDate: string, map?: Record<string, Day>) => {
     const source = map ?? days;
@@ -128,6 +130,12 @@ export const JournalPanel = memo(function JournalPanel({
         setHasNotifyChannel(s.slack || s.discord);
       }),
     );
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (saveFeedbackTimer.current) clearTimeout(saveFeedbackTimer.current);
+    };
   }, []);
 
   const currentTags = useMemo(() => parseTags(tagsInput), [tagsInput]);
@@ -187,12 +195,20 @@ export const JournalPanel = memo(function JournalPanel({
 
   const save = useCallback(async (opts?: { notify?: boolean }) => {
     const tags = parseTags(tagsInput);
-    // 낙관적 UI 갱신 — 저장 I/O가 느려도 버튼이 즉시 반응
+    if (saveFeedbackTimer.current) clearTimeout(saveFeedbackTimer.current);
+    setSaveState('saving');
+    // 낙관적 UI + 로컬 즉시 영속 (cloud/beacon 대기와 무관)
     setDays(prev => ({ ...prev, [date]: { content: draft, tags } }));
     try {
-      await saveJournalWithFallback(date, draft, tags);
+      saveJournal(date, draft, tags);
+      setSaveState('saved');
+      saveFeedbackTimer.current = setTimeout(() => setSaveState('idle'), 2000);
+      // 원격 동기화는 백그라운드 (로컬 선행은 saveWithFallback도 수행)
+      void saveJournalWithFallback(date, draft, tags);
     } catch {
-      /* 로컬 미러는 이미 반영됨 */
+      setSaveState('error');
+      saveFeedbackTimer.current = setTimeout(() => setSaveState('idle'), 2500);
+      return;
     }
 
     if (!opts?.notify || !hasNotifyChannel) return;
@@ -363,11 +379,28 @@ export const JournalPanel = memo(function JournalPanel({
             </Button>
             <Button
               type="button"
+              disabled={saveState === 'saving'}
               onClick={() => void save({ notify: notifyOnSave })}
               size="sm"
-              className="gap-2 bg-gray-900 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white"
+              className="gap-2 bg-gray-900 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white min-w-[4.5rem]"
             >
-              <Save className="h-4 w-4" /> 저장
+              {saveState === 'saving' ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" /> 저장 중
+                </>
+              ) : saveState === 'saved' ? (
+                <>
+                  <Check className="h-4 w-4" /> 저장됨
+                </>
+              ) : saveState === 'error' ? (
+                <>
+                  <Save className="h-4 w-4" /> 실패
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" /> 저장
+                </>
+              )}
             </Button>
           </div>
         </div>

@@ -2,7 +2,7 @@
 
 import { requireAuthUser } from '@/lib/supabase';
 import { getStorageMode, loadWithFallback, saveWithFallback } from '@/lib/storage';
-import { getLocalJson, setLocalJson } from '@/lib/local-cache';
+import { getLocalJson, setLocalJson, flushLocalJson } from '@/lib/local-cache';
 import { cachedQuery, invalidateQueryCache } from '@/lib/query-cache';
 
 export interface Task {
@@ -74,6 +74,7 @@ export function loadTasks(): Task[] {
 
 export function saveTasks(tasks: Task[]) {
   setLocalJson(STORAGE_KEY, tasks);
+  flushLocalJson(STORAGE_KEY);
 }
 
 export { DEFAULT_COLUMNS };
@@ -142,35 +143,26 @@ export async function saveTaskWithFallback(task: Task) {
       await saveTaskSupabase(task);
     },
   });
-  // Jira/GitHub 확장 필드는 클라우드 성공 시에도 로컬 미러 유지
-  if (result.mode === 'cloud' && !result.usedFallback) {
-    saveTasks(next);
-  }
+  return result;
 }
 
 export async function saveTasksWithFallback(tasks: Task[]) {
-  const result = await saveWithFallback(tasks, 'board', {
+  return saveWithFallback(tasks, 'board', {
     localSave: () => saveTasks(tasks),
     cloudSave: async () => {
       await saveTasksSupabase(tasks);
     },
   });
-  if (result.mode === 'cloud' && !result.usedFallback) {
-    saveTasks(tasks);
-  }
 }
 
 export async function deleteTaskWithFallback(id: string) {
   const next = loadTasks().filter(t => t.id !== id);
-  const result = await saveWithFallback(next, 'board', {
+  return saveWithFallback(next, 'board', {
     localSave: () => saveTasks(next),
     cloudSave: async () => {
       await deleteTaskSupabase(id);
     },
   });
-  if (result.mode === 'cloud' && !result.usedFallback) {
-    saveTasks(next);
-  }
 }
 
 /** 저장 모드에 따라 로드. 클라우드 시 로컬 Jira/GitHub 필드 병합 */

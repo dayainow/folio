@@ -119,9 +119,8 @@ export async function saveBeaconCache(type: StorageDataType, data: unknown): Pro
 
 /**
  * 모드에 따라 저장.
- * - beacon: `.beacon/cache` 시도 → 실패 시 localFn
- * - cloud: cloudFn 시도 → 실패 시 localFn
- * - local: localFn
+ * - 항상 로컬을 먼저 영속화 (탭 종료·새로고침 대비)
+ * - beacon/cloud: 원격은 최대 5초, 실패해도 로컬은 이미 반영됨
  */
 export async function saveWithFallback(
   data: unknown,
@@ -129,39 +128,47 @@ export async function saveWithFallback(
   options: {
     localSave: (data: unknown) => void | Promise<void>
     cloudSave?: (data: unknown) => Promise<void>
+    /** 로컬 저장 후 원격에 보낼 최신 스냅샷 (기본: data) */
+    resolveRemoteData?: () => unknown
   },
 ): Promise<SaveWithFallbackResult> {
   const mode = getStorageMode()
 
+  // 1) 로컬 선행 — cloud/beacon 대기를 기다리지 않음
+  await options.localSave(data)
+
   if (mode === 'local') {
-    await options.localSave(data)
     return { mode, usedFallback: false }
   }
 
+  const remoteData = options.resolveRemoteData?.() ?? data
+
   if (mode === 'beacon') {
     try {
-      const available = await withTimeout(isBeaconAvailable(), 5000, 'beacon-available')
-      if (!available) throw new Error('Beacon 미초기화')
-      await withTimeout(saveBeaconCache(type, data), 5000, 'beacon-save')
-      // 오프라인 UX용 로컬 미러
-      await options.localSave(data)
+      await withTimeout(
+        (async () => {
+          const available = await isBeaconAvailable()
+          if (!available) throw new Error('Beacon 미초기화')
+          await saveBeaconCache(type, remoteData)
+        })(),
+        5000,
+        'beacon-save',
+      )
       return { mode, usedFallback: false }
     } catch {
-      await options.localSave(data)
       return { mode, usedFallback: true }
     }
   }
 
   // cloud
   if (!options.cloudSave) {
-    await options.localSave(data)
     return { mode, usedFallback: true }
   }
   try {
-    await withTimeout(options.cloudSave(data), 5000, 'cloud-save')
+    await withTimeout(options.cloudSave(remoteData), 5000, 'cloud-save')
     return { mode, usedFallback: false }
   } catch {
-    await options.localSave(data)
+    // 로컬은 이미 반영됨
     return { mode, usedFallback: true }
   }
 }
