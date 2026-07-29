@@ -5,7 +5,7 @@
 
 | | |
 |--|--|
-| 버전 | **0.6.0** (Phase 5 완료) |
+| 버전 | **0.7.0-wip** (Phase 6) |
 | 라이선스 | private |
 
 ---
@@ -149,9 +149,10 @@ npm run qa:smoke && npm run lint && npm run typecheck
 
 ## 작업 관리
 
-- 현재: **Phase 5 완료** · **0.6.0** 정식 릴리즈
-- 완료: Phase 1~5 (**P15**~**P19** 포함)
-- 다음: **Phase 6** 배포·운영 (모니터링 · 알림 · Beacon 고도화 · 런북)
+- 현재: **Phase 6** · **0.7.0-wip**
+- 완료: Phase 1~5 (**0.6.0**)
+- 진행 중: **P20** 모니터링/알림
+- 다음: **P21** Beacon 고도화 · **P22** 운영 런북
 
 상세: [VERSION.md](./VERSION.md) · [docs/qa-report.md](./docs/qa-report.md)
 
@@ -164,4 +165,4 @@ npm run qa:smoke && npm run lint && npm run typecheck
 | 3 | Obsidian · 검색 · 팀 · 분석 · 알림 | ✅ |
 | 4 | 배포 · Beacon · 저장 모드 | ✅ |
 | 5 | 성능 · 접근성 · 문서화 · QA · 배포 자동화 | ✅ **0.6.0** |
-| 6 | 배포·운영 (모니터 · 알림 · Beacon · 런북) | 다음 |
+| 6 | 배포·운영 (모니터 · 알림 · Beacon · 런북) | 진행 중 (P20) |

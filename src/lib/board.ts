@@ -146,26 +146,43 @@ export async function saveTaskWithFallback(task: Task) {
       await saveTaskSupabase(task);
     },
   });
+  if (result.usedFallback) {
+    void import('@/lib/health-monitor').then(({ alertRemoteSaveFailure }) =>
+      alertRemoteSaveFailure('board', result.mode),
+    );
+  }
   return result;
 }
 
 export async function saveTasksWithFallback(tasks: Task[]) {
-  return saveWithFallback(tasks, 'board', {
+  const result = await saveWithFallback(tasks, 'board', {
     localSave: () => saveTasks(tasks),
     cloudSave: async () => {
       await saveTasksSupabase(tasks);
     },
   });
+  if (result.usedFallback) {
+    void import('@/lib/health-monitor').then(({ alertRemoteSaveFailure }) =>
+      alertRemoteSaveFailure('board', result.mode),
+    );
+  }
+  return result;
 }
 
 export async function deleteTaskWithFallback(id: string) {
   const next = loadTasks().filter(t => t.id !== id);
-  return saveWithFallback(next, 'board', {
+  const result = await saveWithFallback(next, 'board', {
     localSave: () => saveTasks(next),
     cloudSave: async () => {
       await deleteTaskSupabase(id);
     },
   });
+  if (result.usedFallback) {
+    void import('@/lib/health-monitor').then(({ alertRemoteSaveFailure }) =>
+      alertRemoteSaveFailure('board', result.mode),
+    );
+  }
+  return result;
 }
 
 /** 저장 모드에 따라 로드. 클라우드 시 로컬 Jira/GitHub 필드 병합 */

@@ -106,7 +106,7 @@ export async function saveJournalWithFallback(date: string, content: string, tag
   const entry: JournalEntry = { date, content, tags, updatedAt: new Date().toISOString() };
 
   // 로컬 저장 시점에 최신 map과 merge — 수동/자동 저장 경쟁 시 stale 스냅샷 덮어쓰기 방지
-  await saveWithFallback(entry, 'journal', {
+  const result = await saveWithFallback(entry, 'journal', {
     localSave: () => {
       const next = { ...loadJournals(), [date]: entry };
       setLocalJson(STORAGE_KEY, next);
@@ -117,6 +117,14 @@ export async function saveJournalWithFallback(date: string, content: string, tag
       await saveJournalSupabase(date, content, tags);
     },
   });
+
+  if (result.usedFallback) {
+    void import('@/lib/health-monitor').then(({ alertRemoteSaveFailure }) =>
+      alertRemoteSaveFailure('journal', result.mode),
+    );
+  }
+
+  return result;
 }
 
 /** 저장 모드에 따라 로드 */

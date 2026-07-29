@@ -6,10 +6,10 @@
 
 | 항목 | 값 |
 |------|-----|
-| 버전 | **0.6.0** |
-| Phase | Phase 5 완료 · Phase 6 시작 |
-| 진행 중 | — |
-| 다음 | Phase 6 배포·운영 (모니터링 · 알림 · Beacon 고도화) |
+| 버전 | **0.7.0-wip** |
+| Phase | Phase 6 |
+| 진행 중 | P20 모니터링/알림 |
+| 다음 | P21 Beacon 고도화 · P22 운영 런북 |
 
 ## 완료 항목
 
@@ -40,24 +40,30 @@
 | P16 | 접근성/UX (키보드 · 포커스 · ARIA · 로딩) | `781f2ed` |
 | P17 | 문서화 (GETTING-STARTED · API · examples) | `2b6597b` |
 | P18 | 통합 테스트/QA | `52ed45e` |
-| P19 | 배포 자동화 강화 · health · 0.6.0 릴리즈 | *(본 커밋)* |
+| P19 | 배포 자동화 강화 · health · 0.6.0 릴리즈 | `3fecfdf` |
 
 ## 진행 중
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| — | Phase 6 | 운영 모니터링 · 알림 · Beacon 고도화 |
+| P20 | 모니터링/알림 | health-monitor · 헤더 뱃지 · 저장 실패 웹훅/토스트 |
 
 ## Phase 6 계획 (배포·운영)
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| P20 | 업타임/알림 연동 | `/api/health` 기반 외부 모니터 |
-| P21 | 에러 추적 | Sentry 등 (선택) |
-| P22 | Beacon 연동 고도화 | 쓰기/동기화 · UX |
-| P23 | 프로덕션 런북 | 롤백 · 시크릿 로테이션 |
+| P20 | 모니터링/알림 | 상태 점검 · 에러 감지 · Slack/Discord · 헤더 뱃지 |
+| P21 | Beacon 고도화 | 변경 감지 · diff 뷰 · 자동 스냅샷 |
+| P22 | 운영 런북 | 장애 대응 · 백업/복구 · 배포 절차 |
 
 ## 변경 이력
+
+### 0.7.0-wip — 2026-07-29 (P20 모니터링/알림)
+
+- `src/lib/health-monitor.ts`: checkStorageMode / checkSupabaseConnection / checkBeaconStatus / overallHealth
+- `src/components/health-status.tsx`: 헤더 상태 뱃지(정상·클라우드 끊김·Beacon 미연동) + 상세 패널
+- 저장 실패 시 Slack/Discord 웹훅 (쿨다운) · 일지 자동저장 실패 토스트+재시도
+- README · VERSION Phase 6 / P20 진행 중
 
 ### 0.6.0 — 2026-07-29 (Phase 5 완료 · P19)
 

@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { GlobalSearch, type SearchNavigatePayload } from '@/components/global-search';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { StorageModeToggle } from '@/components/storage-mode-toggle';
+import { HealthStatus } from '@/components/health-status';
 import { getActiveTeamId } from '@/lib/team';
 import { Activity } from 'lucide-react';
 
@@ -194,6 +195,7 @@ export default function Home() {
         </div>
         <div className="flex items-center gap-3">
           <span className="text-xs text-muted-foreground hidden sm:inline">프로젝트의 기록</span>
+          <HealthStatus />
           <StorageModeToggle />
           <ThemeToggle />
           {authReady && email && (

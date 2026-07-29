@@ -13,6 +13,7 @@ import { saveJournal, saveJournalWithFallback, loadJournalsWithFallback, getAllT
 import { loadTasksWithFallback } from '@/lib/board';
 import { readObsidianMarkdownFiles } from '@/lib/obsidian';
 import { TagCloud, buildTagCounts } from '@/components/tag-cloud';
+import { setToastRetryHandler, showAppToast } from '@/lib/health-monitor';
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -221,13 +222,23 @@ export const JournalPanel = memo(function JournalPanel({
       saveJournal(date, draft, tags);
       setSaveState('saved');
       saveFeedbackTimer.current = setTimeout(() => setSaveState('idle'), 2000);
-      void saveJournalWithFallback(date, draft, tags).catch(() => {
-        setSaveState('error');
-        setSaveError('클라우드/Beacon 동기화에 실패했지만 로컬에는 저장되었습니다.');
-      });
+      void saveJournalWithFallback(date, draft, tags)
+        .then((result) => {
+          if (result.usedFallback) {
+            setSaveState('error');
+            setSaveError('클라우드/Beacon 동기화에 실패했지만 로컬에는 저장되었습니다.');
+            showAppToast('원격 동기화 실패 · 로컬에는 저장됨', { withRetry: true });
+          }
+        })
+        .catch(() => {
+          setSaveState('error');
+          setSaveError('클라우드/Beacon 동기화에 실패했지만 로컬에는 저장되었습니다.');
+          showAppToast('원격 동기화 실패 · 로컬에는 저장됨', { withRetry: true });
+        });
     } catch {
       setSaveState('error');
       setSaveError('저장에 실패했습니다. 다시 시도해 주세요.');
+      showAppToast('일지 저장에 실패했습니다', { withRetry: true });
       saveFeedbackTimer.current = setTimeout(() => setSaveState('idle'), 2500);
       return;
     }
@@ -247,12 +258,30 @@ export const JournalPanel = memo(function JournalPanel({
   }, [date, draft, tagsInput, hasNotifyChannel]);
 
   useEffect(() => {
+    setToastRetryHandler(() => {
+      void save({ notify: notifyOnSave });
+    });
+    return () => setToastRetryHandler(null);
+  }, [save, notifyOnSave]);
+
+  useEffect(() => {
     if (!ready) return;
     const t = setInterval(() => {
       const tags = parseTags(tagsInput);
-      void saveJournalWithFallback(date, draft, tags).then(() => {
-        setDays(prev => ({ ...prev, [date]: { content: draft, tags } }));
-      });
+      void saveJournalWithFallback(date, draft, tags)
+        .then((result) => {
+          setDays(prev => ({ ...prev, [date]: { content: draft, tags } }));
+          if (result.usedFallback) {
+            setSaveState('error');
+            setSaveError('자동 저장: 원격 동기화 실패 · 로컬에는 저장됨');
+            showAppToast('일지 자동 저장 동기화 실패', { withRetry: true });
+          }
+        })
+        .catch(() => {
+          setSaveState('error');
+          setSaveError('자동 저장에 실패했습니다. 다시 시도해 주세요.');
+          showAppToast('일지 자동 저장 실패', { withRetry: true });
+        });
     }, 3000);
     return () => clearInterval(t);
   }, [date, draft, tagsInput, ready]);

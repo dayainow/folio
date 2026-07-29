@@ -162,7 +162,7 @@ export async function saveDocWithFallback(doc: DocEntry) {
   if (idx >= 0) next[idx] = updated;
   else next.push(updated);
 
-  await saveWithFallback(next, 'docs', {
+  const result = await saveWithFallback(next, 'docs', {
     localSave: () => {
       setLocalJson(STORAGE_KEY, next);
       flushLocalJson(STORAGE_KEY);
@@ -171,11 +171,19 @@ export async function saveDocWithFallback(doc: DocEntry) {
       await saveDocSupabase(updated);
     },
   });
+
+  if (result.usedFallback) {
+    void import('@/lib/health-monitor').then(({ alertRemoteSaveFailure }) =>
+      alertRemoteSaveFailure('docs', result.mode),
+    );
+  }
+
+  return result;
 }
 
 export async function deleteDocWithFallback(id: string) {
   const next = loadDocs().filter(d => d.id !== id);
-  await saveWithFallback(next, 'docs', {
+  const result = await saveWithFallback(next, 'docs', {
     localSave: () => {
       setLocalJson(STORAGE_KEY, next);
       flushLocalJson(STORAGE_KEY);
@@ -184,6 +192,14 @@ export async function deleteDocWithFallback(id: string) {
       await deleteDocSupabase(id);
     },
   });
+
+  if (result.usedFallback) {
+    void import('@/lib/health-monitor').then(({ alertRemoteSaveFailure }) =>
+      alertRemoteSaveFailure('docs', result.mode),
+    );
+  }
+
+  return result;
 }
 
 /** 저장 모드에 따라 로드 */
