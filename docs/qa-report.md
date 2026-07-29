@@ -1,7 +1,7 @@
 # Folio QA 리포트 (P18)
 
 **일시:** 2026-07-29  
-**버전:** 0.6.0-wip  
+**버전:** 0.6.0  
 **방법:** 코드 경로 리뷰 · API 스모크 · `npm run qa:smoke` · typecheck/lint
 
 ## 요약

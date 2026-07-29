@@ -1,5 +1,6 @@
 # Folio local / self-hosted stack
 # 사용: cp docs/env.example .env.local && docker compose up --build
+# Health: GET http://localhost:3000/api/health
 
 services:
   folio:
@@ -19,7 +20,7 @@ services:
       NODE_ENV: production
       PORT: 3000
       HOSTNAME: 0.0.0.0
-      # 런타임 서버 시크릿은 .env.local 에서 주입
+      FOLIO_VERSION: ${FOLIO_VERSION:-0.6.0}
       NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
       JIRA_API_TOKEN: ${JIRA_API_TOKEN:-}
@@ -30,9 +31,10 @@ services:
       DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:-}
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
       GITHUB_REPO: ${GITHUB_REPO:-}
+      BEACON_PROJECT_ROOT: ${BEACON_PROJECT_ROOT:-}
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
       interval: 30s
       timeout: 5s
       retries: 3

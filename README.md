@@ -5,7 +5,7 @@
 
 | | |
 |--|--|
-| 버전 | **0.6.0-wip** (Phase 5) |
+| 버전 | **0.6.0** (Phase 5 완료) |
 | 라이선스 | private |
 
 ---
@@ -71,19 +71,27 @@ Beacon: [docs/BEACON.md](./docs/BEACON.md) · [PROCESS.md](./PROCESS.md)
 
 ## 배포 / Deploy
 
-| 방식 | 문서 |
+상세: **[docs/DEPLOY.md](./docs/DEPLOY.md)** · 환경변수: [docs/env.example](./docs/env.example)
+
+| 방식 | 요약 |
 |------|------|
-| Vercel | [docs/DEPLOY.md](./docs/DEPLOY.md#vercel) |
-| Docker / Compose | [docs/DEPLOY.md](./docs/DEPLOY.md#docker) |
-| CI | `.github/workflows/ci.yml` |
+| Vercel | `main` → Production · PR → Preview (`vercel.json`) |
+| Docker | `Dockerfile` 멀티스테이지 · `docker compose up --build` |
+| CI | lint · typecheck · `qa:smoke` · build (`.github/workflows/ci.yml`) |
+| Deploy | main 푸시 시 Vercel CLI (시크릿 설정 시) 또는 Vercel Git 연동 |
+| Health | `GET /api/health` → `{ status, version, uptime }` |
 
 ```bash
+# Vercel
 npx vercel --prod
-# or
+
+# Docker
+cp docs/env.example .env.local   # 값 채움
 docker compose up --build
+curl -s http://localhost:3000/api/health
 ```
 
-환경변수: [docs/env.example](./docs/env.example)
+브랜치: feature → PR (Preview) → `main` 머지 (Production)
 
 ---
 
@@ -141,10 +149,9 @@ npm run qa:smoke && npm run lint && npm run typecheck
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 5** (성능·접근성·문서화)
-- 완료: Phase 1~4, **P13**~**P16**, **P17** 문서화
-- 진행 중: **P18 통합 테스트/QA**
-- 다음: Phase 5 마무리 · Beacon 연동 고도화
+- 현재: **Phase 5 완료** · **0.6.0** 정식 릴리즈
+- 완료: Phase 1~5 (**P15**~**P19** 포함)
+- 다음: **Phase 6** 배포·운영 (모니터링 · 알림 · Beacon 고도화 · 런북)
 
 상세: [VERSION.md](./VERSION.md) · [docs/qa-report.md](./docs/qa-report.md)
 
@@ -156,4 +163,5 @@ npm run qa:smoke && npm run lint && npm run typecheck
 | 2 | Supabase · Auth · Jira · 멀티유저 | ✅ |
 | 3 | Obsidian · 검색 · 팀 · 분석 · 알림 | ✅ |
 | 4 | 배포 · Beacon · 저장 모드 | ✅ |
-| 5 | 성능 · 접근성 · 문서화 · QA | 진행 중 (P18) |
+| 5 | 성능 · 접근성 · 문서화 · QA · 배포 자동화 | ✅ **0.6.0** |
+| 6 | 배포·운영 (모니터 · 알림 · Beacon · 런북) | 다음 |

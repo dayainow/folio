@@ -1,6 +1,6 @@
 # Folio 배포 가이드
 
-로컬 · Vercel · Docker · CI 배포 절차. (P13에서 도입, P17에서 문서 인덱스에 포함)
+로컬 · Vercel · Docker · CI/CD · Healthcheck. (P13 도입 · **P19** 강화 · 0.6.0)
 
 ## 환경변수
 
@@ -8,11 +8,13 @@
 
 | 구분 | 변수 | 노출 | 비고 |
 |------|------|------|------|
+| App | `FOLIO_VERSION` | 서버 | health `version` 폴백 |
 | Supabase | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | 클라이언트 | 빌드·런타임 모두 필요 |
 | Jira | `JIRA_*` | 서버만 | `/api/jira/*` |
 | Slack | `SLACK_WEBHOOK_URL` | 서버만 | 없으면 알림 스킵 |
 | Discord | `DISCORD_WEBHOOK_URL` | 서버만 | 없으면 알림 스킵 |
 | GitHub | `GITHUB_TOKEN`, `GITHUB_REPO` | 서버만 | 없으면 UI 숨김 |
+| Beacon | `BEACON_PROJECT_ROOT` | 서버만 | 로컬/자가호스팅 |
 
 **규칙**
 
@@ -43,6 +45,25 @@ feature/* ──PR──▶ Preview (*.vercel.app)
                    main ──▶ Production
 ```
 
+`vercel.json` → `git.deploymentEnabled.main: true`
+
+---
+
+## Healthcheck
+
+```http
+GET /api/health
+```
+
+응답 예:
+
+```json
+{ "status": "ok", "version": "0.6.0", "uptime": 42, "timestamp": "…" }
+```
+
+- Docker `HEALTHCHECK` / Compose `healthcheck` 가 이 엔드포인트를 사용한다.
+- Vercel: `/api/health` 에 `Cache-Control: no-store`.
+
 ---
 
 ## 로컬
@@ -53,6 +74,7 @@ cp docs/env.example .env.local
 npm install
 npm run dev
 # http://localhost:3000
+curl -s http://localhost:3000/api/health
 ```
 
 품질 검사
@@ -60,6 +82,7 @@ npm run dev
 ```bash
 npm run lint
 npm run typecheck
+npm run qa:smoke
 npm run test
 npm run build
 ```
@@ -75,6 +98,7 @@ npm run build
 3. Environment Variables에 `docs/env.example` 목록 등록
    - `NEXT_PUBLIC_*`: Production + Preview
    - `JIRA_*` / `SLACK_*` / `DISCORD_*` / `GITHUB_*`: Production (필요 시 Preview)
+   - `FOLIO_VERSION`: `0.6.0` (선택)
 4. Deploy
 5. Supabase Dashboard → Auth → URL Configuration
    - Site URL: Production 도메인
@@ -91,6 +115,7 @@ npx vercel --prod   # Production (main 권장)
 
 - Region: `vercel.json` 의 `icn1` (서울). 변경 시 `regions` 수정.
 - 서버 라우트(`/api/*`)는 Vercel Serverless / Edge 정책에 따름. 현재 Node runtime.
+- **권장**: Vercel Git 연동으로 PR Preview + `main` Production 자동 배포.
 
 ---
 
@@ -115,7 +140,11 @@ docker run --rm -p 3000:3000 --env-file .env.local folio:local
 cp docs/env.example .env.local   # 값 채움
 docker compose up --build
 # http://localhost:3000
+curl -s http://localhost:3000/api/health
 ```
+
+- `env_file: .env.local`
+- `HEALTHCHECK` → `GET /api/health`
 
 중지: `docker compose down`
 
@@ -125,17 +154,23 @@ docker compose up --build
 
 ## CI/CD (GitHub Actions)
 
-워크플로: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)
+### Quality gate — [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)
 
 `main` push 및 PR에서 실행:
 
 1. `npm ci`
 2. `npm run lint`
 3. `npm run typecheck`
-4. `npm run test`
-5. `npm run build` (placeholder 공개 env)
+4. `npm run qa:smoke`
+5. `npm run test`
+6. `npm run build` (placeholder 공개 env)
 
-배포 자체는 Vercel Git 연동 또는 Docker 레지스트리 푸시로 분리한다. CI는 품질 게이트 역할.
+### Deploy — [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml)
+
+`main` 푸시(PR 머지) 또는 `workflow_dispatch` 시:
+
+- Secrets `VERCEL_TOKEN` · `VERCEL_ORG_ID` · `VERCEL_PROJECT_ID` 가 있으면 Vercel CLI Production 배포
+- 없으면 스킵 — **Vercel Dashboard Git 연동**이 기본 자동 배포 경로
 
 ---
 
@@ -145,6 +180,7 @@ docker compose up --build
 - [ ] Supabase 스키마 (기본 + team) 적용
 - [ ] Auth Redirect URL 등록
 - [ ] Preview에서 로그인·Jira/알림 스모크 테스트
+- [ ] `GET /api/health` 확인
 - [ ] `main` 머지 후 Production 확인
 
 ---

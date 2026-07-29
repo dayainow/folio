@@ -6,10 +6,10 @@
 
 | 항목 | 값 |
 |------|-----|
-| 버전 | **0.6.0-wip** |
-| Phase | Phase 5 |
-| 진행 중 | P18 통합 테스트/QA |
-| 다음 | Phase 5 마무리 · Beacon 연동 고도화 |
+| 버전 | **0.6.0** |
+| Phase | Phase 5 완료 · Phase 6 시작 |
+| 진행 중 | — |
+| 다음 | Phase 6 배포·운영 (모니터링 · 알림 · Beacon 고도화) |
 
 ## 완료 항목
 
@@ -39,14 +39,35 @@
 | — | 저장 로컬 선행 · Journal 저장 피드백 | `10c6fef` |
 | P16 | 접근성/UX (키보드 · 포커스 · ARIA · 로딩) | `781f2ed` |
 | P17 | 문서화 (GETTING-STARTED · API · examples) | `2b6597b` |
+| P18 | 통합 테스트/QA | `52ed45e` |
+| P19 | 배포 자동화 강화 · health · 0.6.0 릴리즈 | *(본 커밋)* |
 
 ## 진행 중
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| P18 | 통합 테스트/QA | `docs/qa-report.md` · `npm run qa:smoke` |
+| — | Phase 6 | 운영 모니터링 · 알림 · Beacon 고도화 |
+
+## Phase 6 계획 (배포·운영)
+
+| ID | 요약 | 노트 |
+|----|------|------|
+| P20 | 업타임/알림 연동 | `/api/health` 기반 외부 모니터 |
+| P21 | 에러 추적 | Sentry 등 (선택) |
+| P22 | Beacon 연동 고도화 | 쓰기/동기화 · UX |
+| P23 | 프로덕션 런북 | 롤백 · 시크릿 로테이션 |
 
 ## 변경 이력
+
+### 0.6.0 — 2026-07-29 (Phase 5 완료 · P19)
+
+- 정식 릴리즈 **0.6.0** (Phase 5: 성능 · a11y · 문서 · QA · 배포 자동화)
+- `GET /api/health` → `{ status, version, uptime }`
+- `vercel.json` Preview/Production · health Cache-Control
+- Docker HEALTHCHECK → `/api/health` · compose `env_file` · `FOLIO_VERSION`
+- CI: `lint` · `typecheck` · `qa:smoke` · build
+- `.github/workflows/deploy.yml` — main 머지 시 Vercel CLI 배포(시크릿 있을 때)
+- `docs/env.example` · DEPLOY · README Phase 1~5 / Phase 6
 
 ### 0.6.0-wip — 2026-07-29 (P18 통합 QA)
 

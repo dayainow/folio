@@ -155,4 +155,8 @@ useFocusTrap(open: boolean, containerRef: RefObject<HTMLElement | null>): void
 | `query-cache` | `cachedQuery`, `invalidateQueryCache` |
 | `utils` | `cn(...inputs)` |
 
-HTTP API 라우트는 `src/app/api/*` — Beacon · Jira · GitHub · notify · integrations/status.
+HTTP API 라우트는 `src/app/api/*` — health · Beacon · Jira · GitHub · notify · integrations/status.
+
+| Method | Path | 요약 |
+|--------|------|------|
+| GET | `/api/health` | `{ status: "ok", version, uptime, timestamp }` |
