@@ -140,9 +140,9 @@ export async function saveWithFallback(
 
   if (mode === 'beacon') {
     try {
-      const available = await withTimeout(isBeaconAvailable(), 4000, 'beacon-available')
+      const available = await withTimeout(isBeaconAvailable(), 5000, 'beacon-available')
       if (!available) throw new Error('Beacon 미초기화')
-      await withTimeout(saveBeaconCache(type, data), 8000, 'beacon-save')
+      await withTimeout(saveBeaconCache(type, data), 5000, 'beacon-save')
       // 오프라인 UX용 로컬 미러
       await options.localSave(data)
       return { mode, usedFallback: false }
@@ -158,7 +158,7 @@ export async function saveWithFallback(
     return { mode, usedFallback: true }
   }
   try {
-    await withTimeout(options.cloudSave(data), 8000, 'cloud-save')
+    await withTimeout(options.cloudSave(data), 5000, 'cloud-save')
     return { mode, usedFallback: false }
   } catch {
     await options.localSave(data)

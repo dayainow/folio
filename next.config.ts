@@ -14,7 +14,13 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   poweredByHeader: false,
   experimental: {
-    optimizePackageImports: ['lucide-react', 'recharts'],
+    optimizePackageImports: [
+      'lucide-react',
+      'recharts',
+      '@dnd-kit/core',
+      '@supabase/supabase-js',
+      '@supabase/ssr',
+    ],
   },
 }
 

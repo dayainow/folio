@@ -44,6 +44,13 @@
 
 ## 변경 이력
 
+### 0.5.0 — 2026-07-29 (P15 성능 최적화 · 확장)
+
+- page: Journal/Docs/Board/Analytics/Team/Beacon 전부 dynamic · Supabase/migrate dynamic import
+- storage: cloud/beacon 저장 타임아웃 5초
+- layout: next/font `display: swap` · optimizePackageImports에 dnd-kit/supabase 추가
+- `scripts/bundle-size.mjs` + `npm run bundle:size`
+
 ### 0.5.0 — 2026-07-29 (fix: 패널 버튼 상태 갱신)
 
 - Board: `composing` 상태로 새 태스크/컬럼+ 폼 표시 (`editingId || form.title` 버그 수정)

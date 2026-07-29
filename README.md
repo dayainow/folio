@@ -101,8 +101,8 @@ private
 ## 작업 관리
 
 - 현재 Phase: **Phase 5** (성능·접근성·문서화)
-- 완료: Phase 1~4 (v0.5.0)
-- 진행 중: **P15 성능 최적화** (code splitting · 캐시 · memo)
+- 완료: Phase 1~4 (v0.5.0), 패널 버튼 버그 픽스
+- 진행 중: **P15 성능 최적화** (code splitting · debounce · memo · 번들 측정)
 - 다음: **P16** 접근성/UX
 
 상세 이력은 [VERSION.md](./VERSION.md), 연동 규약은 [PROCESS.md](./PROCESS.md)를 참고하세요.
@@ -127,6 +127,7 @@ private
 ### 성능 측정
 
 ```bash
+npm run bundle:size           # 주요 패키지·chunk 사이즈
 npm run perf:measure          # 의존성·.next 크기 요약
 ANALYZE=true npm run analyze  # @next/bundle-analyzer UI
 ```

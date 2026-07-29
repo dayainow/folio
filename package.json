@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "npm run typecheck",
     "analyze": "ANALYZE=true next build",
-    "perf:measure": "node scripts/perf-measure.mjs"
+    "perf:measure": "node scripts/perf-measure.mjs",
+    "bundle:size": "node scripts/bundle-size.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

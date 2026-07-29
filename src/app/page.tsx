@@ -6,20 +6,24 @@ import Link from 'next/link';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { JournalPanel } from '@/components/journal';
-import { DocsPanel } from '@/components/docs';
 import { GlobalSearch, type SearchNavigatePayload } from '@/components/global-search';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { StorageModeToggle } from '@/components/storage-mode-toggle';
-import { TeamSwitcher } from '@/components/team-switcher';
-import { TeamSidebar } from '@/components/team-sidebar';
-import { createBrowserSupabaseClient, signOut } from '@/lib/supabase';
-import { migrateLocalDataOnLogin } from '@/lib/migrate';
 import { getActiveTeamId } from '@/lib/team';
 import { Activity } from 'lucide-react';
 
 const PanelFallback = ({ label }: { label: string }) => (
   <div className="py-16 text-center text-sm text-muted-foreground">{label} 로딩 중…</div>
+);
+
+const JournalPanel = dynamic(
+  () => import('@/components/journal').then((m) => ({ default: m.JournalPanel })),
+  { ssr: false, loading: () => <PanelFallback label="일지" /> },
+);
+
+const DocsPanel = dynamic(
+  () => import('@/components/docs').then((m) => ({ default: m.DocsPanel })),
+  { ssr: false, loading: () => <PanelFallback label="문서" /> },
 );
 
 const BoardPanel = dynamic(
@@ -40,6 +44,16 @@ const JournalAnalyticsPanel = dynamic(
 const BoardAnalyticsPanel = dynamic(
   () => import('@/components/analytics').then((m) => ({ default: m.BoardAnalyticsPanel })),
   { ssr: false, loading: () => <PanelFallback label="분석" /> },
+);
+
+const TeamSwitcher = dynamic(
+  () => import('@/components/team-switcher').then((m) => ({ default: m.TeamSwitcher })),
+  { ssr: false },
+);
+
+const TeamSidebar = dynamic(
+  () => import('@/components/team-sidebar').then((m) => ({ default: m.TeamSidebar })),
+  { ssr: false },
 );
 
 type TabValue = 'journal' | 'docs' | 'board' | 'process';
@@ -66,6 +80,10 @@ export default function Home() {
 
     const boot = async () => {
       try {
+        const [{ createBrowserSupabaseClient }, { migrateLocalDataOnLogin }] = await Promise.all([
+          import('@/lib/supabase'),
+          import('@/lib/migrate'),
+        ]);
         const supabase = createBrowserSupabaseClient();
         const { data } = await supabase.auth.getUser();
         if (cancelled) return;
@@ -80,7 +98,9 @@ export default function Home() {
           setEmail(session?.user?.email ?? null);
           setAuthReady(true);
           if (event === 'SIGNED_IN' && session?.user) {
-            void migrateLocalDataOnLogin().catch(() => undefined);
+            void import('@/lib/migrate').then(({ migrateLocalDataOnLogin: migrate }) =>
+              migrate().catch(() => undefined),
+            );
           }
           if (event === 'SIGNED_OUT') {
             setActiveTeamIdState(null);
@@ -105,6 +125,7 @@ export default function Home() {
 
   const handleSignOut = async () => {
     try {
+      const { signOut } = await import('@/lib/supabase');
       await signOut();
       setEmail(null);
       setActiveTeamIdState(null);
