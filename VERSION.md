@@ -44,6 +44,12 @@
 
 ## 변경 이력
 
+### 0.5.0 — 2026-07-29 (fix: 패널 버튼 상태 갱신)
+
+- Board: `composing` 상태로 새 태스크/컬럼+ 폼 표시 (`editingId || form.title` 버그 수정)
+- Board/Journal/Docs: 낙관적 UI 갱신 후 저장 (저장 I/O 지연 시 버튼 무반응 해소)
+- Board 이중 dynamic 제거 · storage cloud/beacon 저장 타임아웃
+
 ### 0.5.0 — 2026-07-29 (P15 성능 최적화)
 
 - `@next/bundle-analyzer` + `npm run analyze` / `perf:measure`

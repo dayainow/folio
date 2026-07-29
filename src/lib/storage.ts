@@ -58,6 +58,20 @@ export function subscribeStorageMode(listener: (mode: StorageMode) => void): () 
   }
 }
 
+async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`${label} timeout`)), ms)
+      }),
+    ])
+  } finally {
+    if (timer) clearTimeout(timer)
+  }
+}
+
 export type SaveWithFallbackResult = {
   mode: StorageMode
   usedFallback: boolean
@@ -126,9 +140,9 @@ export async function saveWithFallback(
 
   if (mode === 'beacon') {
     try {
-      const available = await isBeaconAvailable()
+      const available = await withTimeout(isBeaconAvailable(), 4000, 'beacon-available')
       if (!available) throw new Error('Beacon 미초기화')
-      await saveBeaconCache(type, data)
+      await withTimeout(saveBeaconCache(type, data), 8000, 'beacon-save')
       // 오프라인 UX용 로컬 미러
       await options.localSave(data)
       return { mode, usedFallback: false }
@@ -144,7 +158,7 @@ export async function saveWithFallback(
     return { mode, usedFallback: true }
   }
   try {
-    await options.cloudSave(data)
+    await withTimeout(options.cloudSave(data), 8000, 'cloud-save')
     return { mode, usedFallback: false }
   } catch {
     await options.localSave(data)

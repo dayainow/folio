@@ -187,17 +187,26 @@ export const JournalPanel = memo(function JournalPanel({
 
   const save = useCallback(async (opts?: { notify?: boolean }) => {
     const tags = parseTags(tagsInput);
-    await saveJournalWithFallback(date, draft, tags);
+    // 낙관적 UI 갱신 — 저장 I/O가 느려도 버튼이 즉시 반응
     setDays(prev => ({ ...prev, [date]: { content: draft, tags } }));
+    try {
+      await saveJournalWithFallback(date, draft, tags);
+    } catch {
+      /* 로컬 미러는 이미 반영됨 */
+    }
 
     if (!opts?.notify || !hasNotifyChannel) return;
 
     const preview = draft.trim().slice(0, 120).replace(/\s+/g, ' ');
-    await import('@/lib/notify-client').then(({ notifyChannels }) =>
-      notifyChannels(
-        `📓 Folio 일지 저장 · ${date}${preview ? `\n${preview}${draft.trim().length > 120 ? '…' : ''}` : ''}`,
-      ),
-    );
+    try {
+      await import('@/lib/notify-client').then(({ notifyChannels }) =>
+        notifyChannels(
+          `📓 Folio 일지 저장 · ${date}${preview ? `\n${preview}${draft.trim().length > 120 ? '…' : ''}` : ''}`,
+        ),
+      );
+    } catch {
+      /* 알림 실패는 저장 UX를 막지 않음 */
+    }
   }, [date, draft, tagsInput, hasNotifyChannel]);
 
   useEffect(() => {
@@ -352,7 +361,12 @@ export const JournalPanel = memo(function JournalPanel({
               <Upload className="h-4 w-4" />
               {importing ? '가져오는 중…' : 'Obsidian 가져오기'}
             </Button>
-            <Button onClick={() => void save({ notify: notifyOnSave })} size="sm" className="gap-2 bg-gray-900 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white">
+            <Button
+              type="button"
+              onClick={() => void save({ notify: notifyOnSave })}
+              size="sm"
+              className="gap-2 bg-gray-900 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white"
+            >
               <Save className="h-4 w-4" /> 저장
             </Button>
           </div>

@@ -274,6 +274,7 @@ export function BoardDndPanel({
   const [favorites, setFavorites] = useState<string[]>([]);
   const [journalTagSources, setJournalTagSources] = useState<Array<{ tags: string[] }>>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [composing, setComposing] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [form, setForm] = useState<{ title: string; description: string; priority: Task['priority']; tags: string; status: Task['status'] }>({ title: '', description: '', priority: 'medium', tags: '', status: 'backlog' });
   const [jiraSyncing, setJiraSyncing] = useState(false);
@@ -315,6 +316,7 @@ export function BoardDndPanel({
     const task = tasks.find(t => t.id === focusTaskId);
     const handle = window.setTimeout(() => {
       if (task) {
+        setComposing(false);
         setEditingId(task.id);
         setForm({
           title: task.title,
@@ -337,12 +339,29 @@ export function BoardDndPanel({
   );
 
   const persist = async (next: Task[]) => {
-    const removed = tasks.filter(old => !next.some(n => n.id === old.id));
-    for (const item of removed) {
-      await deleteTaskWithFallback(item.id);
-    }
-    await saveTasksWithFallback(next);
+    // UI를 먼저 갱신한 뒤 저장 (저장 지연/실패 시에도 버튼이 먹힌 것처럼 보이게)
     setTasks(next);
+    const removed = tasks.filter(old => !next.some(n => n.id === old.id));
+    try {
+      for (const item of removed) {
+        await deleteTaskWithFallback(item.id);
+      }
+      await saveTasksWithFallback(next);
+    } catch {
+      /* 저장 실패해도 UI 상태는 유지 — 다음 저장에서 재시도 */
+    }
+  };
+
+  const resetForm = () => {
+    setForm({ title: '', description: '', priority: 'medium', tags: '', status: 'backlog' });
+    setEditingId(null);
+    setComposing(false);
+  };
+
+  const openNewTask = (status: Task['status'] = 'backlog') => {
+    setEditingId(null);
+    setComposing(true);
+    setForm({ title: '', description: '', priority: 'medium', tags: '', status });
   };
 
   const syncFromJira = async () => {
@@ -452,11 +471,11 @@ export function BoardDndPanel({
       };
       await persist([...tasks, newTask]);
     }
-    setForm({ title: '', description: '', priority: 'medium', tags: '', status: 'backlog' });
-    setEditingId(null);
+    resetForm();
   };
 
   const doEdit = (task: Task) => {
+    setComposing(false);
     setEditingId(task.id);
     setForm({ title: task.title, description: task.description, priority: task.priority, tags: task.tags.join(', '), status: task.status });
   };
@@ -468,7 +487,7 @@ export function BoardDndPanel({
       saveFavorites(cleaned);
       return cleaned;
     });
-    if (editingId === id) setEditingId(null);
+    if (editingId === id) resetForm();
   };
 
   const handleToggleFavorite = (id: string) => {
@@ -576,7 +595,12 @@ export function BoardDndPanel({
             완료 시 알림
           </label>
         )}
-        <Button onClick={() => { setForm({ ...form, status: 'backlog' }); setEditingId(null); }} size="sm" className="gap-1 bg-gray-900 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white">
+        <Button
+          type="button"
+          onClick={() => openNewTask('backlog')}
+          size="sm"
+          className="gap-1 bg-gray-900 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white"
+        >
           <Plus className="h-3 w-3" /> 새 태스크
         </Button>
       </div>
@@ -599,7 +623,7 @@ export function BoardDndPanel({
         </p>
       )}
 
-      {editingId || form.title ? (
+      {(editingId || composing) ? (
         <Card className="rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-4 bg-card">
           <div className="space-y-3">
             <Input
@@ -607,6 +631,7 @@ export function BoardDndPanel({
               onChange={e => setForm({ ...form, title: e.target.value })}
               placeholder="태스크 제목"
               className="h-9 text-sm"
+              autoFocus
             />
             <Textarea
               value={form.description}
@@ -632,8 +657,8 @@ export function BoardDndPanel({
               />
             </div>
             <div className="flex gap-2">
-              <Button onClick={doSave} size="sm" className="bg-gray-900 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900">저장</Button>
-              <Button size="sm" variant="ghost" onClick={() => { setEditingId(null); setForm({ title: '', description: '', priority: 'medium', tags: '', status: 'backlog' }); }}>취소</Button>
+              <Button type="button" onClick={() => void doSave()} size="sm" className="bg-gray-900 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900">저장</Button>
+              <Button type="button" size="sm" variant="ghost" onClick={resetForm}>취소</Button>
             </div>
           </div>
         </Card>
@@ -684,7 +709,7 @@ export function BoardDndPanel({
                 key={col.key}
                 col={col}
                 count={colTasks.length}
-                onAdd={() => { setForm({ ...form, status: col.key }); setEditingId(null); }}
+                onAdd={() => openNewTask(col.key)}
               >
                 {colTasks.length === 0 && (
                   <div className="px-2 py-6 text-center text-xs text-gray-400">태스크 없음</div>

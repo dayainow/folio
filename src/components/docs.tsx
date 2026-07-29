@@ -70,11 +70,6 @@ export const DocsPanel = memo(function DocsPanel({
   const [docs, setDocs] = useState<DocEntry[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
 
-  const refresh = useCallback(async () => {
-    const next = await loadDocsWithFallback();
-    setDocs(next);
-  }, []);
-
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -136,33 +131,49 @@ export const DocsPanel = memo(function DocsPanel({
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    await saveDocWithFallback(newDoc);
-    await refresh();
+    // 낙관적 UI — 저장 전에 에디터부터 열기
+    setDocs(prev => [newDoc, ...prev]);
     selectDoc(newDoc);
     setEditPane('edit');
     setEditing(true);
+    try {
+      await saveDocWithFallback(newDoc);
+    } catch {
+      /* UI는 이미 반영 */
+    }
   };
 
   const doSave = async () => {
     if (!selectedId) return;
-    await saveDocWithFallback({
+    const createdAt = docs.find(d => d.id === selectedId)?.createdAt ?? new Date().toISOString();
+    const updated: DocEntry = {
       id: selectedId,
       title,
       content,
       category,
-      createdAt: docs.find(d => d.id === selectedId)!.createdAt,
+      createdAt,
       updatedAt: new Date().toISOString(),
-    });
-    await refresh();
+    };
+    setDocs(prev => prev.map(d => (d.id === selectedId ? updated : d)));
     setEditing(false);
     setEditPane('edit');
+    try {
+      await saveDocWithFallback(updated);
+    } catch {
+      /* UI는 이미 반영 */
+    }
   };
 
   const doDelete = async () => {
     if (!selectedId) return;
-    await deleteDocWithFallback(selectedId);
+    const id = selectedId;
+    setDocs(prev => prev.filter(d => d.id !== id));
     setSelectedId(null);
-    await refresh();
+    try {
+      await deleteDocWithFallback(id);
+    } catch {
+      /* UI는 이미 반영 */
+    }
   };
 
   const importObsidian = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -237,7 +248,7 @@ export const DocsPanel = memo(function DocsPanel({
       {/* Sidebar */}
       <Card className="rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="p-3 border-b border-gray-50 space-y-2">
-          <Button onClick={startNew} size="sm" className="w-full gap-2 bg-gray-900 hover:bg-gray-800">
+          <Button type="button" onClick={() => void startNew()} size="sm" className="w-full gap-2 bg-gray-900 hover:bg-gray-800">
             <Plus className="h-4 w-4" /> 새 문서
           </Button>
           <input
@@ -323,16 +334,16 @@ export const DocsPanel = memo(function DocsPanel({
                     <select value={category} onChange={e => setCategory(e.target.value)} className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white">
                       {categories.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
-                    <Button size="sm" onClick={doSave} className="gap-1 bg-gray-900 hover:bg-gray-800">
+                    <Button type="button" size="sm" onClick={() => void doSave()} className="gap-1 bg-gray-900 hover:bg-gray-800">
                       <Save className="h-3 w-3" /> 저장
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => { setEditing(false); setEditPane('edit'); }}>취소</Button>
+                    <Button type="button" size="sm" variant="ghost" onClick={() => { setEditing(false); setEditPane('edit'); }}>취소</Button>
                   </>
                 ) : (
                   <>
                     <Badge variant="outline">{docs.find(d => d.id === selectedId)?.category}</Badge>
-                    <Button size="sm" variant="ghost" onClick={startEdit}>편집</Button>
-                    <Button size="sm" variant="ghost" onClick={doDelete} className="text-red-500 hover:text-red-600">
+                    <Button type="button" size="sm" variant="ghost" onClick={startEdit}>편집</Button>
+                    <Button type="button" size="sm" variant="ghost" onClick={() => void doDelete()} className="text-red-500 hover:text-red-600">
                       <Trash2 className="h-3 w-3" />
                     </Button>
                   </>
