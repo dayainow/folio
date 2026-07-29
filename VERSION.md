@@ -8,7 +8,7 @@
 |------|-----|
 | 버전 | **0.6.0-wip** |
 | Phase | Phase 5 |
-| 진행 중 | P17 문서화 |
+| 진행 중 | P18 통합 테스트/QA |
 | 다음 | Phase 5 마무리 · Beacon 연동 고도화 |
 
 ## 완료 항목
@@ -38,14 +38,23 @@
 | P15 | 성능 최적화 (code splitting · debounce · memo · 번들) | `e40db3f` |
 | — | 저장 로컬 선행 · Journal 저장 피드백 | `10c6fef` |
 | P16 | 접근성/UX (키보드 · 포커스 · ARIA · 로딩) | `781f2ed` |
+| P17 | 문서화 (GETTING-STARTED · API · examples) | `2b6597b` |
 
 ## 진행 중
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| P17 | 문서화 | GETTING-STARTED · ARCHITECTURE · API · examples |
+| P18 | 통합 테스트/QA | `docs/qa-report.md` · `npm run qa:smoke` |
 
 ## 변경 이력
+
+### 0.6.0-wip — 2026-07-29 (P18 통합 QA)
+
+- QA 매트릭스 · `docs/qa-report.md` · README QA 체크리스트
+- fix: 미로그인 시 클라우드 저장 모드 비활성
+- fix: 일지 날짜 이동 시 미저장 초안 영속
+- fix: 문서 전환 시 편집 중 내용 자동 저장
+- `scripts/qa-smoke.mjs` · `npm run qa:smoke`
 
 ### 0.6.0-wip — 2026-07-29 (P17 문서화)
 

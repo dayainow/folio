@@ -98,14 +98,32 @@ export const DocsPanel = memo(function DocsPanel({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  const selectDoc = useCallback((doc: DocEntry) => {
+  const selectDoc = useCallback(async (doc: DocEntry) => {
+    // 편집 중 다른 문서로 이동 시 현재 내용 저장
+    if (editing && selectedId && selectedId !== doc.id) {
+      const createdAt = docs.find(d => d.id === selectedId)?.createdAt ?? new Date().toISOString();
+      const updated: DocEntry = {
+        id: selectedId,
+        title: title.trim() || '제목 없음',
+        content,
+        category,
+        createdAt,
+        updatedAt: new Date().toISOString(),
+      };
+      setDocs(prev => prev.map(d => (d.id === selectedId ? updated : d)));
+      try {
+        await saveDocWithFallback(updated);
+      } catch {
+        /* 계속 이동 */
+      }
+    }
     setSelectedId(doc.id);
     setTitle(doc.title);
     setContent(doc.content);
     setCategory(doc.category);
     setEditing(false);
     setEditPane('edit');
-  }, []);
+  }, [editing, selectedId, docs, title, content, category]);
 
   useEffect(() => {
     if (!focusDocId || docs.length === 0) return;

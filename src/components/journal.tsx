@@ -84,12 +84,24 @@ export const JournalPanel = memo(function JournalPanel({
   const saveFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const selectDate = useCallback((nextDate: string, map?: Record<string, Day>) => {
-    const source = map ?? days;
+    // 날짜 이탈 전 현재 초안을 days·local에 반영 (자동저장 대기 없이 유지)
+    const leavingTags = parseTags(tagsInput);
+    const base = map ?? days;
+    const merged: Record<string, Day> = {
+      ...base,
+      [date]: { content: draft, tags: leavingTags },
+    };
+
+    if (nextDate !== date && (draft.trim() || leavingTags.length > 0 || Boolean(days[date]))) {
+      void saveJournalWithFallback(date, draft, leavingTags);
+    }
+
+    setDays(merged);
     setDate(nextDate);
-    setDraft(source[nextDate]?.content ?? '');
-    setTagsInput(joinTags(source[nextDate]?.tags ?? []));
+    setDraft(merged[nextDate]?.content ?? '');
+    setTagsInput(joinTags(merged[nextDate]?.tags ?? []));
     setTagDraft('');
-  }, [days]);
+  }, [date, draft, tagsInput, days]);
 
   useEffect(() => {
     let cancelled = false;

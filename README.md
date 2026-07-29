@@ -97,11 +97,34 @@ docker compose up --build
 | [DEPLOY](./docs/DEPLOY.md) | Vercel · Docker · 로컬 |
 | [A11Y](./docs/A11Y.md) | 접근성 · 단축키 |
 | [API](./docs/API.md) | `src/lib` 시그니처 |
+| [qa-report](./docs/qa-report.md) | P18 통합 QA 결과 |
 | [a11y-checklist](./docs/a11y-checklist.md) | 수동 a11y 체크 |
 | [PROCESS](./PROCESS.md) | Beacon 규약 |
 | [VERSION](./VERSION.md) | 버전 · 작업 이력 |
 
-성능 측정: `npm run bundle:size` · `perf:measure` · `ANALYZE=true npm run analyze`
+성능 측정: `npm run bundle:size` · `perf:measure` · `ANALYZE=true npm run analyze`  
+QA 스모크: `npm run qa:smoke`
+
+---
+
+## QA 체크리스트
+
+상세 결과: **[docs/qa-report.md](./docs/qa-report.md)**
+
+- [ ] 일지: 저장 → 날짜 이동 → 재진입 내용 유지
+- [ ] 일지: 태그 추가/삭제 → 최근 기록 · 태그 클라우드 필터
+- [ ] 문서: 생성 → 편집 → 저장 → 읽기 모드 반영
+- [ ] 일정: 생성 → ←/→ 이동 → 편집 → 삭제
+- [ ] 일정: DnD 드롭 후 새로고침에도 status 유지
+- [ ] 프로세스: Gate / Timeline / 산출물 (`.beacon` 있을 때)
+- [ ] 저장 모드: 로컬 동작 · 미로그인 시 클라우드 비활성 · Beacon available 시만 활성
+- [ ] 검색: ⌘K · 결과 클릭 시 탭 이동
+- [ ] 다크모드: 토글 후 새로고침 유지
+- [ ] 분석: 기간 변경 시 차트 갱신
+
+```bash
+npm run qa:smoke && npm run lint && npm run typecheck
+```
 
 ---
 
@@ -119,11 +142,11 @@ docker compose up --build
 ## 작업 관리
 
 - 현재 Phase: **Phase 5** (성능·접근성·문서화)
-- 완료: Phase 1~4, **P13** 배포, **P14**/P14-2 Beacon, **P15** 성능, **P16** 접근성/UX
-- 진행 중: **P17 문서화**
+- 완료: Phase 1~4, **P13**~**P16**, **P17** 문서화
+- 진행 중: **P18 통합 테스트/QA**
 - 다음: Phase 5 마무리 · Beacon 연동 고도화
 
-상세: [VERSION.md](./VERSION.md)
+상세: [VERSION.md](./VERSION.md) · [docs/qa-report.md](./docs/qa-report.md)
 
 ## Phase 요약
 
@@ -133,4 +156,4 @@ docker compose up --build
 | 2 | Supabase · Auth · Jira · 멀티유저 | ✅ |
 | 3 | Obsidian · 검색 · 팀 · 분석 · 알림 | ✅ |
 | 4 | 배포 · Beacon · 저장 모드 | ✅ |
-| 5 | 성능 · 접근성 · 문서화 | 진행 중 (P17) |
+| 5 | 성능 · 접근성 · 문서화 · QA | 진행 중 (P18) |
