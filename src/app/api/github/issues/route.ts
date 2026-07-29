@@ -1,15 +1,11 @@
 import { NextResponse } from 'next/server'
-import {
-  createGithubIssue,
-  fetchGitHubIssues,
-  isGitHubConfigured,
-} from '@/lib/github'
 
 export const runtime = 'nodejs'
 
 /** GET /api/github/issues */
 export async function GET() {
   try {
+    const { fetchGitHubIssues, isGitHubConfigured } = await import('@/lib/github')
     if (!isGitHubConfigured()) {
       return NextResponse.json({ enabled: false, issues: [] })
     }
@@ -24,6 +20,7 @@ export async function GET() {
 /** POST /api/github/issues — { title, body? } */
 export async function POST(request: Request) {
   try {
+    const { createGithubIssue, isGitHubConfigured } = await import('@/lib/github')
     if (!isGitHubConfigured()) {
       return NextResponse.json({ error: 'GitHub가 설정되지 않았습니다.' }, { status: 400 })
     }

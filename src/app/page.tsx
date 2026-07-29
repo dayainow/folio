@@ -1,24 +1,46 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { JournalPanel } from '@/components/journal';
 import { DocsPanel } from '@/components/docs';
-import { BoardPanel } from '@/components/board';
-import { BeaconPanel } from '@/components/beacon';
 import { GlobalSearch, type SearchNavigatePayload } from '@/components/global-search';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { StorageModeToggle } from '@/components/storage-mode-toggle';
 import { TeamSwitcher } from '@/components/team-switcher';
 import { TeamSidebar } from '@/components/team-sidebar';
-import { JournalAnalyticsPanel, BoardAnalyticsPanel } from '@/components/analytics';
 import { createBrowserSupabaseClient, signOut } from '@/lib/supabase';
 import { migrateLocalDataOnLogin } from '@/lib/migrate';
 import { getActiveTeamId } from '@/lib/team';
 import { Activity } from 'lucide-react';
+
+const PanelFallback = ({ label }: { label: string }) => (
+  <div className="py-16 text-center text-sm text-muted-foreground">{label} 로딩 중…</div>
+);
+
+const BoardPanel = dynamic(
+  () => import('@/components/board').then((m) => ({ default: m.BoardPanel })),
+  { ssr: false, loading: () => <PanelFallback label="일정" /> },
+);
+
+const BeaconPanel = dynamic(
+  () => import('@/components/beacon').then((m) => ({ default: m.BeaconPanel })),
+  { ssr: false, loading: () => <PanelFallback label="프로세스" /> },
+);
+
+const JournalAnalyticsPanel = dynamic(
+  () => import('@/components/analytics').then((m) => ({ default: m.JournalAnalyticsPanel })),
+  { ssr: false, loading: () => <PanelFallback label="통계" /> },
+);
+
+const BoardAnalyticsPanel = dynamic(
+  () => import('@/components/analytics').then((m) => ({ default: m.BoardAnalyticsPanel })),
+  { ssr: false, loading: () => <PanelFallback label="분석" /> },
+);
 
 type TabValue = 'journal' | 'docs' | 'board' | 'process';
 

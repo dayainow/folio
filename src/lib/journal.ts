@@ -2,6 +2,8 @@
 
 import { requireAuthUser } from '@/lib/supabase';
 import { loadWithFallback, saveWithFallback } from '@/lib/storage';
+import { getLocalJson, setLocalJson } from '@/lib/local-cache';
+import { cachedQuery, invalidateQueryCache } from '@/lib/query-cache';
 
 export interface JournalEntry {
   id?: string;
@@ -13,6 +15,7 @@ export interface JournalEntry {
 }
 
 const STORAGE_KEY = 'workspace_journals';
+const SUPABASE_CACHE_KEY = 'supabase:journals';
 
 type JournalRow = {
   id: string;
@@ -35,20 +38,13 @@ function rowToEntry(row: JournalRow): JournalEntry {
 }
 
 export function loadJournals(): Record<string, JournalEntry> {
-  if (typeof window === 'undefined') return {};
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
+  return getLocalJson<Record<string, JournalEntry>>(STORAGE_KEY, {});
 }
 
 export function saveJournal(date: string, content: string, tags: string[]) {
-  if (typeof window === 'undefined') return;
   const all = loadJournals();
   all[date] = { date, content, tags, updatedAt: new Date().toISOString() };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+  setLocalJson(STORAGE_KEY, all);
 }
 
 /** 저장된 일지들에서 중복 없는 태그 목록을 정렬해 반환 */
@@ -59,22 +55,24 @@ export function getAllTags(entries?: Record<string, { tags: string[] }>): string
   );
 }
 
-/** Supabase `journals` — 현재 user_id만 조회 */
+/** Supabase `journals` — 현재 user_id만 조회 (5분 TTL) */
 export async function loadJournalsSupabase(): Promise<Record<string, JournalEntry>> {
-  const { supabase, userId } = await requireAuthUser();
-  const { data, error } = await supabase
-    .from('journals')
-    .select('id, date, content, tags, created_at, updated_at')
-    .eq('user_id', userId)
-    .order('date', { ascending: false });
+  return cachedQuery(SUPABASE_CACHE_KEY, async () => {
+    const { supabase, userId } = await requireAuthUser();
+    const { data, error } = await supabase
+      .from('journals')
+      .select('id, date, content, tags, created_at, updated_at')
+      .eq('user_id', userId)
+      .order('date', { ascending: false });
 
-  if (error) throw error;
+    if (error) throw error;
 
-  const map: Record<string, JournalEntry> = {};
-  for (const row of (data ?? []) as JournalRow[]) {
-    map[row.date] = rowToEntry(row);
-  }
-  return map;
+    const map: Record<string, JournalEntry> = {};
+    for (const row of (data ?? []) as JournalRow[]) {
+      map[row.date] = rowToEntry(row);
+    }
+    return map;
+  });
 }
 
 /** Supabase `journals` — user_id 포함 upsert */
@@ -93,22 +91,22 @@ export async function saveJournalSupabase(date: string, content: string, tags: s
   );
 
   if (error) throw error;
+  invalidateQueryCache(SUPABASE_CACHE_KEY);
 }
 
 /** 저장 모드(local/cloud/beacon)에 따라 분기 — `storage.ts` */
 export async function saveJournalWithFallback(date: string, content: string, tags: string[]) {
-  const entry = { date, content, tags, updatedAt: new Date().toISOString() }
-  const next = { ...loadJournals(), [date]: entry }
+  const entry = { date, content, tags, updatedAt: new Date().toISOString() };
+  const next = { ...loadJournals(), [date]: entry };
 
   await saveWithFallback(next, 'journal', {
     localSave: () => {
-      if (typeof window === 'undefined') return
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+      setLocalJson(STORAGE_KEY, next);
     },
     cloudSave: async () => {
-      await saveJournalSupabase(date, content, tags)
+      await saveJournalSupabase(date, content, tags);
     },
-  })
+  });
 }
 
 /** 저장 모드에 따라 로드 */
@@ -118,5 +116,5 @@ export async function loadJournalsWithFallback(): Promise<Record<string, Journal
     localLoad: loadJournals,
     cloudLoad: loadJournalsSupabase,
     emptyBeacon: {},
-  })
+  });
 }

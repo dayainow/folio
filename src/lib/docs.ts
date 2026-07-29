@@ -2,6 +2,8 @@
 
 import { requireAuthUser } from '@/lib/supabase';
 import { loadWithFallback, saveWithFallback } from '@/lib/storage';
+import { getLocalJson, setLocalJson } from '@/lib/local-cache';
+import { cachedQuery, invalidateQueryCache } from '@/lib/query-cache';
 
 export interface DocEntry {
   id: string;
@@ -13,6 +15,7 @@ export interface DocEntry {
 }
 
 const STORAGE_KEY = 'workspace_docs';
+const SUPABASE_CACHE_KEY = 'supabase:docs';
 
 const DEFAULT_CATEGORIES = [
   'Dev Guide',
@@ -45,12 +48,11 @@ function rowToDoc(row: DocRow): DocEntry {
 
 export function loadDocs(): DocEntry[] {
   if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : getDefaults();
-  } catch {
-    return getDefaults();
-  }
+  const stored = getLocalJson<DocEntry[] | null>(STORAGE_KEY, null);
+  if (stored !== null && Array.isArray(stored)) return stored;
+  const defaults = getDefaults();
+  setLocalJson(STORAGE_KEY, defaults);
+  return defaults;
 }
 
 function getDefaults(): DocEntry[] {
@@ -83,13 +85,13 @@ export function saveDoc(doc: DocEntry) {
   } else {
     all.push({ ...doc, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
   }
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+  setLocalJson(STORAGE_KEY, all);
 }
 
 export function deleteDoc(id: string) {
   if (typeof window === 'undefined') return;
   const all = loadDocs().filter(d => d.id !== id);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+  setLocalJson(STORAGE_KEY, all);
 }
 
 export function loadCategories(docs?: DocEntry[]): string[] {
@@ -98,18 +100,20 @@ export function loadCategories(docs?: DocEntry[]): string[] {
   return Array.from(new Set([...DEFAULT_CATEGORIES, 'Obsidian Import', ...fromDocs]));
 }
 
-/** Supabase `docs` — 현재 user_id만 조회 */
+/** Supabase `docs` — 현재 user_id만 조회 (5분 TTL) */
 export async function loadDocsSupabase(): Promise<DocEntry[]> {
-  const { supabase, userId } = await requireAuthUser();
-  const { data, error } = await supabase
-    .from('docs')
-    .select('id, title, content, category, created_at, updated_at')
-    .eq('user_id', userId)
-    .order('updated_at', { ascending: false });
+  return cachedQuery(SUPABASE_CACHE_KEY, async () => {
+    const { supabase, userId } = await requireAuthUser();
+    const { data, error } = await supabase
+      .from('docs')
+      .select('id, title, content, category, created_at, updated_at')
+      .eq('user_id', userId)
+      .order('updated_at', { ascending: false });
 
-  if (error) throw error;
+    if (error) throw error;
 
-  return ((data ?? []) as DocRow[]).map(rowToDoc);
+    return ((data ?? []) as DocRow[]).map(rowToDoc);
+  });
 }
 
 /** Supabase `docs` — user_id 포함 upsert */
@@ -130,6 +134,7 @@ export async function saveDocSupabase(doc: DocEntry) {
   );
 
   if (error) throw error;
+  invalidateQueryCache(SUPABASE_CACHE_KEY);
 }
 
 /** Supabase `docs` — 본인 레코드만 삭제 */
@@ -138,6 +143,7 @@ export async function deleteDocSupabase(id: string) {
   const { error } = await supabase.from('docs').delete().eq('id', id).eq('user_id', userId);
 
   if (error) throw error;
+  invalidateQueryCache(SUPABASE_CACHE_KEY);
 }
 
 export async function saveDocWithFallback(doc: DocEntry) {
@@ -155,8 +161,7 @@ export async function saveDocWithFallback(doc: DocEntry) {
 
   await saveWithFallback(next, 'docs', {
     localSave: () => {
-      if (typeof window === 'undefined') return;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      setLocalJson(STORAGE_KEY, next);
     },
     cloudSave: async () => {
       await saveDocSupabase(updated);
@@ -168,8 +173,7 @@ export async function deleteDocWithFallback(id: string) {
   const next = loadDocs().filter(d => d.id !== id);
   await saveWithFallback(next, 'docs', {
     localSave: () => {
-      if (typeof window === 'undefined') return;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      setLocalJson(STORAGE_KEY, next);
     },
     cloudSave: async () => {
       await deleteDocSupabase(id);

@@ -100,10 +100,10 @@ private
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 4 완료** (v0.5.0)
-- 완료: Phase 1~4 (P1~P14-2, 배포·Beacon 연동·저장 모드 포함)
-- 진행 중: —
-- 다음: **Phase 5** (성능·접근성·문서화 강화)
+- 현재 Phase: **Phase 5** (성능·접근성·문서화)
+- 완료: Phase 1~4 (v0.5.0)
+- 진행 중: **P15 성능 최적화** (code splitting · 캐시 · memo)
+- 다음: **P16** 접근성/UX
 
 상세 이력은 [VERSION.md](./VERSION.md), 연동 규약은 [PROCESS.md](./PROCESS.md)를 참고하세요.
 
@@ -115,11 +115,18 @@ private
 | 2 | Supabase · Auth · Jira · 멀티유저 | ✅ |
 | 3 | Obsidian · 검색 · 팀 · 분석 · 외부 알림 | ✅ |
 | 4 | 배포 · Beacon 프로세스 · 저장 모드 토글 | ✅ |
-| 5 | 성능 · 접근성 · 문서화 강화 | 다음 |
+| 5 | 성능 · 접근성 · 문서화 강화 | 진행 중 |
 
 ## Phase 5 계획
 
-- 성능 — 캐시 전략, 로딩 상태, 번들/리스트 가상화 검토
-- 접근성 — 키보드 네비게이션, 포커스·ARIA, 대비 점검
+- **P15 성능** — 번들 분석, code splitting, debounce/캐시, React.memo ← 진행 중
+- **P16 접근성/UX** — 키보드 네비게이션, 포커스·ARIA, 대비
 - 문서화 — API/환경변수 사용자 가이드, 운영 체크리스트
-- (선택) Beacon export API · Vercel에서의 프로세스 연동 고도화
+- (선택) Beacon export API · Vercel 프로세스 연동 고도화
+
+### 성능 측정
+
+```bash
+npm run perf:measure          # 의존성·.next 크기 요약
+ANALYZE=true npm run analyze  # @next/bundle-analyzer UI
+```

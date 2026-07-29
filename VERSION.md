@@ -7,9 +7,9 @@
 | 항목 | 값 |
 |------|-----|
 | 버전 | **0.5.0** |
-| Phase | Phase 4 완료 |
-| 진행 중 | — |
-| 다음 | Phase 5 (성능·접근성·문서화 강화) |
+| Phase | Phase 5 |
+| 진행 중 | P15 성능 최적화 |
+| 다음 | P16 접근성/UX |
 
 ## 완료 항목
 
@@ -40,9 +40,17 @@
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| — | — | Phase 4 완료 |
+| P15 | 성능 최적화 | code splitting · debounce · query cache · memo |
 
 ## 변경 이력
+
+### 0.5.0 — 2026-07-29 (P15 성능 최적화)
+
+- `@next/bundle-analyzer` + `npm run analyze` / `perf:measure`
+- Board: `@dnd-kit` → `board-dnd` dynamic import · Analytics: recharts 분리 lazy 로드
+- Slack/Discord/GitHub: 클라이언트·API dynamic import
+- localStorage 300ms debounce · Journal autosave 3초 · Supabase 5분 TTL 캐시
+- Journal/Docs/Board `React.memo` · lucide/recharts `optimizePackageImports`
 
 ### 0.5.0 — 2026-07-29 (Phase 4 완료)
 

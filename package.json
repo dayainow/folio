@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc --noEmit",
-    "test": "npm run typecheck"
+    "test": "npm run typecheck",
+    "analyze": "ANALYZE=true next build",
+    "perf:measure": "node scripts/perf-measure.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
@@ -33,6 +35,7 @@
     "uuid": "^14.0.1"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^16.2.12",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

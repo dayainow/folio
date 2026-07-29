@@ -2,6 +2,8 @@
 
 import { requireAuthUser } from '@/lib/supabase';
 import { getStorageMode, loadWithFallback, saveWithFallback } from '@/lib/storage';
+import { getLocalJson, setLocalJson } from '@/lib/local-cache';
+import { cachedQuery, invalidateQueryCache } from '@/lib/query-cache';
 
 export interface Task {
   id: string;
@@ -19,6 +21,7 @@ export interface Task {
 }
 
 const STORAGE_KEY = 'workspace_tasks';
+const SUPABASE_CACHE_KEY = 'supabase:boards';
 
 const DEFAULT_COLUMNS: { key: Task['status']; label: string; color: string }[] = [
   { key: 'backlog', label: 'Backlog', color: 'bg-gray-100' },
@@ -66,34 +69,29 @@ function taskToRow(task: Task, userId: string) {
 }
 
 export function loadTasks(): Task[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
+  return getLocalJson<Task[]>(STORAGE_KEY, []);
 }
 
 export function saveTasks(tasks: Task[]) {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+  setLocalJson(STORAGE_KEY, tasks);
 }
 
 export { DEFAULT_COLUMNS };
 
-/** Supabase `boards` — 현재 user_id만 조회 */
+/** Supabase `boards` — 현재 user_id만 조회 (5분 TTL) */
 export async function loadTasksSupabase(): Promise<Task[]> {
-  const { supabase, userId } = await requireAuthUser();
-  const { data, error } = await supabase
-    .from('boards')
-    .select('id, title, description, status, priority, tags, created_at, updated_at')
-    .eq('user_id', userId)
-    .order('updated_at', { ascending: false });
+  return cachedQuery(SUPABASE_CACHE_KEY, async () => {
+    const { supabase, userId } = await requireAuthUser();
+    const { data, error } = await supabase
+      .from('boards')
+      .select('id, title, description, status, priority, tags, created_at, updated_at')
+      .eq('user_id', userId)
+      .order('updated_at', { ascending: false });
 
-  if (error) throw error;
+    if (error) throw error;
 
-  return ((data ?? []) as BoardRow[]).map(rowToTask);
+    return ((data ?? []) as BoardRow[]).map(rowToTask);
+  });
 }
 
 /** Supabase `boards` — user_id 포함 upsert */
@@ -114,6 +112,7 @@ export async function saveTasksSupabase(tasks: Task[]) {
   const { error } = await supabase.from('boards').upsert(rows, { onConflict: 'id' });
 
   if (error) throw error;
+  invalidateQueryCache(SUPABASE_CACHE_KEY);
 }
 
 /** Supabase `boards` — 단일 태스크 upsert */
@@ -127,6 +126,7 @@ export async function deleteTaskSupabase(id: string) {
   const { error } = await supabase.from('boards').delete().eq('id', id).eq('user_id', userId);
 
   if (error) throw error;
+  invalidateQueryCache(SUPABASE_CACHE_KEY);
 }
 
 export async function saveTaskWithFallback(task: Task) {

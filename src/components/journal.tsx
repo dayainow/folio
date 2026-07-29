@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useMemo, useRef, type KeyboardEvent, type ChangeEvent } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef, memo, type KeyboardEvent, type ChangeEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -13,7 +13,6 @@ import { saveJournalWithFallback, loadJournalsWithFallback, getAllTags } from '@
 import { loadTasksWithFallback } from '@/lib/board';
 import { readObsidianMarkdownFiles } from '@/lib/obsidian';
 import { TagCloud, buildTagCounts } from '@/components/tag-cloud';
-import { fetchIntegrationsStatus, notifyChannels } from '@/lib/notify-client';
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -56,7 +55,7 @@ function joinTags(tags: string[]): string {
   return tags.join(', ');
 }
 
-export function JournalPanel({
+export const JournalPanel = memo(function JournalPanel({
   focusDate,
   onFocusHandled,
 }: {
@@ -124,9 +123,11 @@ export function JournalPanel({
   }, [focusDate, ready, selectDate, onFocusHandled]);
 
   useEffect(() => {
-    void fetchIntegrationsStatus().then(s => {
-      setHasNotifyChannel(s.slack || s.discord);
-    });
+    void import('@/lib/notify-client').then(({ fetchIntegrationsStatus }) =>
+      fetchIntegrationsStatus().then(s => {
+        setHasNotifyChannel(s.slack || s.discord);
+      }),
+    );
   }, []);
 
   const currentTags = useMemo(() => parseTags(tagsInput), [tagsInput]);
@@ -192,8 +193,10 @@ export function JournalPanel({
     if (!opts?.notify || !hasNotifyChannel) return;
 
     const preview = draft.trim().slice(0, 120).replace(/\s+/g, ' ');
-    await notifyChannels(
-      `📓 Folio 일지 저장 · ${date}${preview ? `\n${preview}${draft.trim().length > 120 ? '…' : ''}` : ''}`,
+    await import('@/lib/notify-client').then(({ notifyChannels }) =>
+      notifyChannels(
+        `📓 Folio 일지 저장 · ${date}${preview ? `\n${preview}${draft.trim().length > 120 ? '…' : ''}` : ''}`,
+      ),
     );
   }, [date, draft, tagsInput, hasNotifyChannel]);
 
@@ -204,7 +207,7 @@ export function JournalPanel({
       void saveJournalWithFallback(date, draft, tags).then(() => {
         setDays(prev => ({ ...prev, [date]: { content: draft, tags } }));
       });
-    }, 2000);
+    }, 3000);
     return () => clearInterval(t);
   }, [date, draft, tagsInput, ready]);
 
@@ -525,4 +528,4 @@ export function JournalPanel({
       </div>
     </div>
   );
-}
+});

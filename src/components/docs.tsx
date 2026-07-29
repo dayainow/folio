@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef, type ReactNode, type ChangeEvent } from 'react';
+import { useState, useCallback, useEffect, useRef, memo, type ReactNode, type ChangeEvent } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Button } from '@/components/ui/button';
@@ -60,7 +60,7 @@ function MarkdownPreview({ content }: { content: string }) {
   );
 }
 
-export function DocsPanel({
+export const DocsPanel = memo(function DocsPanel({
   focusDocId,
   onFocusHandled,
 }: {
@@ -392,4 +392,4 @@ export function DocsPanel({
       </Card>
     </div>
   );
-}
+});

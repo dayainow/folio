@@ -1,6 +1,4 @@
 import { NextResponse } from 'next/server'
-import { isDiscordConfigured, sendDiscordNotification } from '@/lib/discord'
-import { isSlackConfigured, sendSlackNotification } from '@/lib/slack'
 
 export const runtime = 'nodejs'
 
@@ -16,6 +14,9 @@ export async function POST(request: Request) {
     if (!message) {
       return NextResponse.json({ error: 'message가 필요합니다.' }, { status: 400 })
     }
+
+    const [{ isDiscordConfigured, sendDiscordNotification }, { isSlackConfigured, sendSlackNotification }] =
+      await Promise.all([import('@/lib/discord'), import('@/lib/slack')])
 
     const channels = body.channels?.length ? body.channels : (['slack', 'discord'] as const)
     const results: Record<string, { ok: boolean; skipped?: boolean }> = {}
