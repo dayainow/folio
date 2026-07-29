@@ -42,6 +42,7 @@ function formatDate(iso: string): string {
 }
 
 function ResultRow({
+  id,
   icon,
   title,
   preview,
@@ -50,6 +51,7 @@ function ResultRow({
   onClick,
   onHover,
 }: {
+  id: string;
   icon: ReactNode;
   title: string;
   preview: string;
@@ -61,6 +63,9 @@ function ResultRow({
   return (
     <button
       type="button"
+      id={id}
+      role="option"
+      aria-selected={active}
       onClick={onClick}
       onMouseEnter={onHover}
       className={[
@@ -197,6 +202,8 @@ export function GlobalSearch({ onNavigate }: GlobalSearchProps) {
   };
 
   const showPanel = open && query.trim().length > 0;
+  const activeOptionId =
+    showPanel && flatItems().length > 0 ? `${panelId}-opt-${activeIndex}` : undefined;
 
   const resultGroups = useMemo(() => {
     const groups: Array<{
@@ -258,6 +265,8 @@ export function GlobalSearch({ onNavigate }: GlobalSearchProps) {
           aria-label="통합 검색"
           aria-expanded={showPanel}
           aria-controls={`${panelId}-list`}
+          aria-autocomplete="list"
+          aria-activedescendant={activeOptionId}
           autoComplete="off"
         />
         <kbd className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 hidden sm:inline-flex h-6 items-center gap-0.5 rounded-md border border-gray-200 bg-white px-1.5 text-[10px] font-medium text-gray-400">
@@ -294,6 +303,7 @@ export function GlobalSearch({ onNavigate }: GlobalSearchProps) {
                           return (
                             <ResultRow
                               key={`j-${item.hit.id}`}
+                              id={`${panelId}-opt-${index}`}
                               icon={<BookOpen className="h-3.5 w-3.5" />}
                               title={item.hit.title}
                               preview={item.hit.preview}
@@ -308,6 +318,7 @@ export function GlobalSearch({ onNavigate }: GlobalSearchProps) {
                           return (
                             <ResultRow
                               key={`d-${item.hit.id}`}
+                              id={`${panelId}-opt-${index}`}
                               icon={<FileText className="h-3.5 w-3.5" />}
                               title={item.hit.title}
                               preview={item.hit.preview}
@@ -321,6 +332,7 @@ export function GlobalSearch({ onNavigate }: GlobalSearchProps) {
                         return (
                           <ResultRow
                             key={`t-${item.hit.id}`}
+                            id={`${panelId}-opt-${index}`}
                             icon={<Kanban className="h-3.5 w-3.5" />}
                             title={item.hit.title}
                             preview={item.hit.preview}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -13,7 +13,9 @@ import { getActiveTeamId } from '@/lib/team';
 import { Activity } from 'lucide-react';
 
 const PanelFallback = ({ label }: { label: string }) => (
-  <div className="py-16 text-center text-sm text-muted-foreground">{label} 로딩 중…</div>
+  <div className="py-16 text-center text-sm text-muted-foreground" role="status" aria-live="polite">
+    {label} 로딩 중…
+  </div>
 );
 
 const JournalPanel = dynamic(
@@ -69,9 +71,24 @@ export default function Home() {
     typeof window !== 'undefined' ? getActiveTeamId() : null,
   );
   const [teamPanelOpen, setTeamPanelOpen] = useState(false);
+  const mainRef = useRef<HTMLElement>(null);
+  const panelFocusRef = useRef<HTMLDivElement>(null);
 
   const handleActiveTeamChange = useCallback((teamId: string | null) => {
     setActiveTeamIdState(teamId);
+  }, []);
+
+  const handleTabChange = useCallback((v: string) => {
+    setTab(v as TabValue);
+    // 탭 전환 시 패널 첫 포커스 가능 영역으로 이동
+    window.setTimeout(() => {
+      const root = panelFocusRef.current;
+      if (!root) return;
+      const first = root.querySelector<HTMLElement>(
+        'button:not([disabled]), [href], input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      first?.focus();
+    }, 0);
   }, []);
 
   useEffect(() => {
@@ -151,7 +168,13 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="border-b border-gray-100 dark:border-gray-800 px-6 py-4 flex items-center justify-between bg-background/80 backdrop-blur sticky top-0 z-50 gap-4">
+      <a href="#main-content" className="skip-link">
+        본문으로 건너뛰기
+      </a>
+      <header
+        className="border-b border-gray-100 dark:border-gray-800 px-6 py-4 flex items-center justify-between bg-background/80 backdrop-blur sticky top-0 z-50 gap-4"
+        role="banner"
+      >
         <div className="flex items-center gap-3">
           <div className="flex flex-col leading-none">
             <span
@@ -187,7 +210,13 @@ export default function Home() {
                 <span className="text-xs text-muted-foreground max-w-[160px] truncate" title={email}>
                   {email}
                 </span>
-                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => void handleSignOut()}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  onClick={() => void handleSignOut()}
+                  aria-label="로그아웃"
+                >
                   로그아웃
                 </Button>
               </div>
@@ -213,15 +242,24 @@ export default function Home() {
         onActiveTeamChange={handleActiveTeamChange}
       />
 
-      <main className="flex-1 p-6 max-w-6xl mx-auto w-full">
+      <main
+        id="main-content"
+        ref={mainRef}
+        tabIndex={-1}
+        className="flex-1 p-6 max-w-6xl mx-auto w-full outline-none"
+      >
         <GlobalSearch onNavigate={handleSearchNavigate} />
 
+        <div ref={panelFocusRef}>
         <Tabs
           value={tab}
-          onValueChange={v => setTab(v as TabValue)}
+          onValueChange={handleTabChange}
           className="w-full"
         >
-          <TabsList className="bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-1 rounded-xl mb-6 w-fit">
+          <TabsList
+            aria-label="주요 패널"
+            className="bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-1 rounded-xl mb-6 w-fit"
+          >
             <TabsTrigger value="journal" className="gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:shadow-sm">
               📓 일지
             </TabsTrigger>
@@ -301,9 +339,13 @@ export default function Home() {
             <BeaconPanel />
           </TabsContent>
         </Tabs>
+        </div>
       </main>
 
-      <footer className="px-6 py-3 border-t border-gray-50 dark:border-gray-900 text-center text-xs text-muted-foreground">
+      <footer
+        className="px-6 py-3 border-t border-gray-50 dark:border-gray-900 text-center text-xs text-muted-foreground"
+        role="contentinfo"
+      >
         Folio · 브라우저에 저장되는 개인 워크스페이스
       </footer>
     </div>

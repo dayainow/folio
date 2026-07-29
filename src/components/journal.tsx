@@ -79,6 +79,7 @@ export const JournalPanel = memo(function JournalPanel({
   const [notifyOnSave, setNotifyOnSave] = useState(false);
   const [hasNotifyChannel, setHasNotifyChannel] = useState(false);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [saveError, setSaveError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const saveFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -190,6 +191,11 @@ export const JournalPanel = memo(function JournalPanel({
     if (e.key === 'Enter') {
       e.preventDefault();
       commitTagDraft();
+      return;
+    }
+    if (e.key === 'Backspace' && tagDraft === '' && currentTags.length > 0) {
+      e.preventDefault();
+      removeTag(currentTags[currentTags.length - 1]!);
     }
   };
 
@@ -197,16 +203,19 @@ export const JournalPanel = memo(function JournalPanel({
     const tags = parseTags(tagsInput);
     if (saveFeedbackTimer.current) clearTimeout(saveFeedbackTimer.current);
     setSaveState('saving');
-    // 낙관적 UI + 로컬 즉시 영속 (cloud/beacon 대기와 무관)
+    setSaveError(null);
     setDays(prev => ({ ...prev, [date]: { content: draft, tags } }));
     try {
       saveJournal(date, draft, tags);
       setSaveState('saved');
       saveFeedbackTimer.current = setTimeout(() => setSaveState('idle'), 2000);
-      // 원격 동기화는 백그라운드 (로컬 선행은 saveWithFallback도 수행)
-      void saveJournalWithFallback(date, draft, tags);
+      void saveJournalWithFallback(date, draft, tags).catch(() => {
+        setSaveState('error');
+        setSaveError('클라우드/Beacon 동기화에 실패했지만 로컬에는 저장되었습니다.');
+      });
     } catch {
       setSaveState('error');
+      setSaveError('저장에 실패했습니다. 다시 시도해 주세요.');
       saveFeedbackTimer.current = setTimeout(() => setSaveState('idle'), 2500);
       return;
     }
@@ -346,14 +355,14 @@ export const JournalPanel = memo(function JournalPanel({
       <Card className="rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm bg-card">
         <div className="flex items-center justify-between p-4 border-b border-gray-50 dark:border-gray-800">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={prevDay} className="h-8 w-8">
+            <Button variant="ghost" size="icon" onClick={prevDay} className="h-8 w-8" aria-label="이전 날짜">
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-gray-400" />
-              <span className="font-medium text-sm">{date}</span>
+              <Calendar className="h-4 w-4 text-gray-400" aria-hidden />
+              <span className="font-medium text-sm" aria-live="polite">{date}</span>
             </div>
-            <Button variant="ghost" size="icon" onClick={nextDay} className="h-8 w-8">
+            <Button variant="ghost" size="icon" onClick={nextDay} className="h-8 w-8" aria-label="다음 날짜">
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
@@ -382,28 +391,58 @@ export const JournalPanel = memo(function JournalPanel({
               disabled={saveState === 'saving'}
               onClick={() => void save({ notify: notifyOnSave })}
               size="sm"
+              aria-busy={saveState === 'saving'}
+              aria-label={
+                saveState === 'saving'
+                  ? '저장 중'
+                  : saveState === 'saved'
+                    ? '저장됨'
+                    : saveState === 'error'
+                      ? '저장 실패'
+                      : '일지 저장'
+              }
               className="gap-2 bg-gray-900 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white min-w-[4.5rem]"
             >
               {saveState === 'saving' ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" /> 저장 중
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> 저장 중
                 </>
               ) : saveState === 'saved' ? (
                 <>
-                  <Check className="h-4 w-4" /> 저장됨
+                  <Check className="h-4 w-4" aria-hidden /> 저장됨
                 </>
               ) : saveState === 'error' ? (
                 <>
-                  <Save className="h-4 w-4" /> 실패
+                  <Save className="h-4 w-4" aria-hidden /> 실패
                 </>
               ) : (
                 <>
-                  <Save className="h-4 w-4" /> 저장
+                  <Save className="h-4 w-4" aria-hidden /> 저장
                 </>
               )}
             </Button>
           </div>
         </div>
+        <span className="sr-only" aria-live="polite">
+          {saveState === 'saved' ? '일지가 저장되었습니다' : saveState === 'saving' ? '일지 저장 중' : saveState === 'error' ? '일지 저장 실패' : ''}
+        </span>
+        {saveError && (
+          <div
+            role="alert"
+            className="mx-4 mt-2 flex flex-wrap items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
+          >
+            <span className="flex-1">{saveError}</span>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs"
+              onClick={() => void save({ notify: notifyOnSave })}
+            >
+              다시 시도
+            </Button>
+          </div>
+        )}
         {hasNotifyChannel && (
           <div className="px-4 pt-2">
             <label className="inline-flex items-center gap-2 text-[11px] text-gray-500 cursor-pointer">
@@ -421,17 +460,25 @@ export const JournalPanel = memo(function JournalPanel({
           <p className="px-4 pt-2 text-[11px] text-gray-500">{importMsg}</p>
         )}
         <div className="p-4">
+          <label htmlFor="journal-draft" className="sr-only">
+            일지 본문
+          </label>
           <Textarea
+            id="journal-draft"
             value={draft}
             onChange={e => setDraft(e.target.value)}
             placeholder="오늘 한 일, 회의 내용, 이슈, 배운 것... 자유롭게 적으세요.\nMarkdown 지원: # 제목, - 리스트, **굵게**"
             className="min-h-[400px] resize-none border-0 focus-visible:ring-0 text-[15px] leading-relaxed p-0 font-mono"
+            aria-describedby="journal-draft-hint"
           />
+          <p id="journal-draft-hint" className="sr-only">
+            마크다운을 사용할 수 있습니다. 저장 버튼 또는 자동 저장으로 기록됩니다.
+          </p>
         </div>
         <div className="px-4 pb-4">
           <Separator className="mb-3" />
           <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2" aria-label="현재 태그">
               <span className="text-xs text-gray-400">태그:</span>
               {currentTags.map(tag => (
                 <Badge
@@ -439,6 +486,15 @@ export const JournalPanel = memo(function JournalPanel({
                   variant="secondary"
                   className="text-xs cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700"
                   onClick={() => removeTag(tag)}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`${tag} 태그 제거`}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      removeTag(tag);
+                    }
+                  }}
                 >
                   #{tag} ×
                 </Badge>
@@ -447,14 +503,22 @@ export const JournalPanel = memo(function JournalPanel({
                 <span className="text-xs text-gray-300">없음</span>
               )}
             </div>
+            <label htmlFor="journal-tag-draft" className="sr-only">
+              태그 입력
+            </label>
             <Input
+              id="journal-tag-draft"
               value={tagDraft}
               onChange={handleTagDraftChange}
               onKeyDown={handleTagKeyDown}
               onBlur={commitTagDraft}
               placeholder="태그 입력 후 Enter 또는 쉼표"
               className="h-8 text-xs"
+              aria-describedby="journal-tag-hint"
             />
+            <p id="journal-tag-hint" className="text-[11px] text-gray-400">
+              Enter로 추가 · 빈 입력에서 Backspace로 마지막 태그 삭제
+            </p>
             {allTags.length > 0 && (
               <div className="space-y-1.5">
                 <span className="text-[11px] text-gray-400">기존 태그 {tagDraft.trim() ? '자동완성' : '제안'}</span>
@@ -567,7 +631,10 @@ export const JournalPanel = memo(function JournalPanel({
                   </button>
                 ))}
               {recentEntries.length === 0 && (
-                <span className="text-xs text-gray-400">조건에 맞는 기록 없음</span>
+                <div className="px-1 py-6 text-center" role="status">
+                  <p className="text-xs font-medium text-gray-500 mb-1">기록이 없습니다</p>
+                  <p className="text-[11px] text-gray-400">오늘 일지를 작성하고 저장해 보세요</p>
+                </div>
               )}
             </div>
           </ScrollArea>

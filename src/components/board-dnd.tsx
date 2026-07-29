@@ -5,6 +5,7 @@ import {
   DndContext,
   DragOverlay,
   PointerSensor,
+  KeyboardSensor,
   closestCorners,
   useSensor,
   useSensors,
@@ -13,6 +14,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
+import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -97,12 +99,24 @@ function TaskCardBody({
           {showActions && onMove && (
             <>
               {task.status !== 'backlog' && (
-                <Button variant="ghost" size="icon" onClick={() => onMove('left')} className="h-5 w-5">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onMove('left')}
+                  className="h-5 w-5"
+                  aria-label="이전 컬럼으로 이동"
+                >
                   <ChevronUp className="h-3 w-3" />
                 </Button>
               )}
               {task.status !== 'done' && (
-                <Button variant="ghost" size="icon" onClick={() => onMove('right')} className="h-5 w-5">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onMove('right')}
+                  className="h-5 w-5"
+                  aria-label="다음 컬럼으로 이동"
+                >
                   <ChevronDown className="h-3 w-3" />
                 </Button>
               )}
@@ -179,6 +193,8 @@ function DraggableTaskCard({
   favorite,
   githubEnabled,
   githubBusy,
+  focused,
+  onFocus,
   onMove,
   onEdit,
   onDelete,
@@ -189,6 +205,8 @@ function DraggableTaskCard({
   favorite: boolean;
   githubEnabled: boolean;
   githubBusy: boolean;
+  focused: boolean;
+  onFocus: () => void;
   onMove: (direction: 'left' | 'right') => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -206,7 +224,25 @@ function DraggableTaskCard({
       style={{ opacity: isDragging ? 0.4 : undefined }}
       {...listeners}
       {...attributes}
-      className="rounded-xl border border-gray-100 dark:border-gray-700 bg-card p-3 shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing touch-none"
+      tabIndex={0}
+      role="option"
+      aria-selected={focused}
+      aria-label={`${task.title}, ${task.status}${favorite ? ', 즐겨찾기' : ''}. 화살표 좌우로 컬럼 이동, 스페이스로 드래그`}
+      onFocus={onFocus}
+      onKeyDown={e => {
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          onMove('left');
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          onMove('right');
+        }
+      }}
+      className={`rounded-xl border bg-card p-3 shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing touch-none outline-none ${
+        focused
+          ? 'border-blue-400 ring-2 ring-blue-300 dark:ring-blue-800'
+          : 'border-gray-100 dark:border-gray-700'
+      }`}
     >
       <TaskCardBody
         task={task}
@@ -248,7 +284,7 @@ function DroppableColumn({
           <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">{col.label}</span>
           <Badge variant="secondary" className="text-xs">{count}</Badge>
         </div>
-        <Button variant="ghost" size="icon" onClick={onAdd} className="h-6 w-6">
+        <Button variant="ghost" size="icon" onClick={onAdd} className="h-6 w-6" aria-label={`${col.label}에 태스크 추가`}>
           <Plus className="h-3 w-3" />
         </Button>
       </div>
@@ -283,6 +319,9 @@ export function BoardDndPanel({
   const [notifyOnDone, setNotifyOnDone] = useState(true);
   const [hasNotifyChannel, setHasNotifyChannel] = useState(false);
   const [githubBusyId, setGithubBusyId] = useState<string | null>(null);
+  const [focusedTaskId, setFocusedTaskId] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [lastPersist, setLastPersist] = useState<Task[] | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -336,10 +375,14 @@ export function BoardDndPanel({
     useSensor(PointerSensor, {
       activationConstraint: { distance: 8 },
     }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
   );
 
   const persist = async (next: Task[]) => {
-    // UI를 먼저 갱신한 뒤 저장 (저장 지연/실패 시에도 버튼이 먹힌 것처럼 보이게)
+    setSaveError(null);
+    setLastPersist(next);
     setTasks(next);
     const removed = tasks.filter(old => !next.some(n => n.id === old.id));
     try {
@@ -348,7 +391,7 @@ export function BoardDndPanel({
       }
       await saveTasksWithFallback(next);
     } catch {
-      /* 저장 실패해도 UI 상태는 유지 — 다음 저장에서 재시도 */
+      setSaveError('태스크 저장에 실패했습니다. 다시 시도해 주세요.');
     }
   };
 
@@ -565,8 +608,14 @@ export function BoardDndPanel({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 max-w-sm min-w-[180px]">
-          <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-gray-400" />
-          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="태스크 검색..." className="pl-8 h-8 text-xs" />
+          <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-gray-400" aria-hidden />
+          <Input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="태스크 검색..."
+            className="pl-8 h-8 text-xs"
+            aria-label="태스크 검색"
+          />
         </div>
         <Button
           onClick={() => void syncFromJira()}
@@ -574,6 +623,8 @@ export function BoardDndPanel({
           variant="outline"
           disabled={jiraSyncing}
           className="gap-1"
+          aria-busy={jiraSyncing}
+          aria-label={jiraSyncing ? 'Jira 동기화 중' : 'Jira 동기화'}
         >
           <RefreshCw className={`h-3 w-3 ${jiraSyncing ? 'animate-spin' : ''}`} />
           {jiraSyncing ? '동기화 중…' : 'Jira 동기화'}
@@ -617,8 +668,30 @@ export function BoardDndPanel({
         <TagCloud tags={cloudTags} selected={filterTag} onSelect={setFilterTag} />
       </Card>
 
+      {saveError && (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
+        >
+          <span className="flex-1">{saveError}</span>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs"
+            onClick={() => lastPersist && void persist(lastPersist)}
+          >
+            다시 시도
+          </Button>
+        </div>
+      )}
+
       {jiraMessage && (
-        <p className={`text-xs ${jiraMessage.includes('실패') || jiraMessage.includes('없습니다') || jiraMessage.includes('Error') || jiraMessage.includes('Jira API') ? 'text-red-500' : 'text-gray-500'}`}>
+        <p
+          role="status"
+          aria-live="polite"
+          className={`text-xs ${jiraMessage.includes('실패') || jiraMessage.includes('없습니다') || jiraMessage.includes('Error') || jiraMessage.includes('Jira API') ? 'text-red-500' : 'text-gray-500'}`}
+        >
           {jiraMessage}
         </p>
       )}
@@ -632,12 +705,20 @@ export function BoardDndPanel({
               placeholder="태스크 제목"
               className="h-9 text-sm"
               autoFocus
+              required
+              aria-required="true"
+              aria-label="태스크 제목"
+              aria-describedby="board-title-hint"
             />
+            <p id="board-title-hint" className="text-[11px] text-muted-foreground">
+              제목은 필수입니다. 저장하려면 입력하세요.
+            </p>
             <Textarea
               value={form.description}
               onChange={e => setForm({ ...form, description: e.target.value })}
               placeholder="설명..."
               className="min-h-[60px] resize-none text-sm"
+              aria-label="태스크 설명"
             />
             <div className="flex items-center gap-3">
               <select
@@ -700,8 +781,32 @@ export function BoardDndPanel({
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}
+        accessibility={{
+          announcements: {
+            onDragStart({ active }) {
+              return `태스크 ${String(active.id)} 드래그 시작`;
+            },
+            onDragOver({ active, over }) {
+              return over
+                ? `태스크 ${String(active.id)}가 ${String(over.id)} 위에 있음`
+                : `태스크 ${String(active.id)} 드래그 중`;
+            },
+            onDragEnd({ active, over }) {
+              return over
+                ? `태스크 ${String(active.id)}를 ${String(over.id)}로 이동함`
+                : `태스크 ${String(active.id)} 드래그 취소`;
+            },
+            onDragCancel({ active }) {
+              return `태스크 ${String(active.id)} 드래그 취소`;
+            },
+          },
+        }}
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div
+          className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4"
+          role="listbox"
+          aria-label="칸반 보드. 카드 포커스 후 좌우 화살표로 컬럼 이동"
+        >
           {DEFAULT_COLUMNS.map(col => {
             const colTasks = tasksByStatus[col.key];
             return (
@@ -712,7 +817,10 @@ export function BoardDndPanel({
                 onAdd={() => openNewTask(col.key)}
               >
                 {colTasks.length === 0 && (
-                  <div className="px-2 py-6 text-center text-xs text-gray-400">태스크 없음</div>
+                  <div className="px-2 py-8 text-center text-xs text-gray-400" role="status">
+                    <p className="font-medium text-gray-500 dark:text-gray-400 mb-1">비어 있음</p>
+                    <p>+ 버튼으로 「{col.label}」에 태스크를 추가하세요</p>
+                  </div>
                 )}
                 {colTasks.map(task => (
                   <DraggableTaskCard
@@ -721,6 +829,8 @@ export function BoardDndPanel({
                     favorite={favorites.includes(task.id)}
                     githubEnabled={githubEnabled}
                     githubBusy={githubBusyId === task.id}
+                    focused={focusedTaskId === task.id}
+                    onFocus={() => setFocusedTaskId(task.id)}
                     onMove={direction => move(task.id, direction)}
                     onEdit={() => doEdit(task)}
                     onDelete={() => doDelete(task.id)}

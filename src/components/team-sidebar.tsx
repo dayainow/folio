@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -23,6 +23,7 @@ import {
   type TeamRole,
 } from '@/lib/team';
 import { getUser } from '@/lib/supabase';
+import { useEscapeToClose, useFocusTrap } from '@/lib/a11y';
 
 interface TeamSidebarProps {
   open: boolean;
@@ -54,6 +55,11 @@ export function TeamSidebar({
   const [myId, setMyId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const onCloseStable = useCallback(() => onClose(), [onClose]);
+
+  useEscapeToClose(open, onCloseStable);
+  useFocusTrap(open, panelRef);
 
   const myRole = members.find(m => m.userId === myId)?.role;
   const canInvite = myRole === 'owner' || myRole === 'admin';
@@ -139,20 +145,26 @@ export function TeamSidebar({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex justify-end">
+    <div className="fixed inset-0 z-[60] flex justify-end" role="presentation">
       <button
         type="button"
-        aria-label="닫기"
+        aria-label="팀 관리 닫기"
         className="absolute inset-0 bg-black/30 backdrop-blur-[1px]"
         onClick={onClose}
       />
-      <Card className="relative z-10 h-full w-full max-w-md rounded-none border-l border-gray-100 dark:border-gray-800 shadow-xl bg-background flex flex-col">
+      <Card
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="팀 관리"
+        className="relative z-10 h-full w-full max-w-md rounded-none border-l border-gray-100 dark:border-gray-800 shadow-xl bg-background flex flex-col"
+      >
         <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800">
           <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-gray-500" />
+            <Users className="h-4 w-4 text-gray-500" aria-hidden />
             <h2 className="text-sm font-semibold">팀 관리</h2>
           </div>
-          <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={onClose}>
+          <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={onClose} aria-label="닫기">
             <X className="h-4 w-4" />
           </Button>
         </div>

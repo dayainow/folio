@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { ChevronDown, Cloud, Database, HardDrive } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,6 +11,7 @@ import {
   subscribeStorageMode,
   type StorageMode,
 } from '@/lib/storage';
+import { useEscapeToClose, useFocusTrap } from '@/lib/a11y';
 
 const MODES: StorageMode[] = ['local', 'cloud', 'beacon'];
 
@@ -25,6 +26,11 @@ export function StorageModeToggle() {
   const [beaconOk, setBeaconOk] = useState(false);
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const menuId = useId();
+  const close = useCallback(() => setOpen(false), []);
+
+  useEscapeToClose(open, close);
+  useFocusTrap(open, rootRef);
 
   useEffect(() => {
     const handle = window.setTimeout(() => {
@@ -67,24 +73,34 @@ export function StorageModeToggle() {
         className="h-7 gap-1.5 text-xs max-w-[160px]"
         onClick={() => setOpen((v) => !v)}
         title="저장 모드"
-        aria-label="저장 모드"
+        aria-label={`저장 모드, 현재 ${STORAGE_MODE_LABELS[mode]}`}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-controls={menuId}
       >
-        <ModeIcon mode={mode} className="h-3.5 w-3.5 shrink-0" />
+        <ModeIcon mode={mode} className="h-3.5 w-3.5 shrink-0" aria-hidden />
         <span className="truncate">{STORAGE_MODE_LABELS[mode]}</span>
         <span className="rounded bg-gray-100 dark:bg-gray-800 px-1 py-0 text-[9px] font-medium tracking-wide text-muted-foreground">
           {mode === 'local' ? 'L' : mode === 'cloud' ? 'C' : 'B'}
         </span>
-        <ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
+        <ChevronDown className="h-3 w-3 shrink-0 opacity-60" aria-hidden />
       </Button>
 
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-xl border border-gray-100 dark:border-gray-800 bg-background shadow-lg p-1">
+        <div
+          id={menuId}
+          role="menu"
+          aria-label="저장 모드 선택"
+          className="absolute right-0 top-full z-50 mt-1 w-48 rounded-xl border border-gray-100 dark:border-gray-800 bg-background shadow-lg p-1"
+        >
           {MODES.map((m) => {
             const disabled = m === 'beacon' && !beaconOk;
             return (
               <button
                 key={m}
                 type="button"
+                role="menuitemradio"
+                aria-checked={mode === m}
                 disabled={disabled}
                 onClick={() => select(m)}
                 className={`w-full flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs transition-colors ${
@@ -93,7 +109,7 @@ export function StorageModeToggle() {
                     : 'hover:bg-gray-50 dark:hover:bg-gray-900'
                 } ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
               >
-                <ModeIcon mode={m} className="h-3.5 w-3.5 shrink-0" />
+                <ModeIcon mode={m} className="h-3.5 w-3.5 shrink-0" aria-hidden />
                 <span className="flex-1">{STORAGE_MODE_LABELS[m]}</span>
                 {mode === m && (
                   <span className="text-[10px] text-muted-foreground">현재</span>

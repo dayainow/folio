@@ -46,6 +46,14 @@
 
 ## 변경 이력
 
+### 0.5.0 — 2026-07-29 (P16 접근성/UX)
+
+- skip link · main landmark · 탭 전환 포커스
+- Journal/Docs aria-live · 필수 입력 · 저장 로딩/에러 재시도
+- Board KeyboardSensor + ←/→ 컬럼 이동 · 포커스 강조
+- 저장모드/팀 사이드바 Escape · 포커스 트랩
+- `@dnd-kit/sortable` · `docs/a11y-checklist.md`
+
 ### 0.5.0 — 2026-07-29 (P16 준비)
 
 - P15 완료로 표시 · P16 접근성/UX 구현 계획 문서 추가

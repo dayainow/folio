@@ -101,11 +101,11 @@ private
 ## 작업 관리
 
 - 현재 Phase: **Phase 5** (성능·접근성·문서화)
-- 완료: Phase 1~4 (v0.5.0), 패널 버튼 버그 픽스, **P15 성능 최적화**
-- 진행 중: **P16 접근성/UX** (키보드 · 포커스 · ARIA · 대비) — [계획](./docs/superpowers/plans/2026-07-29-p16-accessibility-ux.md)
-- 다음: 문서화 강화 / (선택) Beacon export
+- 완료: Phase 1~4 (v0.5.0), P13 배포, P14/P14-2 Beacon, **P15 성능 최적화**
+- 진행 중: **P16 접근성/UX** (키보드 · 포커스 · ARIA · 로딩/에러)
+- 다음: 문서화 강화
 
-상세 이력은 [VERSION.md](./VERSION.md), 연동 규약은 [PROCESS.md](./PROCESS.md)를 참고하세요.
+상세 이력은 [VERSION.md](./VERSION.md), 연동 규약은 [PROCESS.md](./PROCESS.md), a11y 체크는 [docs/a11y-checklist.md](./docs/a11y-checklist.md)를 참고하세요.
 
 ## Phase 요약
 

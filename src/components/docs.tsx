@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef, memo, type ReactNode, type ChangeEvent } from 'react';
+import { useState, useCallback, useEffect, useRef, memo, type ReactNode, type ChangeEvent, type KeyboardEvent } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ import {
   Eye,
   Pencil,
   Upload,
+  Loader2,
 } from 'lucide-react';
 import { loadDocsWithFallback, saveDocWithFallback, deleteDocWithFallback, loadCategories, type DocEntry } from '@/lib/docs';
 import { readObsidianMarkdownFiles, uniqueDocTitle } from '@/lib/obsidian';
@@ -92,7 +93,10 @@ export const DocsPanel = memo(function DocsPanel({
   const [category, setCategory] = useState('Dev Guide');
   const [importing, setImporting] = useState(false);
   const [importMsg, setImportMsg] = useState<string | null>(null);
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [saveError, setSaveError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   const selectDoc = useCallback((doc: DocEntry) => {
     setSelectedId(doc.id);
@@ -145,6 +149,11 @@ export const DocsPanel = memo(function DocsPanel({
 
   const doSave = async () => {
     if (!selectedId) return;
+    if (!title.trim()) {
+      setSaveError('문서 제목은 필수입니다.');
+      setSaveState('error');
+      return;
+    }
     const createdAt = docs.find(d => d.id === selectedId)?.createdAt ?? new Date().toISOString();
     const updated: DocEntry = {
       id: selectedId,
@@ -154,13 +163,18 @@ export const DocsPanel = memo(function DocsPanel({
       createdAt,
       updatedAt: new Date().toISOString(),
     };
+    setSaveState('saving');
+    setSaveError(null);
     setDocs(prev => prev.map(d => (d.id === selectedId ? updated : d)));
     setEditing(false);
     setEditPane('edit');
     try {
       await saveDocWithFallback(updated);
+      setSaveState('saved');
+      window.setTimeout(() => setSaveState('idle'), 2000);
     } catch {
-      /* UI는 이미 반영 */
+      setSaveState('error');
+      setSaveError('문서 저장에 실패했습니다. 다시 시도해 주세요.');
     }
   };
 
@@ -233,15 +247,31 @@ export const DocsPanel = memo(function DocsPanel({
   const paneButton = (pane: EditPane, label: string, icon: ReactNode) => (
     <Button
       key={pane}
+      type="button"
       size="sm"
       variant={editPane === pane ? 'default' : 'ghost'}
       onClick={() => setEditPane(pane)}
+      aria-pressed={editPane === pane}
+      aria-label={`${label} 보기`}
       className={`h-7 gap-1 text-xs ${editPane === pane ? 'bg-gray-900 hover:bg-gray-800' : ''}`}
     >
       {icon}
       {label}
     </Button>
   );
+
+  const onListKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (filtered.length === 0) return;
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    e.preventDefault();
+    const idx = filtered.findIndex(d => d.id === selectedId);
+    const nextIdx =
+      e.key === 'ArrowDown'
+        ? Math.min(filtered.length - 1, (idx < 0 ? -1 : idx) + 1)
+        : Math.max(0, (idx < 0 ? 0 : idx) - 1);
+    const next = filtered[nextIdx];
+    if (next) selectDoc(next);
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
@@ -278,10 +308,11 @@ export const DocsPanel = memo(function DocsPanel({
               onChange={e => setSearch(e.target.value)}
               placeholder="검색..."
               className="pl-8 h-8 text-xs"
+              aria-label="문서 검색"
             />
           </div>
         </div>
-        <div className="p-2 flex flex-wrap gap-1 border-b border-gray-50">
+        <div className="p-2 flex flex-wrap gap-1 border-b border-gray-50" role="group" aria-label="카테고리 필터">
           <Badge variant={filterCat === null ? 'default' : 'secondary'} className="cursor-pointer text-xs" onClick={() => setFilterCat(null)}>전체</Badge>
           {categories.map(cat => (
             <Badge key={cat} variant={filterCat === cat ? 'default' : 'secondary'} className="cursor-pointer text-xs" onClick={() => setFilterCat(filterCat === cat ? null : cat)}>
@@ -290,11 +321,27 @@ export const DocsPanel = memo(function DocsPanel({
           ))}
         </div>
         <ScrollArea className="h-[calc(100vh-300px)]">
-          <div className="p-2 space-y-1">
-            {filtered.length === 0 && <span className="text-xs text-gray-400 px-2 py-4 block text-center">문서 없음</span>}
+          <div
+            ref={listRef}
+            className="p-2 space-y-1"
+            role="listbox"
+            aria-label="문서 목록. 위아래 화살표로 선택"
+            tabIndex={0}
+            onKeyDown={onListKeyDown}
+          >
+            {filtered.length === 0 && (
+              <div className="px-2 py-8 text-center" role="status">
+                <p className="text-xs font-medium text-gray-500 mb-1">문서가 없습니다</p>
+                <p className="text-[11px] text-gray-400">「새 문서」로 첫 문서를 만들어 보세요</p>
+              </div>
+            )}
             {filtered.map(doc => (
               <button
                 key={doc.id}
+                type="button"
+                role="option"
+                aria-selected={selectedId === doc.id}
+                aria-current={selectedId === doc.id ? 'true' : undefined}
                 onClick={() => selectDoc(doc)}
                 className={`w-full text-left px-3 py-2 rounded-xl text-sm transition-colors ${
                   selectedId === doc.id ? 'bg-gray-50 ring-1 ring-gray-200' : 'hover:bg-gray-50'
@@ -319,11 +366,20 @@ export const DocsPanel = memo(function DocsPanel({
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <FileText className="h-4 w-4 text-gray-400 shrink-0" />
                 {editing ? (
-                  <Input
-                    value={title}
-                    onChange={e => setTitle(e.target.value)}
-                    className="h-8 text-sm border-0 focus-visible:ring-0 px-0"
-                  />
+                  <>
+                    <label htmlFor="doc-title" className="sr-only">
+                      문서 제목 (필수)
+                    </label>
+                    <Input
+                      id="doc-title"
+                      value={title}
+                      onChange={e => setTitle(e.target.value)}
+                      className="h-8 text-sm border-0 focus-visible:ring-0 px-0"
+                      required
+                      aria-required="true"
+                      aria-describedby="doc-title-hint"
+                    />
+                  </>
                 ) : (
                   <span className="font-medium truncate">{docs.find(d => d.id === selectedId)?.title}</span>
                 )}
@@ -331,25 +387,58 @@ export const DocsPanel = memo(function DocsPanel({
               <div className="flex items-center gap-2 shrink-0">
                 {editing ? (
                   <>
-                    <select value={category} onChange={e => setCategory(e.target.value)} className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white">
+                    <select
+                      value={category}
+                      onChange={e => setCategory(e.target.value)}
+                      className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white"
+                      aria-label="문서 카테고리"
+                    >
                       {categories.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
-                    <Button type="button" size="sm" onClick={() => void doSave()} className="gap-1 bg-gray-900 hover:bg-gray-800">
-                      <Save className="h-3 w-3" /> 저장
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => void doSave()}
+                      className="gap-1 bg-gray-900 hover:bg-gray-800"
+                      aria-busy={saveState === 'saving'}
+                      aria-label={saveState === 'saving' ? '저장 중' : '문서 저장'}
+                    >
+                      {saveState === 'saving' ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Save className="h-3 w-3" />
+                      )}{' '}
+                      {saveState === 'saving' ? '저장 중' : '저장'}
                     </Button>
-                    <Button type="button" size="sm" variant="ghost" onClick={() => { setEditing(false); setEditPane('edit'); }}>취소</Button>
+                    <Button type="button" size="sm" variant="ghost" onClick={() => { setEditing(false); setEditPane('edit'); }} aria-label="편집 취소">취소</Button>
                   </>
                 ) : (
                   <>
                     <Badge variant="outline">{docs.find(d => d.id === selectedId)?.category}</Badge>
-                    <Button type="button" size="sm" variant="ghost" onClick={startEdit}>편집</Button>
-                    <Button type="button" size="sm" variant="ghost" onClick={() => void doDelete()} className="text-red-500 hover:text-red-600">
+                    <Button type="button" size="sm" variant="ghost" onClick={startEdit} aria-label="문서 편집">편집</Button>
+                    <Button type="button" size="sm" variant="ghost" onClick={() => void doDelete()} className="text-red-500 hover:text-red-600" aria-label="문서 삭제">
                       <Trash2 className="h-3 w-3" />
                     </Button>
                   </>
                 )}
               </div>
             </div>
+            {editing && (
+              <p id="doc-title-hint" className="px-4 pt-1 text-[11px] text-muted-foreground">
+                제목은 필수 입력 항목입니다.
+              </p>
+            )}
+            {saveError && (
+              <div role="alert" className="mx-4 mt-2 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                <span className="flex-1">{saveError}</span>
+                <Button type="button" size="sm" variant="outline" className="h-7 text-xs" onClick={() => void doSave()}>
+                  다시 시도
+                </Button>
+              </div>
+            )}
+            <span className="sr-only" aria-live="polite">
+              {saveState === 'saved' ? '문서가 저장되었습니다' : saveState === 'saving' ? '문서 저장 중' : ''}
+            </span>
 
             {editing && (
               <div className="px-4 pt-3 flex items-center gap-1">
