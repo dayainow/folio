@@ -34,7 +34,7 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
-ENV FOLIO_VERSION=0.6.0
+ENV FOLIO_VERSION=0.7.0
 
 RUN apk add --no-cache libc6-compat wget \
   && addgroup --system --gid 1001 nodejs \

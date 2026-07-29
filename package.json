@@ -1,6 +1,6 @@
 {
   "name": "workspace",
-  "version": "0.7.0-wip",
+  "version": "0.7.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -12,7 +12,10 @@
     "analyze": "ANALYZE=true next build",
     "perf:measure": "node scripts/perf-measure.mjs",
     "bundle:size": "node scripts/bundle-size.mjs",
-    "qa:smoke": "node scripts/qa-smoke.mjs"
+    "qa:smoke": "node scripts/qa-smoke.mjs",
+    "runbook:backup": "node scripts/runbook-backup.mjs",
+    "runbook:restore": "node scripts/runbook-restore.mjs",
+    "runbook:deploy": "node scripts/runbook-deploy.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

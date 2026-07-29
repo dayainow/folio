@@ -5,7 +5,7 @@
 
 | | |
 |--|--|
-| 버전 | **0.7.0-wip** (Phase 6) |
+| 버전 | **0.7.0** (Phase 1~6 완료) |
 | 라이선스 | private |
 
 ---
@@ -103,6 +103,7 @@ curl -s http://localhost:3000/api/health
 | [ARCHITECTURE](./docs/ARCHITECTURE.md) | 폴더 · 데이터 흐름 · 저장 모드 |
 | [BEACON](./docs/BEACON.md) | Beacon 연동 · 경로 · 제약 |
 | [DEPLOY](./docs/DEPLOY.md) | Vercel · Docker · 로컬 |
+| [runbooks](./docs/runbooks/) | Incident · Backup · Deploy · Upgrade |
 | [A11Y](./docs/A11Y.md) | 접근성 · 단축키 |
 | [API](./docs/API.md) | `src/lib` 시그니처 |
 | [qa-report](./docs/qa-report.md) | P18 통합 QA 결과 |
@@ -111,7 +112,8 @@ curl -s http://localhost:3000/api/health
 | [VERSION](./VERSION.md) | 버전 · 작업 이력 |
 
 성능 측정: `npm run bundle:size` · `perf:measure` · `ANALYZE=true npm run analyze`  
-QA 스모크: `npm run qa:smoke`
+QA 스모크: `npm run qa:smoke`  
+런북: `npm run runbook:backup` · `runbook:restore` · `runbook:deploy`
 
 ---
 
@@ -149,12 +151,12 @@ npm run qa:smoke && npm run lint && npm run typecheck
 
 ## 작업 관리
 
-- 현재: **Phase 6** · **0.7.0-wip**
-- 완료: Phase 1~5 (**0.6.0**) · **P20** 모니터링/알림
-- 진행 중: **P21** Beacon 고도화
-- 다음: **P22** 운영 런북
+- 현재: **Phase 1~6 완료** · **0.7.0** 정식 릴리즈
+- 완료: Phase 1~5 (**0.6.0**) · Phase 6 (**P20**~**P22**)
+- 진행 중: —
+- 다음: 운영 유지보수 · 필요 시 다음 Phase 기획
 
-상세: [VERSION.md](./VERSION.md) · [docs/qa-report.md](./docs/qa-report.md)
+상세: [VERSION.md](./VERSION.md) · [docs/runbooks/](./docs/runbooks/)
 
 ## Phase 요약
 
@@ -165,4 +167,4 @@ npm run qa:smoke && npm run lint && npm run typecheck
 | 3 | Obsidian · 검색 · 팀 · 분석 · 알림 | ✅ |
 | 4 | 배포 · Beacon · 저장 모드 | ✅ |
 | 5 | 성능 · 접근성 · 문서화 · QA · 배포 자동화 | ✅ **0.6.0** |
-| 6 | 배포·운영 (모니터 · 알림 · Beacon · 런북) | 진행 중 (P21) |
+| 6 | 모니터 · Beacon 고도화 · 운영 런북 | ✅ **0.7.0** |

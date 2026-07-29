@@ -6,10 +6,10 @@
 
 | 항목 | 값 |
 |------|-----|
-| 버전 | **0.7.0-wip** |
-| Phase | Phase 6 |
-| 진행 중 | P21 Beacon 고도화 |
-| 다음 | P22 운영 런북 |
+| 버전 | **0.7.0** |
+| Phase | Phase 1~6 완료 |
+| 진행 중 | — |
+| 다음 | 운영 유지보수 · 필요 시 Phase 7 기획 |
 
 ## 완료 항목
 
@@ -42,22 +42,32 @@
 | P18 | 통합 테스트/QA | `52ed45e` |
 | P19 | 배포 자동화 강화 · health · 0.6.0 릴리즈 | `3fecfdf` |
 | P20 | 모니터링/알림 | `1416576` |
+| P21 | Beacon 고도화 | `4ca166d` |
+| P22 | 운영 런북 · runtime API · 0.7.0 릴리즈 | *(본 커밋)* |
 
 ## 진행 중
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| P21 | Beacon 고도화 | 변경 감지 · diff · 스냅샷 |
+| — | — | Phase 1~6 완료 |
 
 ## Phase 6 계획 (배포·운영)
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| P20 | 모니터링/알림 | ✅ 상태 점검 · 웹훅 · 헤더 뱃지 |
-| P21 | Beacon 고도화 | 변경 감지 · diff 뷰 · 자동 스냅샷 |
-| P22 | 운영 런북 | 장애 대응 · 백업/복구 · 배포 절차 |
+| P20 | 모니터링/알림 | ✅ |
+| P21 | Beacon 고도화 | ✅ |
+| P22 | 운영 런북 | ✅ Incident · Backup · Deploy · Upgrade · `/api/runtime` |
 
 ## 변경 이력
+
+### 0.7.0 — 2026-07-29 (Phase 6 완료 · P22)
+
+- 정식 릴리즈 **0.7.0** (Phase 6: 모니터 · Beacon · 런북)
+- `docs/runbooks/`: INCIDENT · BACKUP · DEPLOY · UPGRADE
+- `GET /api/runtime` — Node/Next 버전 · env 설정 여부 · uptime (시크릿 비노출)
+- `npm run runbook:backup` · `runbook:restore` · `runbook:deploy`
+- README: Phase 1~6 완료 기록
 
 ### 0.7.0-wip — 2026-07-29 (P21 Beacon 고도화)
 
