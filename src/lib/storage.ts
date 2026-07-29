@@ -4,7 +4,7 @@
  * - cloud: Supabase → 실패 시 local
  * - beacon: `.beacon/cache/folio-*.json` (서버 API) → 실패 시 local
  *
- * Beacon CLI 원본(project.json / beacon.db)은 건드리지 않는다.
+ * 저장은 항상 로컬을 선행한다. Beacon CLI 원본(project.json / beacon.db)은 건드리지 않는다.
  */
 
 export type StorageMode = 'local' | 'cloud' | 'beacon'

@@ -1,5 +1,8 @@
 'use client';
 
+/**
+ * Journal(일지) CRUD — 로컬 · Supabase · storage 폴백.
+ */
 import { requireAuthUser } from '@/lib/supabase';
 import { loadWithFallback, saveWithFallback } from '@/lib/storage';
 import { getLocalJson, setLocalJson, flushLocalJson } from '@/lib/local-cache';
@@ -41,6 +44,9 @@ export function loadJournals(): Record<string, JournalEntry> {
   return getLocalJson<Record<string, JournalEntry>>(STORAGE_KEY, {});
 }
 
+/**
+ * 로컬 즉시 저장(flush 포함). UI 수동 저장 버튼에서 원격 대기 없이 호출한다.
+ */
 export function saveJournal(date: string, content: string, tags: string[]) {
   const all = loadJournals();
   all[date] = { date, content, tags, updatedAt: new Date().toISOString() };

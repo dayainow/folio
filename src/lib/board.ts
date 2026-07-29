@@ -1,5 +1,8 @@
 'use client';
 
+/**
+ * Board(칸반) 태스크 CRUD — 로컬 · Supabase · storage 폴백. Jira/GitHub 확장 필드 포함.
+ */
 import { requireAuthUser } from '@/lib/supabase';
 import { getStorageMode, loadWithFallback, saveWithFallback } from '@/lib/storage';
 import { getLocalJson, setLocalJson, flushLocalJson } from '@/lib/local-cache';

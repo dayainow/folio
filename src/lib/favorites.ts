@@ -1,5 +1,8 @@
 'use client';
 
+/**
+ * Board 즐겨찾기 ID 목록 (localStorage).
+ */
 const STORAGE_KEY = 'workspace_favorites';
 
 export function loadFavorites(): string[] {

@@ -1,5 +1,8 @@
 'use client';
 
+/**
+ * Docs(문서) CRUD — 로컬 · Supabase · storage 폴백.
+ */
 import { requireAuthUser } from '@/lib/supabase';
 import { loadWithFallback, saveWithFallback } from '@/lib/storage';
 import { getLocalJson, setLocalJson, flushLocalJson } from '@/lib/local-cache';

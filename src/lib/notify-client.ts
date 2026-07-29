@@ -1,5 +1,8 @@
 'use client';
 
+/**
+ * 클라이언트 알림 — 연동 상태 조회 및 Slack/Discord 알림 요청.
+ */
 export interface IntegrationsStatus {
   slack: boolean
   discord: boolean

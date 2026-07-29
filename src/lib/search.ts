@@ -1,5 +1,8 @@
 'use client';
 
+/**
+ * Journal / Docs / Board 통합 검색.
+ */
 import { loadJournalsWithFallback, type JournalEntry } from '@/lib/journal';
 import { loadDocsWithFallback, type DocEntry } from '@/lib/docs';
 import { loadTasksWithFallback, type Task } from '@/lib/board';

@@ -1,30 +1,45 @@
 # Folio
 
-프로젝트의 기록을 남기는 개발자 워크스페이스. **v0.5.0** (Phase 4 완료)
+프로젝트의 기록을 남기는 개발자 워크스페이스.  
+**Developer workspace for project records.**
 
-## Pages
+| | |
+|--|--|
+| 버전 | **0.6.0-wip** (Phase 5) |
+| 라이선스 | private |
 
-- 일지 (Journal): 날짜별 업무 일지, 태그, 자동 저장, 날짜 범위 필터, 통계, Slack/Discord 알림(옵션)
-- 문서 (Docs): 공통 문서, 카테고리, 검색, 마크다운 프리뷰
-- 일정 (Board): 칸반 + Jira/GitHub + 즐겨찾기 + 분석 + 완료 알림
-- **프로세스**: Beacon `.beacon` 읽기 전용 (Gate / Timeline / 산출물)
-- 로그인 (`/login`): Supabase Auth UI
-- 팀: 초대·멤버·공유
-- 통합 검색: ⌘/Ctrl+K
-- 저장 모드: 헤더에서 로컬 / 클라우드 / Beacon 전환
+---
 
-## 스택
+## 소개 / Introduction
 
-- Next.js 16 + React 19
-- Tailwind v4 + shadcn/ui
-- localStorage + Supabase (user_id 분리, 팀 RLS)
-- Jira / GitHub / Slack / Discord 웹훅
-- Beacon 프로세스 연동 (읽기 전용 + Folio 캐시)
+Folio는 브라우저(및 선택적으로 Supabase · Beacon)에 저장되는 개인·팀용 워크스페이스다.  
+일지 · 문서 · 칸반 · 프로세스(Beacon)를 한 화면에서 다룬다.
 
-## 시작 (로컬)
+Folio is a personal/team workspace stored in the browser (optionally Supabase / Beacon), covering journals, docs, kanban, and process views.
+
+---
+
+## 기능 / Features
+
+| 영역 | 내용 |
+|------|------|
+| 일지 (Journal) | 날짜별 기록, 태그, 자동 저장, 통계, 알림(옵션) |
+| 문서 (Docs) | 마크다운 편집·미리보기·분할, Obsidian 가져오기 |
+| 일정 (Board) | 칸반 + 키보드 이동, Jira/GitHub, 즐겨찾기, 분석 |
+| 프로세스 | Beacon Gate / Timeline / 산출물 (읽기 전용) |
+| 팀 | 초대 · 멤버 · 문서/보드 공유 (Supabase) |
+| 검색 | ⌘/Ctrl+K 통합 검색 |
+| 저장 모드 | 로컬 / 클라우드 / Beacon |
+| 접근성 | 스킵 링크, 키보드, ARIA, 포커스 트랩 (P16) |
+
+스택: Next.js 16 · React 19 · Tailwind v4 · shadcn/Base UI · Supabase · @dnd-kit
+
+---
+
+## 빠른 시작 / Quick start
 
 ```bash
-cp docs/env.example .env.local   # 값 채우기
+cp docs/env.example .env.local   # fill values
 npm install
 npm run dev
 # http://localhost:3000
@@ -34,100 +49,88 @@ npm run dev
 npm run lint && npm run typecheck && npm run test && npm run build
 ```
 
+자세한 설치: **[docs/GETTING-STARTED.md](./docs/GETTING-STARTED.md)**
+
+---
+
+## 사용 가이드 / Usage
+
+1. 헤더에서 **저장 모드** 선택 (기본: 로컬)
+2. 탭: 일지 · 문서 · 일정 · 프로세스
+3. 검색창 또는 ⌘K 로 Journal/Docs/Board 검색
+4. (선택) 로그인 후 팀 관리 · 클라우드 동기화
+
+시나리오 예시:
+
+- [examples/basic-usage.md](./examples/basic-usage.md)
+- [examples/team-setup.md](./examples/team-setup.md)
+
+Beacon: [docs/BEACON.md](./docs/BEACON.md) · [PROCESS.md](./PROCESS.md)
+
+---
+
+## 배포 / Deploy
+
+| 방식 | 문서 |
+|------|------|
+| Vercel | [docs/DEPLOY.md](./docs/DEPLOY.md#vercel) |
+| Docker / Compose | [docs/DEPLOY.md](./docs/DEPLOY.md#docker) |
+| CI | `.github/workflows/ci.yml` |
+
+```bash
+npx vercel --prod
+# or
+docker compose up --build
+```
+
 환경변수: [docs/env.example](./docs/env.example)
 
-### Supabase
+---
 
-1. `.env.local`에 URL / anon key
-2. [docs/supabase-schema.sql](./docs/supabase-schema.sql) 또는 [docs/supabase-schema-migration.sql](./docs/supabase-schema-migration.sql)
-3. 팀: [docs/supabase-schema-team.sql](./docs/supabase-schema-team.sql)
+## 문서 / Docs
 
-### Jira / Slack / Discord / GitHub
+| 문서 | 설명 |
+|------|------|
+| [GETTING-STARTED](./docs/GETTING-STARTED.md) | 설치 · 실행 · 기본 사용 |
+| [ARCHITECTURE](./docs/ARCHITECTURE.md) | 폴더 · 데이터 흐름 · 저장 모드 |
+| [BEACON](./docs/BEACON.md) | Beacon 연동 · 경로 · 제약 |
+| [DEPLOY](./docs/DEPLOY.md) | Vercel · Docker · 로컬 |
+| [A11Y](./docs/A11Y.md) | 접근성 · 단축키 |
+| [API](./docs/API.md) | `src/lib` 시그니처 |
+| [a11y-checklist](./docs/a11y-checklist.md) | 수동 a11y 체크 |
+| [PROCESS](./PROCESS.md) | Beacon 규약 |
+| [VERSION](./VERSION.md) | 버전 · 작업 이력 |
 
-[docs/env.example](./docs/env.example) 참고. 미설정 시 해당 기능은 스킵되거나 UI에서 숨겨진다.
+성능 측정: `npm run bundle:size` · `perf:measure` · `ANALYZE=true npm run analyze`
 
-## Beacon 연동 사용법
+---
 
-상세 규약: **[PROCESS.md](./PROCESS.md)**
+## 기여 / Contributing
 
-1. **프로젝트 루트에서 Beacon 초기화** (beacon-project-os CLI)
-   ```bash
-   beacon init --root /path/to/project
-   beacon open --root /path/to/project   # 스캔 → .beacon/beacon.db
-   ```
-2. **Folio 환경변수** (선택) — `.env.local`
-   ```bash
-   BEACON_PROJECT_ROOT=/path/to/project
-   ```
-   미설정 시 `process.cwd()`를 루트로 사용한다.
-3. **프로세스 탭** — Gate(P0–P4) · Timeline · 산출물 체크리스트 (읽기 전용)
-   - 서버가 `.beacon`을 못 읽으면 「Beacon 프로젝트를 초기화하세요」와 폴더 선택 UI가 뜬다.
-4. **저장 모드 Beacon** — 헤더 토글에서 Beacon 선택 시 Journal/Docs/Board는
-   `.beacon/cache/folio-*.json`에만 저장한다. `project.json` / `beacon.db` 등 CLI 원본은 수정하지 않는다.
+1. feature 브랜치에서 작업 → PR (Preview)
+2. `npm run lint && npm run typecheck` 통과
+3. Conventional Commits (한국어 메시지 권장): `feat:` / `fix:` / `docs:` …
+4. `VERSION.md` · README **작업 관리**를 함께 갱신
 
-## 배포
+이슈·PR은 GitHub `dayainow/folio` 에서 받는다.
 
-상세 가이드: **[docs/DEPLOY.md](./docs/DEPLOY.md)** (브랜치 전략 · 환경변수 · Vercel · Docker · CI)
-
-### Vercel (요약)
-
-1. GitHub 저장소 Import → Framework: Next.js (`vercel.json`)
-2. Environment Variables 등록 (`NEXT_PUBLIC_*` + 서버 시크릿)
-3. `main` → Production, PR → Preview
-4. Supabase Auth Redirect URL 등록
-
-```bash
-npx vercel          # Preview
-npx vercel --prod   # Production
-```
-
-### Docker (요약)
-
-```bash
-docker compose up --build
-# http://localhost:3000
-```
-
-또는 `docker build -t folio . && docker run --rm -p 3000:3000 --env-file .env.local folio`
-
-### CI
-
-`.github/workflows/ci.yml` — `main`/PR 시 lint · typecheck · test · build 자동 실행.
-
-## License
-
-private
+---
 
 ## 작업 관리
 
 - 현재 Phase: **Phase 5** (성능·접근성·문서화)
-- 완료: Phase 1~4 (v0.5.0), P13 배포, P14/P14-2 Beacon, **P15 성능 최적화**
-- 진행 중: **P16 접근성/UX** (키보드 · 포커스 · ARIA · 로딩/에러)
-- 다음: 문서화 강화
+- 완료: Phase 1~4, **P13** 배포, **P14**/P14-2 Beacon, **P15** 성능, **P16** 접근성/UX
+- 진행 중: **P17 문서화**
+- 다음: Phase 5 마무리 · Beacon 연동 고도화
 
-상세 이력은 [VERSION.md](./VERSION.md), 연동 규약은 [PROCESS.md](./PROCESS.md), a11y 체크는 [docs/a11y-checklist.md](./docs/a11y-checklist.md)를 참고하세요.
+상세: [VERSION.md](./VERSION.md)
 
 ## Phase 요약
 
 | Phase | 내용 | 상태 |
 |-------|------|------|
-| 1 | 기본 Journal / Docs / Board + 브랜딩 | ✅ |
+| 1 | Journal / Docs / Board + 브랜딩 | ✅ |
 | 2 | Supabase · Auth · Jira · 멀티유저 | ✅ |
-| 3 | Obsidian · 검색 · 팀 · 분석 · 외부 알림 | ✅ |
-| 4 | 배포 · Beacon 프로세스 · 저장 모드 토글 | ✅ |
-| 5 | 성능 · 접근성 · 문서화 강화 | 진행 중 |
-
-## Phase 5 계획
-
-- **P15 성능** — 번들 분석, code splitting, debounce/캐시, React.memo ✅
-- **P16 접근성/UX** — 키보드 네비게이션, 포커스·ARIA, 대비 ← 진행 중
-- 문서화 — API/환경변수 사용자 가이드, 운영 체크리스트
-- (선택) Beacon export API · Vercel 프로세스 연동 고도화
-
-### 성능 측정
-
-```bash
-npm run bundle:size           # 주요 패키지·chunk 사이즈
-npm run perf:measure          # 의존성·.next 크기 요약
-ANALYZE=true npm run analyze  # @next/bundle-analyzer UI
-```
+| 3 | Obsidian · 검색 · 팀 · 분석 · 알림 | ✅ |
+| 4 | 배포 · Beacon · 저장 모드 | ✅ |
+| 5 | 성능 · 접근성 · 문서화 | 진행 중 (P17) |

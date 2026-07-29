@@ -6,10 +6,10 @@
 
 | 항목 | 값 |
 |------|-----|
-| 버전 | **0.5.0** |
+| 버전 | **0.6.0-wip** |
 | Phase | Phase 5 |
-| 진행 중 | P16 접근성/UX |
-| 다음 | 문서화 강화 |
+| 진행 중 | P17 문서화 |
+| 다음 | Phase 5 마무리 · Beacon 연동 고도화 |
 
 ## 완료 항목
 
@@ -37,14 +37,22 @@
 | P14-2 | 상태 기반 저장 토글 (local / cloud / beacon) | `ffa70d8` |
 | P15 | 성능 최적화 (code splitting · debounce · memo · 번들) | `e40db3f` |
 | — | 저장 로컬 선행 · Journal 저장 피드백 | `10c6fef` |
+| P16 | 접근성/UX (키보드 · 포커스 · ARIA · 로딩) | `781f2ed` |
 
 ## 진행 중
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| P16 | 접근성/UX | 계획: `docs/superpowers/plans/2026-07-29-p16-accessibility-ux.md` |
+| P17 | 문서화 | GETTING-STARTED · ARCHITECTURE · API · examples |
 
 ## 변경 이력
+
+### 0.6.0-wip — 2026-07-29 (P17 문서화)
+
+- docs: GETTING-STARTED, ARCHITECTURE, BEACON, A11Y, API
+- examples: basic-usage, team-setup
+- README 확장 (소개·기능·빠른시작·가이드·배포·문서·기여)
+- `src/lib` JSDoc 보강 · 버전 0.6.0-wip
 
 ### 0.5.0 — 2026-07-29 (P16 접근성/UX)
 

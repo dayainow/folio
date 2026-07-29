@@ -1,3 +1,6 @@
+/**
+ * localStorage JSON 캐시. 쓰기는 기본 300ms debounce, flushLocalJson 으로 즉시 영속화.
+ */
 import { debounce } from '@/lib/debounce'
 
 const DEFAULT_DELAY = 300

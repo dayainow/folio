@@ -1,5 +1,8 @@
 'use client';
 
+/**
+ * Journal/Board 분석 집계 및 상태 변경 이벤트.
+ */
 import { loadJournalsWithFallback, type JournalEntry } from '@/lib/journal';
 import { loadTasksWithFallback, type Task, DEFAULT_COLUMNS } from '@/lib/board';
 

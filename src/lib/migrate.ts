@@ -1,5 +1,8 @@
 'use client'
 
+/**
+ * 로그인 시 로컬 데이터를 Supabase로 마이그레이션.
+ */
 import { requireAuthUser } from '@/lib/supabase'
 import {
   loadJournals,

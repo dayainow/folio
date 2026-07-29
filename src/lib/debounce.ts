@@ -1,4 +1,6 @@
-/** 디바운스 헬퍼 (localStorage 등) */
+/**
+ * 디바운스 헬퍼 (localStorage 등). `flush` / `cancel` 지원.
+ */
 export function debounce<T extends (...args: never[]) => void>(
   fn: T,
   waitMs: number,

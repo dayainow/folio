@@ -1,3 +1,6 @@
+/**
+ * Supabase 브라우저/서버 클라이언트 및 Auth 헬퍼.
+ */
 import { createBrowserClient, createServerClient } from '@supabase/ssr'
 import type { User } from '@supabase/supabase-js'
 

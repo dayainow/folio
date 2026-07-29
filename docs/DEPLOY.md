@@ -1,6 +1,6 @@
-# Folio 배포 가이드 (P13)
+# Folio 배포 가이드
 
-로컬 개발, Vercel, Docker 배포 절차와 브랜치·환경변수 전략을 정리한다.
+로컬 · Vercel · Docker · CI 배포 절차. (P13에서 도입, P17에서 문서 인덱스에 포함)
 
 ## 환경변수
 
@@ -146,3 +146,7 @@ docker compose up --build
 - [ ] Auth Redirect URL 등록
 - [ ] Preview에서 로그인·Jira/알림 스모크 테스트
 - [ ] `main` 머지 후 Production 확인
+
+---
+
+관련: [GETTING-STARTED.md](./GETTING-STARTED.md) · [ARCHITECTURE.md](./ARCHITECTURE.md) · [BEACON.md](./BEACON.md)

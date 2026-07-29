@@ -1,3 +1,6 @@
+/**
+ * Tailwind className 병합 유틸 (`cn`).
+ */
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 

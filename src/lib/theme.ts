@@ -1,5 +1,8 @@
 'use client';
 
+/**
+ * light/dark 테마 저장 · 적용.
+ */
 const THEME_KEY = 'folio_theme';
 
 export type ThemeMode = 'light' | 'dark';

@@ -1,3 +1,6 @@
+/**
+ * 인메모리 쿼리 TTL 캐시 (Supabase 로드 등).
+ */
 const DEFAULT_TTL_MS = 5 * 60 * 1000
 
 type CacheEntry = { at: number; data: unknown }

@@ -1,5 +1,8 @@
 'use client';
 
+/**
+ * 팀 · 초대 · 문서/보드 공유 (Supabase RLS).
+ */
 import { requireAuthUser } from '@/lib/supabase';
 
 export type TeamRole = 'owner' | 'admin' | 'member';

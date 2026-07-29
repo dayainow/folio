@@ -1,8 +1,11 @@
 'use client'
 
+/**
+ * 접근성 훅 — Escape 닫기, 포커스 트랩 (P16).
+ */
 import { useEffect, useRef, type RefObject } from 'react'
 
-/** Escape로 닫기 */
+/** Escape로 닫기 — 드롭다운·모달용 */
 export function useEscapeToClose(open: boolean, onClose: () => void) {
   useEffect(() => {
     if (!open) return
