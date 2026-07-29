@@ -1,26 +1,37 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Activity,
+  Camera,
   CheckCircle2,
   Circle,
   FolderOpen,
+  GitCompare,
   Loader2,
   RefreshCw,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { BeaconDiffView } from '@/components/beacon-diff';
 import {
+  createBeaconSnapshotClient,
+  fetchBeaconSnapshot,
+  fetchBeaconSnapshots,
   fetchBeaconSummary,
   loadBeaconFromDirectoryPicker,
+  watchBeaconFiles,
   type ArtifactItem,
   type BeaconViewModel,
+  type FolioBeaconSnapshot,
+  type FolioBeaconSnapshotMeta,
   type GateStatus,
   type StageState,
   type StageSummary,
   type TimelineItem,
 } from '@/lib/beacon';
+
+const AUTO_SNAPSHOT_MS = 5 * 60 * 1000;
 
 function gateLabel(status: GateStatus): string {
   switch (status) {
@@ -257,17 +268,57 @@ function ArtifactChecklist({ items }: { items: ArtifactItem[] }) {
   );
 }
 
+function sourceLabel(source: FolioBeaconSnapshotMeta['source']): string {
+  if (source === 'manual') return '수동';
+  if (source === 'change') return '변경';
+  return '주기';
+}
+
 export function BeaconPanel() {
   const [view, setView] = useState<BeaconViewModel | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [snapBusy, setSnapBusy] = useState(false);
+  const [snapshots, setSnapshots] = useState<FolioBeaconSnapshotMeta[]>([]);
+  const [compareA, setCompareA] = useState('');
+  const [compareB, setCompareB] = useState('');
+  const [diffBefore, setDiffBefore] = useState<FolioBeaconSnapshot | null>(null);
+  const [diffAfter, setDiffAfter] = useState<FolioBeaconSnapshot | null>(null);
+  const [diffLoading, setDiffLoading] = useState(false);
+  const autoSnapAt = useRef(0);
 
-  const loadFromServer = useCallback(async () => {
+  const refreshSnapshots = useCallback(async () => {
+    const list = await fetchBeaconSnapshots();
+    setSnapshots(list);
+    if (list.length >= 2) {
+      setCompareA((prev) => prev || list[1]!.id);
+      setCompareB((prev) => prev || list[0]!.id);
+    } else if (list.length === 1) {
+      setCompareB((prev) => prev || list[0]!.id);
+    }
+    return list;
+  }, []);
+
+  const loadFromServer = useCallback(async (opts?: { clearUpdateBadge?: boolean }) => {
     setLoading(true);
     setError(null);
     try {
       const data = await fetchBeaconSummary();
       setView(data);
+      setLastUpdatedAt(new Date().toISOString());
+      if (opts?.clearUpdateBadge !== false) {
+        setUpdateAvailable(false);
+      }
+      const list = await refreshSnapshots();
+      if (data.available && list.length === 0) {
+        const snap = await createBeaconSnapshotClient('auto');
+        if (snap) {
+          autoSnapAt.current = Date.now();
+          await refreshSnapshots();
+        }
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : '로드 실패');
       setView({
@@ -282,7 +333,7 @@ export function BeaconPanel() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [refreshSnapshots]);
 
   const pickFolder = useCallback(async () => {
     setLoading(true);
@@ -290,6 +341,8 @@ export function BeaconPanel() {
     try {
       const data = await loadBeaconFromDirectoryPicker();
       setView(data);
+      setLastUpdatedAt(new Date().toISOString());
+      setUpdateAvailable(false);
     } catch (e) {
       if (e instanceof DOMException && e.name === 'AbortError') {
         // 사용자 취소
@@ -301,12 +354,72 @@ export function BeaconPanel() {
     }
   }, []);
 
+  const takeSnapshot = useCallback(async (source: 'manual' | 'auto' | 'change' = 'manual') => {
+    setSnapBusy(true);
+    try {
+      const snap = await createBeaconSnapshotClient(source);
+      if (!snap) {
+        if (source === 'manual') {
+          setError('스냅샷을 만들 수 없습니다. Beacon 초기화를 확인하세요.');
+        }
+        return;
+      }
+      autoSnapAt.current = Date.now();
+      await refreshSnapshots();
+    } finally {
+      setSnapBusy(false);
+    }
+  }, [refreshSnapshots]);
+
+  const runCompare = useCallback(async () => {
+    if (!compareA || !compareB) return;
+    setDiffLoading(true);
+    try {
+      const [a, b] = await Promise.all([
+        fetchBeaconSnapshot(compareA),
+        fetchBeaconSnapshot(compareB),
+      ]);
+      setDiffBefore(a);
+      setDiffAfter(b);
+    } finally {
+      setDiffLoading(false);
+    }
+  }, [compareA, compareB]);
+
   useEffect(() => {
     const handle = window.setTimeout(() => {
       void loadFromServer();
     }, 0);
     return () => window.clearTimeout(handle);
   }, [loadFromServer]);
+
+  // 변경 감지 폴링 + 자동 새로고침/스냅샷
+  useEffect(() => {
+    if (view?.source === 'file-picker') return;
+
+    const watcher = watchBeaconFiles({
+      intervalMs: 5000,
+      onChange: ({ changed }) => {
+        if (!changed) return;
+        setUpdateAvailable(true);
+        void (async () => {
+          await loadFromServer({ clearUpdateBadge: false });
+          await takeSnapshot('change');
+          window.setTimeout(() => setUpdateAvailable(false), 4000);
+        })();
+      },
+    });
+
+    const autoTimer = window.setInterval(() => {
+      if (Date.now() - autoSnapAt.current < AUTO_SNAPSHOT_MS) return;
+      void takeSnapshot('auto');
+    }, AUTO_SNAPSHOT_MS);
+
+    return () => {
+      watcher.stop();
+      window.clearInterval(autoTimer);
+    };
+  }, [loadFromServer, takeSnapshot, view?.source]);
 
   if (loading && !view) {
     return (
@@ -335,12 +448,25 @@ export function BeaconPanel() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
           <Activity className="h-4 w-4" />
-          읽기 전용 · Folio는 `.beacon` 을 수정하지 않습니다
+          <span>읽기 전용 · Folio는 CLI 원본을 수정하지 않습니다</span>
+          {view.source !== 'file-picker' && (
+            <span className="text-[10px] rounded-full border border-gray-200 px-2 py-0.5 dark:border-gray-700">
+              변경 감지 중
+            </span>
+          )}
+          {updateAvailable && (
+            <span className="text-[10px] font-medium rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-amber-900 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-100">
+              업데이트 있음
+            </span>
+          )}
+          <span className="text-[11px]">
+            마지막 업데이트 {formatWhen(lastUpdatedAt)}
+          </span>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             type="button"
             size="sm"
@@ -348,9 +474,21 @@ export function BeaconPanel() {
             className="h-7 text-xs gap-1.5"
             disabled={loading}
             onClick={() => void loadFromServer()}
+            aria-label="프로세스 새로고침"
           >
             {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
             새로고침
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs gap-1.5"
+            disabled={snapBusy || loading}
+            onClick={() => void takeSnapshot('manual')}
+          >
+            {snapBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
+            스냅샷
           </Button>
           <Button
             type="button"
@@ -384,6 +522,81 @@ export function BeaconPanel() {
           <ArtifactChecklist items={view.artifacts} />
         </Card>
       </div>
+
+      <Card className="rounded-2xl border border-gray-100 dark:border-gray-800 p-5 bg-card shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+          <div>
+            <h3 className="text-sm font-semibold tracking-tight flex items-center gap-1.5">
+              <GitCompare className="h-4 w-4" />
+              스냅샷 Diff
+            </h3>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">
+              `.beacon/snapshots/` 백업 간 project.json · Timeline 비교
+              {snapshots.length > 0 ? ` · ${snapshots.length}개` : ''}
+            </p>
+          </div>
+        </div>
+
+        {snapshots.length < 2 ? (
+          <p className="text-sm text-muted-foreground py-4 text-center">
+            비교하려면 스냅샷이 2개 이상 필요합니다. 「스냅샷」으로 수동 저장하거나 변경/주기 백업을 기다리세요.
+          </p>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-end gap-2">
+              <label className="flex flex-col gap-1 text-[11px] text-muted-foreground">
+                이전
+                <select
+                  className="h-8 min-w-[12rem] rounded-lg border border-gray-200 bg-background px-2 text-xs text-foreground dark:border-gray-700"
+                  value={compareA}
+                  onChange={(e) => setCompareA(e.target.value)}
+                >
+                  {snapshots.map((s) => (
+                    <option key={`a-${s.id}`} value={s.id}>
+                      {formatWhen(s.createdAt)} · {sourceLabel(s.source)} · v{s.projectVersion ?? '—'}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1 text-[11px] text-muted-foreground">
+                이후
+                <select
+                  className="h-8 min-w-[12rem] rounded-lg border border-gray-200 bg-background px-2 text-xs text-foreground dark:border-gray-700"
+                  value={compareB}
+                  onChange={(e) => setCompareB(e.target.value)}
+                >
+                  {snapshots.map((s) => (
+                    <option key={`b-${s.id}`} value={s.id}>
+                      {formatWhen(s.createdAt)} · {sourceLabel(s.source)} · v{s.projectVersion ?? '—'}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <Button
+                type="button"
+                size="sm"
+                className="h-8 text-xs gap-1.5"
+                disabled={diffLoading || !compareA || !compareB}
+                onClick={() => void runCompare()}
+              >
+                {diffLoading ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <GitCompare className="h-3.5 w-3.5" />
+                )}
+                비교
+              </Button>
+            </div>
+
+            <BeaconDiffView
+              before={diffBefore}
+              after={diffAfter}
+              beforeLabel={diffBefore ? formatWhen(diffBefore.createdAt) : undefined}
+              afterLabel={diffAfter ? formatWhen(diffAfter.createdAt) : undefined}
+            />
+          </div>
+        )}
+      </Card>
     </div>
   );
 }

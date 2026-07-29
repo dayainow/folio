@@ -620,3 +620,404 @@ export async function loadBeaconFromDirectoryPicker(): Promise<BeaconViewModel> 
     source: 'file-picker',
   })
 }
+
+/* -------------------------------------------------------------------------- */
+/* P21 — 변경 감지 · Folio 스냅샷 · Diff                                      */
+/* -------------------------------------------------------------------------- */
+
+export type BeaconFileMtimes = {
+  available: boolean
+  root: string
+  projectJson: number | null
+  beaconDb: number | null
+  checkedAt: string
+}
+
+export type FolioBeaconSnapshotSource = 'auto' | 'manual' | 'change'
+
+export type FolioBeaconSnapshot = {
+  id: string
+  createdAt: string
+  source: FolioBeaconSnapshotSource
+  project: BeaconProjectJson | null
+  summary: ProjectSummary | null
+  timeline: TimelineItem[]
+  mtimes: {
+    projectJson: number | null
+    beaconDb: number | null
+  }
+}
+
+export type FolioBeaconSnapshotMeta = {
+  id: string
+  createdAt: string
+  source: FolioBeaconSnapshotSource
+  projectVersion: number | null
+  timelineCount: number
+}
+
+export type DiffKind = 'added' | 'removed' | 'modified' | 'unchanged'
+
+export type FieldDiff = {
+  field: string
+  kind: DiffKind
+  before: string | null
+  after: string | null
+}
+
+export type TimelineDiffItem = {
+  id: string
+  kind: 'added' | 'removed' | 'modified'
+  before?: TimelineItem
+  after?: TimelineItem
+}
+
+export type BeaconWatchEvent = {
+  changed: boolean
+  mtimes: BeaconFileMtimes
+  previous: BeaconFileMtimes | null
+}
+
+const SNAPSHOT_DIR = '.beacon/snapshots'
+const SNAPSHOT_KEEP = 30
+const SNAPSHOT_PREFIX = 'folio-'
+
+async function safeMtimeMs(filePath: string): Promise<number | null> {
+  try {
+    const { stat } = await import('node:fs/promises')
+    const st = await stat(filePath)
+    return Math.floor(st.mtimeMs)
+  } catch {
+    return null
+  }
+}
+
+/** 서버: project.json / beacon.db mtime */
+export async function getBeaconFileMtimes(root?: string): Promise<BeaconFileMtimes> {
+  if (typeof window !== 'undefined') {
+    return {
+      available: false,
+      root: '',
+      projectJson: null,
+      beaconDb: null,
+      checkedAt: new Date().toISOString(),
+    }
+  }
+  const path = await import('node:path')
+  const projectRoot = root ?? defaultBeaconRoot()
+  const projectJson = await safeMtimeMs(path.join(projectRoot, '.beacon', 'project.json'))
+  const beaconDb = await safeMtimeMs(path.join(projectRoot, '.beacon', 'beacon.db'))
+  return {
+    available: projectJson != null,
+    root: projectRoot,
+    projectJson,
+    beaconDb,
+    checkedAt: new Date().toISOString(),
+  }
+}
+
+function mtimesEqual(a: BeaconFileMtimes | null, b: BeaconFileMtimes): boolean {
+  if (!a) return false
+  return a.projectJson === b.projectJson && a.beaconDb === b.beaconDb
+}
+
+function snapshotsDir(root: string, pathMod: typeof import('node:path')): string {
+  return pathMod.join(root, SNAPSHOT_DIR)
+}
+
+function snapshotFileName(id: string): string {
+  return `${id}.json`
+}
+
+/** project.json 필드 단위 diff */
+export function diffBeaconProject(
+  before: BeaconProjectJson | null,
+  after: BeaconProjectJson | null,
+): FieldDiff[] {
+  const fields: Array<keyof BeaconProjectJson> = ['version', 'initializedAt', 'name']
+  return fields.map((field) => {
+    const b = before?.[field]
+    const a = after?.[field]
+    const beforeStr = b === undefined || b === null ? null : String(b)
+    const afterStr = a === undefined || a === null ? null : String(a)
+    let kind: DiffKind = 'unchanged'
+    if (beforeStr == null && afterStr != null) kind = 'added'
+    else if (beforeStr != null && afterStr == null) kind = 'removed'
+    else if (beforeStr !== afterStr) kind = 'modified'
+    return { field, kind, before: beforeStr, after: afterStr }
+  })
+}
+
+/** Timeline 항목 id 기준 추가/삭제/수정 */
+export function diffBeaconTimeline(
+  before: TimelineItem[],
+  after: TimelineItem[],
+): TimelineDiffItem[] {
+  const beforeMap = new Map(before.map((t) => [t.id, t]))
+  const afterMap = new Map(after.map((t) => [t.id, t]))
+  const ids = new Set([...beforeMap.keys(), ...afterMap.keys()])
+  const result: TimelineDiffItem[] = []
+
+  for (const id of ids) {
+    const b = beforeMap.get(id)
+    const a = afterMap.get(id)
+    if (b && !a) {
+      result.push({ id, kind: 'removed', before: b })
+      continue
+    }
+    if (!b && a) {
+      result.push({ id, kind: 'added', after: a })
+      continue
+    }
+    if (b && a) {
+      const same =
+        b.title === a.title &&
+        b.detail === a.detail &&
+        b.occurredAt === a.occurredAt &&
+        b.category === a.category &&
+        b.type === a.type
+      if (!same) result.push({ id, kind: 'modified', before: b, after: a })
+    }
+  }
+
+  const order = { added: 0, modified: 1, removed: 2 } as const
+  return result.sort((x, y) => order[x.kind] - order[y.kind] || x.id.localeCompare(y.id))
+}
+
+async function readFallbackPackageName(root: string): Promise<string | undefined> {
+  try {
+    const { readFile } = await import('node:fs/promises')
+    const path = await import('node:path')
+    const raw = await readFile(path.join(root, 'package.json'), 'utf8')
+    const pkg = JSON.parse(raw) as { name?: unknown }
+    return typeof pkg.name === 'string' && pkg.name.trim() ? pkg.name.trim() : undefined
+  } catch {
+    return undefined
+  }
+}
+
+/** 서버: 현재 Beacon 상태를 Folio 스냅샷으로 저장 */
+export async function createFolioBeaconSnapshot(options?: {
+  root?: string
+  source?: FolioBeaconSnapshotSource
+}): Promise<FolioBeaconSnapshot | null> {
+  if (typeof window !== 'undefined') return null
+
+  const path = await import('node:path')
+  const { mkdir, writeFile, readdir, unlink } = await import('node:fs/promises')
+  const root = options?.root ?? defaultBeaconRoot()
+  const source = options?.source ?? 'manual'
+  const mtimes = await getBeaconFileMtimes(root)
+  if (!mtimes.available) return null
+
+  const project = await readBeaconProjectJson({ root })
+  if (!project) return null
+
+  const db = await readBeaconDb({ root })
+  const fallbackName = await readFallbackPackageName(root)
+  const view = buildBeaconViewModel({
+    project,
+    db,
+    fallbackName,
+    source: 'server',
+  })
+
+  const createdAt = new Date().toISOString()
+  const id = `${SNAPSHOT_PREFIX}${createdAt.replace(/[:.]/g, '-')}`
+  const snap: FolioBeaconSnapshot = {
+    id,
+    createdAt,
+    source,
+    project,
+    summary: view.summary,
+    timeline: view.timeline,
+    mtimes: {
+      projectJson: mtimes.projectJson,
+      beaconDb: mtimes.beaconDb,
+    },
+  }
+
+  const dir = snapshotsDir(root, path)
+  await mkdir(dir, { recursive: true })
+  await writeFile(path.join(dir, snapshotFileName(id)), `${JSON.stringify(snap, null, 2)}\n`, 'utf8')
+
+  // 오래된 스냅샷 정리
+  try {
+    const files = (await readdir(dir))
+      .filter((f) => f.startsWith(SNAPSHOT_PREFIX) && f.endsWith('.json'))
+      .sort()
+      .reverse()
+    for (const stale of files.slice(SNAPSHOT_KEEP)) {
+      await unlink(path.join(dir, stale)).catch(() => undefined)
+    }
+  } catch {
+    /* ignore prune errors */
+  }
+
+  return snap
+}
+
+/** 서버: 스냅샷 목록 (최신순) */
+export async function listFolioBeaconSnapshots(root?: string): Promise<FolioBeaconSnapshotMeta[]> {
+  if (typeof window !== 'undefined') return []
+
+  const path = await import('node:path')
+  const { readdir, readFile } = await import('node:fs/promises')
+  const projectRoot = root ?? defaultBeaconRoot()
+  const dir = snapshotsDir(projectRoot, path)
+
+  let files: string[] = []
+  try {
+    files = (await readdir(dir))
+      .filter((f) => f.startsWith(SNAPSHOT_PREFIX) && f.endsWith('.json'))
+      .sort()
+      .reverse()
+  } catch {
+    return []
+  }
+
+  const metas: FolioBeaconSnapshotMeta[] = []
+  for (const file of files.slice(0, SNAPSHOT_KEEP)) {
+    try {
+      const raw = await readFile(path.join(dir, file), 'utf8')
+      const snap = JSON.parse(raw) as FolioBeaconSnapshot
+      metas.push({
+        id: snap.id,
+        createdAt: snap.createdAt,
+        source: snap.source,
+        projectVersion: snap.project?.version ?? null,
+        timelineCount: snap.timeline?.length ?? 0,
+      })
+    } catch {
+      /* skip corrupt */
+    }
+  }
+  return metas
+}
+
+/** 서버: 스냅샷 단건 */
+export async function readFolioBeaconSnapshot(
+  id: string,
+  root?: string,
+): Promise<FolioBeaconSnapshot | null> {
+  if (typeof window !== 'undefined') return null
+  if (!id || id.includes('..') || id.includes('/') || id.includes('\\')) return null
+
+  const path = await import('node:path')
+  const { readFile } = await import('node:fs/promises')
+  const projectRoot = root ?? defaultBeaconRoot()
+  try {
+    const raw = await readFile(path.join(snapshotsDir(projectRoot, path), snapshotFileName(id)), 'utf8')
+    return JSON.parse(raw) as FolioBeaconSnapshot
+  } catch {
+    return null
+  }
+}
+
+/** 클라이언트: mtime 조회 */
+export async function fetchBeaconMtimes(): Promise<BeaconFileMtimes> {
+  try {
+    const res = await fetch('/api/beacon/mtime', { cache: 'no-store' })
+    if (!res.ok) {
+      return {
+        available: false,
+        root: '',
+        projectJson: null,
+        beaconDb: null,
+        checkedAt: new Date().toISOString(),
+      }
+    }
+    return (await res.json()) as BeaconFileMtimes
+  } catch {
+    return {
+      available: false,
+      root: '',
+      projectJson: null,
+      beaconDb: null,
+      checkedAt: new Date().toISOString(),
+    }
+  }
+}
+
+/**
+ * 클라이언트: project.json / beacon.db 변경 폴링.
+ * lastModified(mtime) 비교로 변경 여부 판단.
+ */
+export function watchBeaconFiles(options?: {
+  intervalMs?: number
+  onChange?: (event: BeaconWatchEvent) => void
+  onTick?: (mtimes: BeaconFileMtimes) => void
+}): { stop: () => void } {
+  const intervalMs = options?.intervalMs ?? 5000
+  let previous: BeaconFileMtimes | null = null
+  let stopped = false
+  let timer: ReturnType<typeof setInterval> | null = null
+
+  const tick = async () => {
+    if (stopped) return
+    const mtimes = await fetchBeaconMtimes()
+    options?.onTick?.(mtimes)
+    const changed = previous != null && !mtimesEqual(previous, mtimes)
+    if (changed) {
+      options?.onChange?.({ changed: true, mtimes, previous })
+    }
+    previous = mtimes
+  }
+
+  void tick()
+  timer = setInterval(() => {
+    void tick()
+  }, intervalMs)
+
+  return {
+    stop: () => {
+      stopped = true
+      if (timer) clearInterval(timer)
+      timer = null
+    },
+  }
+}
+
+/** 클라이언트: 스냅샷 목록 */
+export async function fetchBeaconSnapshots(): Promise<FolioBeaconSnapshotMeta[]> {
+  try {
+    const res = await fetch('/api/beacon/snapshots', { cache: 'no-store' })
+    if (!res.ok) return []
+    const json = (await res.json()) as { snapshots?: FolioBeaconSnapshotMeta[] }
+    return json.snapshots ?? []
+  } catch {
+    return []
+  }
+}
+
+/** 클라이언트: 스냅샷 생성 */
+export async function createBeaconSnapshotClient(
+  source: FolioBeaconSnapshotSource = 'manual',
+): Promise<FolioBeaconSnapshot | null> {
+  try {
+    const res = await fetch('/api/beacon/snapshots', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ source }),
+    })
+    if (!res.ok) return null
+    const json = (await res.json()) as { snapshot?: FolioBeaconSnapshot | null }
+    return json.snapshot ?? null
+  } catch {
+    return null
+  }
+}
+
+/** 클라이언트: 스냅샷 단건 */
+export async function fetchBeaconSnapshot(id: string): Promise<FolioBeaconSnapshot | null> {
+  try {
+    const res = await fetch(`/api/beacon/snapshots/${encodeURIComponent(id)}`, {
+      cache: 'no-store',
+    })
+    if (!res.ok) return null
+    const json = (await res.json()) as { snapshot?: FolioBeaconSnapshot | null }
+    return json.snapshot ?? null
+  } catch {
+    return null
+  }
+}

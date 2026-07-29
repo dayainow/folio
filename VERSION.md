@@ -8,8 +8,8 @@
 |------|-----|
 | 버전 | **0.7.0-wip** |
 | Phase | Phase 6 |
-| 진행 중 | P20 모니터링/알림 |
-| 다음 | P21 Beacon 고도화 · P22 운영 런북 |
+| 진행 중 | P21 Beacon 고도화 |
+| 다음 | P22 운영 런북 |
 
 ## 완료 항목
 
@@ -41,22 +41,30 @@
 | P17 | 문서화 (GETTING-STARTED · API · examples) | `2b6597b` |
 | P18 | 통합 테스트/QA | `52ed45e` |
 | P19 | 배포 자동화 강화 · health · 0.6.0 릴리즈 | `3fecfdf` |
+| P20 | 모니터링/알림 | `1416576` |
 
 ## 진행 중
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| P20 | 모니터링/알림 | health-monitor · 헤더 뱃지 · 저장 실패 웹훅/토스트 |
+| P21 | Beacon 고도화 | 변경 감지 · diff · 스냅샷 |
 
 ## Phase 6 계획 (배포·운영)
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| P20 | 모니터링/알림 | 상태 점검 · 에러 감지 · Slack/Discord · 헤더 뱃지 |
+| P20 | 모니터링/알림 | ✅ 상태 점검 · 웹훅 · 헤더 뱃지 |
 | P21 | Beacon 고도화 | 변경 감지 · diff 뷰 · 자동 스냅샷 |
 | P22 | 운영 런북 | 장애 대응 · 백업/복구 · 배포 절차 |
 
 ## 변경 이력
+
+### 0.7.0-wip — 2026-07-29 (P21 Beacon 고도화)
+
+- `watchBeaconFiles()` · `/api/beacon/mtime` — project.json / beacon.db mtime 변경 감지
+- `.beacon/snapshots/` Folio 스냅샷 (수동 · 변경 · 주기) · 비교 Diff
+- `beacon-diff.tsx` — project.json / Timeline 추가·삭제·수정 색 구분
+- 프로세스 탭: 새로고침 · 마지막 업데이트 · 「업데이트 있음」 뱃지
 
 ### 0.7.0-wip — 2026-07-29 (P20 모니터링/알림)
 

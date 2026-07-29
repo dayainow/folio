@@ -44,6 +44,9 @@ BEACON_PROJECT_ROOT=/path/to/project
 
 - Gate (P0–P4) · Timeline · 산출물 체크리스트
 - API: `GET /api/beacon/summary`, `GET /api/beacon/available`
+- 변경 감지: `GET /api/beacon/mtime` + `watchBeaconFiles()` (project.json / beacon.db mtime)
+- Folio 스냅샷: `.beacon/snapshots/folio-*.json` (수동 · 변경 · 5분 주기) — CLI 원본과 별도
+- Diff: 스냅샷 간 project.json / Timeline 비교 (`beacon-diff`)
 - `.beacon`이 없으면 안내 UI + (가능 시) 폴더 선택
 
 ### 저장 모드 Beacon
@@ -63,7 +66,8 @@ BEACON_PROJECT_ROOT=/path/to/project
 
 | 파일 | 역할 |
 |------|------|
-| `src/lib/beacon.ts` | 뷰모델 · DB/JSON 파싱 |
+| `src/lib/beacon.ts` | 뷰모델 · DB/JSON 파싱 · watch · 스냅샷 · diff |
 | `src/lib/storage.ts` | beacon 모드 save/load |
-| `src/app/api/beacon/*` | available · summary · folio cache |
+| `src/app/api/beacon/*` | available · summary · folio · mtime · snapshots |
 | `src/components/beacon.tsx` | 프로세스 패널 |
+| `src/components/beacon-diff.tsx` | 스냅샷 Diff 뷰 |
