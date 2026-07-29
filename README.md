@@ -101,9 +101,9 @@ private
 ## 작업 관리
 
 - 현재 Phase: **Phase 5** (성능·접근성·문서화)
-- 완료: Phase 1~4 (v0.5.0), 패널 버튼 버그 픽스
-- 진행 중: **P15 성능 최적화** (code splitting · debounce · memo · 번들 측정)
-- 다음: **P16** 접근성/UX
+- 완료: Phase 1~4 (v0.5.0), 패널 버튼 버그 픽스, **P15 성능 최적화**
+- 진행 중: **P16 접근성/UX** (키보드 · 포커스 · ARIA · 대비) — [계획](./docs/superpowers/plans/2026-07-29-p16-accessibility-ux.md)
+- 다음: 문서화 강화 / (선택) Beacon export
 
 상세 이력은 [VERSION.md](./VERSION.md), 연동 규약은 [PROCESS.md](./PROCESS.md)를 참고하세요.
 
@@ -119,8 +119,8 @@ private
 
 ## Phase 5 계획
 
-- **P15 성능** — 번들 분석, code splitting, debounce/캐시, React.memo ← 진행 중
-- **P16 접근성/UX** — 키보드 네비게이션, 포커스·ARIA, 대비
+- **P15 성능** — 번들 분석, code splitting, debounce/캐시, React.memo ✅
+- **P16 접근성/UX** — 키보드 네비게이션, 포커스·ARIA, 대비 ← 진행 중
 - 문서화 — API/환경변수 사용자 가이드, 운영 체크리스트
 - (선택) Beacon export API · Vercel 프로세스 연동 고도화
 

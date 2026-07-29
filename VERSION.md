@@ -8,8 +8,8 @@
 |------|-----|
 | 버전 | **0.5.0** |
 | Phase | Phase 5 |
-| 진행 중 | P15 성능 최적화 |
-| 다음 | P16 접근성/UX |
+| 진행 중 | P16 접근성/UX |
+| 다음 | 문서화 강화 |
 
 ## 완료 항목
 
@@ -35,14 +35,27 @@
 | P14 | 프로세스 탭 UI (Gate / Timeline / 산출물) | `93a6d97` |
 | P14 | beacon.db WAL 읽기 수정 | `0574210` |
 | P14-2 | 상태 기반 저장 토글 (local / cloud / beacon) | `ffa70d8` |
+| P15 | 성능 최적화 (code splitting · debounce · memo · 번들) | `e40db3f` |
+| — | 저장 로컬 선행 · Journal 저장 피드백 | `10c6fef` |
 
 ## 진행 중
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| P15 | 성능 최적화 | code splitting · debounce · query cache · memo |
+| P16 | 접근성/UX | 계획: `docs/superpowers/plans/2026-07-29-p16-accessibility-ux.md` |
 
 ## 변경 이력
+
+### 0.5.0 — 2026-07-29 (P16 준비)
+
+- P15 완료로 표시 · P16 접근성/UX 구현 계획 문서 추가
+- README 작업 관리 갱신
+
+### 0.5.0 — 2026-07-29 (fix: 저장 로컬 선행 · Journal 피드백)
+
+- storage: cloud/beacon **로컬 선행** 저장 · Beacon 원격 타임아웃 단일 5초
+- journal: 저장 버튼 `저장 중/저장됨` · 즉시 `saveJournal` + flush
+- docs/board: 의도적 저장 시 localStorage flush
 
 ### 0.5.0 — 2026-07-29 (P15 성능 최적화 · 확장)
 
