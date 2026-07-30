@@ -83,6 +83,12 @@ export const JournalPanel = memo(function JournalPanel({
   const [saveError, setSaveError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const saveFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoNotifyAt = useRef(0);
+  const autoNotifyKey = useRef('');
+  const notifyOnSaveRef = useRef(notifyOnSave);
+  const hasNotifyChannelRef = useRef(hasNotifyChannel);
+  notifyOnSaveRef.current = notifyOnSave;
+  hasNotifyChannelRef.current = hasNotifyChannel;
 
   const selectDate = useCallback((nextDate: string, map?: Record<string, Day>) => {
     // 날짜 이탈 전 현재 초안을 days·local에 반영 (자동저장 대기 없이 유지)
@@ -258,6 +264,11 @@ export const JournalPanel = memo(function JournalPanel({
       await import('@/lib/notify-client').then(({ notifyChannels }) =>
         notifyChannels(
           `📓 Folio 일지 저장 · ${date}${preview ? `\n${preview}${draft.trim().length > 120 ? '…' : ''}` : ''}`,
+          {
+            deepLink: { tab: 'journal', date },
+            actionLabel: '확인',
+            body: `*일지 저장 완료*\n• 날짜: \`${date}\`${preview ? `\n• 미리보기: ${preview}${draft.trim().length > 120 ? '…' : ''}` : ''}`,
+          },
         ),
       );
     } catch {
@@ -283,7 +294,24 @@ export const JournalPanel = memo(function JournalPanel({
             setSaveState('error');
             setSaveError('자동 저장: 원격 동기화 실패 · 로컬에는 저장됨');
             showAppToast('일지 자동 저장 동기화 실패', { withRetry: true });
+            return;
           }
+          if (!hasNotifyChannelRef.current || !notifyOnSaveRef.current) return;
+          if (!draft.trim()) return;
+          const key = `${date}:${draft.trim().slice(0, 80)}`;
+          const now = Date.now();
+          if (key === autoNotifyKey.current) return;
+          if (now - autoNotifyAt.current < 120_000) return;
+          autoNotifyKey.current = key;
+          autoNotifyAt.current = now;
+          const preview = draft.trim().slice(0, 120).replace(/\s+/g, ' ');
+          void import('@/lib/notify-client').then(({ notifyChannels }) =>
+            notifyChannels(`📓 Folio 일지 자동 저장 · ${date}`, {
+              deepLink: { tab: 'journal', date },
+              actionLabel: '확인',
+              body: `*일지 자동 저장 완료*\n• 날짜: \`${date}\`\n• 미리보기: ${preview}${draft.trim().length > 120 ? '…' : ''}`,
+            }),
+          );
         })
         .catch(() => {
           setSaveState('error');

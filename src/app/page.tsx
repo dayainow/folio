@@ -11,7 +11,9 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { StorageModeToggle } from '@/components/storage-mode-toggle';
 import { HealthStatus } from '@/components/health-status';
 import { BeaconChangeBadge } from '@/components/beacon-change-badge';
+import { MobileNav } from '@/components/mobile-nav';
 import { getActiveTeamId } from '@/lib/team';
+import { parseFolioDeepLink } from '@/lib/folio-links';
 import { Activity } from 'lucide-react';
 
 const PanelFallback = ({ label }: { label: string }) => (
@@ -58,6 +60,11 @@ const TeamSwitcher = dynamic(
 const TeamSidebar = dynamic(
   () => import('@/components/team-sidebar').then((m) => ({ default: m.TeamSidebar })),
   { ssr: false },
+);
+
+const WidgetDashboard = dynamic(
+  () => import('@/components/widgets').then((m) => ({ default: m.WidgetDashboard })),
+  { ssr: false, loading: () => <PanelFallback label="위젯" /> },
 );
 
 type TabValue = 'journal' | 'docs' | 'board' | 'process';
@@ -142,6 +149,22 @@ export default function Home() {
     };
   }, []);
 
+  // Slack 「확인」 등 딥링크 (마운트 후 적용 · hydration 안전)
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      const parsed = parseFolioDeepLink(window.location.search);
+      if (!parsed.tab) return;
+      setTab(parsed.tab);
+      if (parsed.tab === 'journal' && parsed.date) setFocusJournalDate(parsed.date);
+      if (parsed.tab === 'docs' && parsed.docId) setFocusDocId(parsed.docId);
+      if (parsed.tab === 'board' && parsed.taskId) setFocusTaskId(parsed.taskId);
+      const url = new URL(window.location.href);
+      url.search = '';
+      window.history.replaceState({}, '', url.pathname);
+    }, 0);
+    return () => window.clearTimeout(handle);
+  }, []);
+
   const handleSignOut = async () => {
     try {
       const { signOut } = await import('@/lib/supabase');
@@ -174,7 +197,7 @@ export default function Home() {
         본문으로 건너뛰기
       </a>
       <header
-        className="border-b border-gray-100 dark:border-gray-800 px-6 py-4 flex items-center justify-between bg-background/80 backdrop-blur sticky top-0 z-50 gap-4"
+        className="border-b border-gray-100 dark:border-gray-800 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between bg-background/80 backdrop-blur sticky top-0 z-50 gap-3"
         role="banner"
       >
         <div className="flex items-center gap-3">
@@ -217,7 +240,7 @@ export default function Home() {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-7 text-xs"
+                  className="h-11 min-h-[44px] px-3 text-xs sm:h-7 sm:min-h-0"
                   onClick={() => void handleSignOut()}
                   aria-label="로그아웃"
                 >
@@ -229,7 +252,7 @@ export default function Home() {
                 href="/login"
                 className={cn(
                   buttonVariants({ size: 'sm' }),
-                  'h-7 text-xs bg-gray-900 text-white hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white',
+                  'h-11 min-h-[44px] px-3 text-xs sm:h-7 sm:min-h-0 bg-gray-900 text-white hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white',
                 )}
               >
                 로그인
@@ -250,9 +273,11 @@ export default function Home() {
         id="main-content"
         ref={mainRef}
         tabIndex={-1}
-        className="flex-1 p-6 max-w-6xl mx-auto w-full outline-none"
+        className="flex-1 p-4 sm:p-6 max-w-6xl mx-auto w-full outline-none pb-24 md:pb-6"
       >
         <GlobalSearch onNavigate={handleSearchNavigate} />
+
+        <WidgetDashboard onOpenTab={(t) => handleTabChange(t)} />
 
         <div ref={panelFocusRef}>
         <Tabs
@@ -262,18 +287,18 @@ export default function Home() {
         >
           <TabsList
             aria-label="주요 패널"
-            className="bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-1 rounded-xl mb-6 w-fit"
+            className="hidden md:inline-flex bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-1 rounded-xl mb-6 w-fit"
           >
-            <TabsTrigger value="journal" className="gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:shadow-sm">
+            <TabsTrigger value="journal" className="gap-2 min-h-[44px] px-4 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:shadow-sm">
               📓 일지
             </TabsTrigger>
-            <TabsTrigger value="docs" className="gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:shadow-sm">
+            <TabsTrigger value="docs" className="gap-2 min-h-[44px] px-4 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:shadow-sm">
               📄 문서
             </TabsTrigger>
-            <TabsTrigger value="board" className="gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:shadow-sm">
+            <TabsTrigger value="board" className="gap-2 min-h-[44px] px-4 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:shadow-sm">
               📋 일정
             </TabsTrigger>
-            <TabsTrigger value="process" className="gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:shadow-sm">
+            <TabsTrigger value="process" className="gap-2 min-h-[44px] px-4 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:shadow-sm">
               <Activity className="h-3.5 w-3.5" />
               프로세스
             </TabsTrigger>
@@ -346,8 +371,10 @@ export default function Home() {
         </div>
       </main>
 
+      <MobileNav value={tab} onChange={(v) => handleTabChange(v)} />
+
       <footer
-        className="px-6 py-3 border-t border-gray-50 dark:border-gray-900 text-center text-xs text-muted-foreground"
+        className="hidden md:block px-6 py-3 border-t border-gray-50 dark:border-gray-900 text-center text-xs text-muted-foreground"
         role="contentinfo"
       >
         Folio · 브라우저에 저장되는 개인 워크스페이스

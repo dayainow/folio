@@ -5,7 +5,7 @@
 
 | | |
 |--|--|
-| 버전 | **0.8.0** (Phase 7 완료) |
+| 버전 | **0.9.0-wip** (Phase 8) |
 | 라이선스 | private |
 
 ---
@@ -183,10 +183,10 @@ npm run qa:smoke && npm run lint && npm run typecheck
 
 ## 작업 관리
 
-- 현재: **Phase 7 완료** · **0.8.0**
-- 완료: Phase 1~7 (Beacon 양방향 · 자동화/알림)
-- 진행 중: —
-- 다음: **Phase 8** (모바일 · Slack 고급 · 커스텀 위젯)
+- 현재: **Phase 8** · **0.9.0-wip**
+- 완료: Phase 1~7 (**0.8.0**)
+- 진행 중: **P25** 모바일·알림·위젯
+- 다음: Phase 8 후속 (PWA · Slack 채널 · 위젯 확장)
 
 상세: [VERSION.md](./VERSION.md) · [docs/runbooks/](./docs/runbooks/)
 
@@ -201,11 +201,13 @@ npm run qa:smoke && npm run lint && npm run typecheck
 | 5 | 성능 · 접근성 · 문서화 · QA · 배포 자동화 | ✅ **0.6.0** |
 | 6 | 모니터 · Beacon 고도화 · 운영 런북 | ✅ **0.7.0** |
 | 7 | Beacon 양방향 · 자동화/알림 | ✅ **0.8.0** |
+| 8 | 모바일 · Slack 고급 · 커스텀 위젯 | 진행 중 (P25) |
 
 ## Phase 8 계획
 
 | 영역 | 내용 |
 |------|------|
-| 모바일 UX | 반응형 개선 · PWA 후보 |
-| Slack 고급 | 채널 라우팅 · 인터랙티브 알림 |
-| 커스텀 위젯 | 대시보드 위젯 슬롯 · 사용자 배치 |
+| P25 모바일·알림·위젯 | 하단 네비 · Slack 「확인」 · 대시보드 위젯 DnD |
+| 모바일 UX | PWA 후보 |
+| Slack 고급 | 채널 라우팅 · 인터랙티브 확장 |
+| 커스텀 위젯 | 위젯 종류·레이아웃 확장 |

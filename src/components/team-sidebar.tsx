@@ -157,14 +157,14 @@ export function TeamSidebar({
         role="dialog"
         aria-modal="true"
         aria-label="팀 관리"
-        className="relative z-10 h-full w-full max-w-md rounded-none border-l border-gray-100 dark:border-gray-800 shadow-xl bg-background flex flex-col"
+        className="relative z-10 h-full w-full max-w-full sm:max-w-md rounded-none border-0 sm:border-l border-gray-100 dark:border-gray-800 shadow-xl bg-background flex flex-col"
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800">
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-gray-500" aria-hidden />
             <h2 className="text-sm font-semibold">팀 관리</h2>
           </div>
-          <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={onClose} aria-label="닫기">
+          <Button type="button" size="icon" variant="ghost" className="h-11 w-11 min-h-[44px] min-w-[44px]" onClick={onClose} aria-label="닫기">
             <X className="h-4 w-4" />
           </Button>
         </div>

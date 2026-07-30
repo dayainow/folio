@@ -468,8 +468,21 @@ export function BoardDndPanel({
     await persist(tasks.map(t => t.id === id ? { ...t, status, updatedAt: new Date().toISOString() } : t));
 
     if (status === 'done' && notifyOnDone && hasNotifyChannel) {
+      const preview = (task.description || '').trim().slice(0, 100).replace(/\s+/g, ' ');
       void import('@/lib/notify-client').then(({ notifyChannels }) =>
-        notifyChannels(`✅ Folio 태스크 완료 · ${task.title}`),
+        notifyChannels(`✅ Folio 태스크 완료 · ${task.title}`, {
+          deepLink: { tab: 'board', taskId: task.id },
+          actionLabel: '확인',
+          body: [
+            `*태스크 완료*`,
+            `• 제목: ${task.title}`,
+            `• 우선순위: ${task.priority}`,
+            task.tags.length ? `• 태그: ${task.tags.join(', ')}` : null,
+            preview ? `• 설명: ${preview}${task.description.trim().length > 100 ? '…' : ''}` : null,
+          ]
+            .filter(Boolean)
+            .join('\n'),
+        }),
       );
     }
   };

@@ -10,8 +10,9 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from 'react';
-import { Search, BookOpen, FileText, Kanban, Loader2 } from 'lucide-react';
+import { Search, BookOpen, FileText, Kanban, Loader2, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   searchAll,
@@ -69,8 +70,8 @@ function ResultRow({
       onClick={onClick}
       onMouseEnter={onHover}
       className={[
-        'w-full text-left px-3 py-2.5 rounded-lg transition-colors',
-        active ? 'bg-gray-100' : 'hover:bg-gray-50',
+        'w-full text-left px-3 py-3 min-h-[44px] rounded-lg transition-colors touch-manipulation',
+        active ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-gray-50 dark:hover:bg-gray-900',
       ].join(' ')}
     >
       <div className="flex items-start gap-2.5">
@@ -133,6 +134,18 @@ export function GlobalSearch({ onNavigate }: GlobalSearchProps) {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
+
+  // 모바일 검색 풀스크린일 때 스크롤 잠금
+  useEffect(() => {
+    if (!open || typeof window === 'undefined') return;
+    const mq = window.matchMedia('(max-width: 767px)');
+    if (!mq.matches || !query.trim()) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open, query]);
 
   useEffect(() => {
     const q = query.trim();
@@ -261,7 +274,7 @@ export function GlobalSearch({ onNavigate }: GlobalSearchProps) {
           }}
           onKeyDown={onInputKeyDown}
           placeholder="전체 검색… Journal · Docs · Board"
-          className="pl-9 pr-16 h-10 rounded-xl border-gray-200 bg-gray-50/80 focus-visible:bg-white"
+          className="pl-9 pr-16 h-11 min-h-[44px] rounded-xl border-gray-200 bg-gray-50/80 focus-visible:bg-white"
           aria-label="통합 검색"
           aria-expanded={showPanel}
           aria-controls={`${panelId}-list`}
@@ -275,51 +288,67 @@ export function GlobalSearch({ onNavigate }: GlobalSearchProps) {
       </div>
 
       {showPanel && (
-        <div
-          id={`${panelId}-list`}
-          role="listbox"
-          className="absolute left-0 right-0 top-[calc(100%+6px)] z-40 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-lg shadow-gray-200/60 dark:border-gray-800 dark:bg-background"
-        >
-          {loading ? (
-            <div className="flex items-center gap-2 px-4 py-6 text-sm text-gray-400">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              검색 중…
-            </div>
-          ) : totalCount === 0 ? (
-            <div className="px-4 py-6 text-sm text-gray-400 text-center">결과가 없습니다</div>
-          ) : (
-            <ScrollArea className="max-h-[min(420px,60vh)]">
-              <div className="py-1">
-                {resultGroups.map(group => (
-                  <div key={group.source}>
-                    <SectionLabel>
-                      {group.label} · {group.items.length}
-                    </SectionLabel>
-                    <div className="px-1 pb-1 space-y-0.5">
-                      {group.items.map((item, i) => {
-                        const index = group.startIndex + i;
-                        const active = activeIndex === index;
-                        if (item.source === 'journal') {
+        <>
+          {/* 데스크톱: 드롭다운 */}
+          <div
+            id={`${panelId}-list`}
+            role="listbox"
+            className="hidden md:block absolute left-0 right-0 top-[calc(100%+6px)] z-40 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-lg shadow-gray-200/60 dark:border-gray-800 dark:bg-background"
+          >
+            {loading ? (
+              <div className="flex items-center gap-2 px-4 py-6 text-sm text-gray-400">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                검색 중…
+              </div>
+            ) : totalCount === 0 ? (
+              <div className="px-4 py-6 text-sm text-gray-400 text-center">결과가 없습니다</div>
+            ) : (
+              <ScrollArea className="max-h-[min(420px,60vh)]">
+                <div className="py-1">
+                  {resultGroups.map(group => (
+                    <div key={group.source}>
+                      <SectionLabel>
+                        {group.label} · {group.items.length}
+                      </SectionLabel>
+                      <div className="px-1 pb-1 space-y-0.5">
+                        {group.items.map((item, i) => {
+                          const index = group.startIndex + i;
+                          const active = activeIndex === index;
+                          if (item.source === 'journal') {
+                            return (
+                              <ResultRow
+                                key={`j-${item.hit.id}`}
+                                id={`${panelId}-opt-${index}`}
+                                icon={<BookOpen className="h-3.5 w-3.5" />}
+                                title={item.hit.title}
+                                preview={item.hit.preview}
+                                meta={formatDate(item.hit.date)}
+                                active={active}
+                                onHover={() => setActiveIndex(index)}
+                                onClick={() => select(item)}
+                              />
+                            );
+                          }
+                          if (item.source === 'docs') {
+                            return (
+                              <ResultRow
+                                key={`d-${item.hit.id}`}
+                                id={`${panelId}-opt-${index}`}
+                                icon={<FileText className="h-3.5 w-3.5" />}
+                                title={item.hit.title}
+                                preview={item.hit.preview}
+                                meta={formatDate(item.hit.updatedAt)}
+                                active={active}
+                                onHover={() => setActiveIndex(index)}
+                                onClick={() => select(item)}
+                              />
+                            );
+                          }
                           return (
                             <ResultRow
-                              key={`j-${item.hit.id}`}
+                              key={`t-${item.hit.id}`}
                               id={`${panelId}-opt-${index}`}
-                              icon={<BookOpen className="h-3.5 w-3.5" />}
-                              title={item.hit.title}
-                              preview={item.hit.preview}
-                              meta={formatDate(item.hit.date)}
-                              active={active}
-                              onHover={() => setActiveIndex(index)}
-                              onClick={() => select(item)}
-                            />
-                          );
-                        }
-                        if (item.source === 'docs') {
-                          return (
-                            <ResultRow
-                              key={`d-${item.hit.id}`}
-                              id={`${panelId}-opt-${index}`}
-                              icon={<FileText className="h-3.5 w-3.5" />}
+                              icon={<Kanban className="h-3.5 w-3.5" />}
                               title={item.hit.title}
                               preview={item.hit.preview}
                               meta={formatDate(item.hit.updatedAt)}
@@ -328,28 +357,128 @@ export function GlobalSearch({ onNavigate }: GlobalSearchProps) {
                               onClick={() => select(item)}
                             />
                           );
-                        }
-                        return (
-                          <ResultRow
-                            key={`t-${item.hit.id}`}
-                            id={`${panelId}-opt-${index}`}
-                            icon={<Kanban className="h-3.5 w-3.5" />}
-                            title={item.hit.title}
-                            preview={item.hit.preview}
-                            meta={formatDate(item.hit.updatedAt)}
-                            active={active}
-                            onHover={() => setActiveIndex(index)}
-                            onClick={() => select(item)}
-                          />
-                        );
-                      })}
+                        })}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+          </div>
+
+          {/* 모바일: 풀스크린 모달 */}
+          <div
+            className="md:hidden fixed inset-0 z-[70] flex flex-col bg-background"
+            role="dialog"
+            aria-modal="true"
+            aria-label="통합 검색"
+          >
+            <div className="flex items-center gap-2 border-b border-gray-100 dark:border-gray-800 px-3 py-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                <Input
+                  value={query}
+                  onChange={e => {
+                    const value = e.target.value;
+                    setQuery(value);
+                    setOpen(true);
+                    if (!value.trim()) {
+                      setResults({ journals: [], docs: [], tasks: [] });
+                      setLoading(false);
+                    }
+                  }}
+                  onKeyDown={onInputKeyDown}
+                  placeholder="검색…"
+                  className="pl-9 h-11 min-h-[44px] rounded-xl"
+                  aria-label="통합 검색"
+                  autoFocus
+                />
               </div>
-            </ScrollArea>
-          )}
-        </div>
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-11 w-11 min-h-[44px] min-w-[44px] shrink-0"
+                aria-label="검색 닫기"
+                onClick={() => {
+                  setOpen(false);
+                  setQuery('');
+                  setResults({ journals: [], docs: [], tasks: [] });
+                }}
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+            <div className="flex-1 overflow-y-auto" role="listbox" id={`${panelId}-list-mobile`}>
+              {loading ? (
+                <div className="flex items-center gap-2 px-4 py-8 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  검색 중…
+                </div>
+              ) : totalCount === 0 ? (
+                <div className="px-4 py-8 text-sm text-muted-foreground text-center">결과가 없습니다</div>
+              ) : (
+                <div className="py-2 pb-24">
+                  {resultGroups.map(group => (
+                    <div key={`m-${group.source}`}>
+                      <SectionLabel>
+                        {group.label} · {group.items.length}
+                      </SectionLabel>
+                      <div className="px-2 space-y-0.5">
+                        {group.items.map((item, i) => {
+                          const index = group.startIndex + i;
+                          const active = activeIndex === index;
+                          if (item.source === 'journal') {
+                            return (
+                              <ResultRow
+                                key={`mj-${item.hit.id}`}
+                                id={`${panelId}-mopt-${index}`}
+                                icon={<BookOpen className="h-3.5 w-3.5" />}
+                                title={item.hit.title}
+                                preview={item.hit.preview}
+                                meta={formatDate(item.hit.date)}
+                                active={active}
+                                onHover={() => setActiveIndex(index)}
+                                onClick={() => select(item)}
+                              />
+                            );
+                          }
+                          if (item.source === 'docs') {
+                            return (
+                              <ResultRow
+                                key={`md-${item.hit.id}`}
+                                id={`${panelId}-mopt-${index}`}
+                                icon={<FileText className="h-3.5 w-3.5" />}
+                                title={item.hit.title}
+                                preview={item.hit.preview}
+                                meta={formatDate(item.hit.updatedAt)}
+                                active={active}
+                                onHover={() => setActiveIndex(index)}
+                                onClick={() => select(item)}
+                              />
+                            );
+                          }
+                          return (
+                            <ResultRow
+                              key={`mt-${item.hit.id}`}
+                              id={`${panelId}-mopt-${index}`}
+                              icon={<Kanban className="h-3.5 w-3.5" />}
+                              title={item.hit.title}
+                              preview={item.hit.preview}
+                              meta={formatDate(item.hit.updatedAt)}
+                              active={active}
+                              onHover={() => setActiveIndex(index)}
+                              onClick={() => select(item)}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
