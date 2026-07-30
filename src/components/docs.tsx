@@ -20,9 +20,12 @@ import {
   Pencil,
   Upload,
   Loader2,
+  Share2,
 } from 'lucide-react';
 import { loadDocsWithFallback, saveDocWithFallback, deleteDocWithFallback, loadCategories, type DocEntry } from '@/lib/docs';
 import { readObsidianMarkdownFiles, uniqueDocTitle } from '@/lib/obsidian';
+import { exportDocToBeacon, fetchBeaconMtimes } from '@/lib/beacon';
+import { recordFolioTimelineEvent } from '@/lib/beacon-timeline-consent';
 
 type EditPane = 'edit' | 'preview' | 'split';
 
@@ -95,6 +98,8 @@ export const DocsPanel = memo(function DocsPanel({
   const [importMsg, setImportMsg] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [exportMsg, setExportMsg] = useState<string | null>(null);
+  const [exportBusy, setExportBusy] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -190,19 +195,75 @@ export const DocsPanel = memo(function DocsPanel({
       await saveDocWithFallback(updated);
       setSaveState('saved');
       window.setTimeout(() => setSaveState('idle'), 2000);
+      void recordFolioTimelineEvent({
+        title: `문서 저장 · ${updated.title}`,
+        detail: updated.category,
+        type: 'docs_save',
+        category: 'docs',
+      });
     } catch {
       setSaveState('error');
       setSaveError('문서 저장에 실패했습니다. 다시 시도해 주세요.');
     }
   };
 
+  const exportToBeacon = async (strategy?: 'merge' | 'reapply') => {
+    if (!selectedId) return;
+    const doc = docs.find((d) => d.id === selectedId);
+    const payload = {
+      title: (editing ? title : doc?.title)?.trim() || '제목 없음',
+      content: editing ? content : doc?.content ?? '',
+      category: editing ? category : doc?.category ?? 'Docs',
+      docId: selectedId,
+    };
+    setExportBusy(true);
+    setExportMsg(null);
+    try {
+      const mtimes = await fetchBeaconMtimes();
+      if (!mtimes.available) {
+        setExportMsg('Beacon이 초기화되지 않았습니다.');
+        return;
+      }
+      const result = await exportDocToBeacon({
+        ...payload,
+        expectedMtime: mtimes.projectJson,
+        strategy,
+      });
+      if (!result.ok && result.conflict) {
+        setExportMsg('충돌: 병합/재적용이 필요합니다. 다시 눌러 병합합니다.');
+        await exportDocToBeacon({ ...payload, expectedMtime: result.mtime ?? null, strategy: 'merge' });
+        setExportMsg(`Beacon export 완료 (병합) · ${result.artifactPath ?? ''}`);
+        return;
+      }
+      if (!result.ok) {
+        setExportMsg(result.message ?? 'export 실패');
+        return;
+      }
+      setExportMsg(`Beacon 산출물로 저장됨 · ${result.artifactPath ?? ''}`);
+      void recordFolioTimelineEvent({
+        title: `문서 export · ${payload.title}`,
+        detail: result.artifactPath,
+        type: 'docs_export',
+        category: 'docs',
+      });
+    } finally {
+      setExportBusy(false);
+    }
+  };
+
   const doDelete = async () => {
     if (!selectedId) return;
     const id = selectedId;
+    const deleted = docs.find((d) => d.id === id);
     setDocs(prev => prev.filter(d => d.id !== id));
     setSelectedId(null);
     try {
       await deleteDocWithFallback(id);
+      void recordFolioTimelineEvent({
+        title: `문서 삭제 · ${deleted?.title ?? id}`,
+        type: 'docs_delete',
+        category: 'docs',
+      });
     } catch {
       /* UI는 이미 반영 */
     }
@@ -433,6 +494,18 @@ export const DocsPanel = memo(function DocsPanel({
                 ) : (
                   <>
                     <Badge variant="outline">{docs.find(d => d.id === selectedId)?.category}</Badge>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="gap-1 text-xs"
+                      disabled={exportBusy}
+                      onClick={() => void exportToBeacon()}
+                      aria-label="Beacon으로 export"
+                    >
+                      {exportBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Share2 className="h-3 w-3" />}
+                      Beacon으로 export
+                    </Button>
                     <Button type="button" size="sm" variant="ghost" onClick={startEdit} aria-label="문서 편집">편집</Button>
                     <Button type="button" size="sm" variant="ghost" onClick={() => void doDelete()} className="text-red-500 hover:text-red-600" aria-label="문서 삭제">
                       <Trash2 className="h-3 w-3" />
@@ -441,6 +514,9 @@ export const DocsPanel = memo(function DocsPanel({
                 )}
               </div>
             </div>
+            {exportMsg && (
+              <p className="px-4 pt-1 text-[11px] text-muted-foreground">{exportMsg}</p>
+            )}
             {editing && (
               <p id="doc-title-hint" className="px-4 pt-1 text-[11px] text-muted-foreground">
                 제목은 필수 입력 항목입니다.

@@ -388,8 +388,22 @@ export function BoardDndPanel({
     try {
       for (const item of removed) {
         await deleteTaskWithFallback(item.id);
+        void import('@/lib/beacon-timeline-consent').then(({ recordFolioTimelineEvent }) =>
+          recordFolioTimelineEvent({
+            title: `일정 삭제 · ${item.title}`,
+            type: 'board_delete',
+            category: 'board',
+          }),
+        );
       }
       await saveTasksWithFallback(next);
+      void import('@/lib/beacon-timeline-consent').then(({ recordFolioTimelineEvent }) =>
+        recordFolioTimelineEvent({
+          title: `일정 저장 · ${next.length}건`,
+          type: 'board_save',
+          category: 'board',
+        }),
+      );
     } catch {
       setSaveError('태스크 저장에 실패했습니다. 다시 시도해 주세요.');
     }

@@ -6,9 +6,10 @@ Folio **프로세스** 탭과 저장 모드 `Beacon`이 Beacon Project OS와 어
 ## 원칙
 
 1. **Beacon 프로젝트 루트가 원본** — 프로세스 상태·산출물의 출처
-2. **Folio는 읽기 전용** — `project.json` / `beacon.db` 등 CLI 산출물을 수정하지 않음
-3. **Folio 캐시는 별도** — `.beacon/cache/folio-*.json` 만 기록 가능
-4. **두 리포 분리** — Folio UI와 beacon-project-os CLI는 독립 저장소
+2. **CLI 원본 필드 보존** — `version` / `initializedAt` / `beacon.db` 는 Folio가 덮어쓰지 않음
+3. **Folio 오버레이 (P23)** — `project.json.folio` + append-only `edits` · artifact 파일 · folio-timeline.jsonl
+4. **Folio 캐시** — `.beacon/cache/folio-*.json` (Journal/Docs/Board 저장 모드)
+5. **두 리포 분리** — Folio UI와 beacon-project-os CLI는 독립 저장소
 
 ## 경로
 
@@ -17,7 +18,10 @@ Folio **프로세스** 탭과 저장 모드 `Beacon`이 Beacon Project OS와 어
 | 프로젝트 루트 | `process.cwd()` | `BEACON_PROJECT_ROOT` |
 | Beacon 디렉터리 | `<root>/.beacon` | — |
 | DB | `.beacon/beacon.db` | — |
-| Folio 캐시 | `.beacon/cache/folio-journals.json` 등 | — |
+| Folio 오버레이 | `.beacon/project.json` → `folio` | — |
+| Folio Timeline | `.beacon/folio-timeline.jsonl` | — |
+| Folio artifacts | `.beacon/artifacts/folio/**` | — |
+| Folio 캐시 | `.beacon/cache/folio-*.json` | — |
 
 `.beacon/` 은 gitignore 대상일 수 있다. 로컬에서만 생성된다.
 
@@ -43,11 +47,12 @@ BEACON_PROJECT_ROOT=/path/to/project
 ### 프로세스 탭
 
 - Gate (P0–P4) · Timeline · 산출물 체크리스트
-- API: `GET /api/beacon/summary`, `GET /api/beacon/available`
-- 변경 감지: `GET /api/beacon/mtime` + `watchBeaconFiles()` (project.json / beacon.db mtime)
-- Folio 스냅샷: `.beacon/snapshots/folio-*.json` (수동 · 변경 · 5분 주기) — CLI 원본과 별도
-- Diff: 스냅샷 간 project.json / Timeline 비교 (`beacon-diff`)
-- `.beacon`이 없으면 안내 UI + (가능 시) 폴더 선택
+- **편집 (P23)**: 프로젝트 이름 · Gate 상태 · 산출물 체크 → `PUT /api/beacon/project`
+- 충돌: mtime 불일치 시 병합/재적용
+- Timeline 동의 토글 (기본 off) → `POST /api/beacon/timeline`
+- Docs 「Beacon으로 export」 → `POST /api/beacon/artifacts`
+- API: `GET /api/beacon/summary`, `available`, `mtime`, `project`, `artifacts`, `timeline`
+- Folio 스냅샷 Diff: `.beacon/snapshots/`
 
 ### 저장 모드 Beacon
 
@@ -60,14 +65,17 @@ BEACON_PROJECT_ROOT=/path/to/project
 
 - Vercel 등 서버리스에서는 로컬 `.beacon` FS가 없을 수 있음 → available=false, 프로세스 탭 제한
 - WAL 모드 `beacon.db`는 서버에서 `node:sqlite` 등으로 읽음 (과거 sql.js WAL 이슈 수정됨)
-- Folio가 Beacon CLI 상태를 “권위 있게” 덮어쓰지 않음
+- Folio가 Beacon CLI 상태를 “권위 있게” 덮어쓰지 않음 (`folio` 오버레이로 공존)
+- Timeline 자동 기록은 동의 후에만
 
 ## 관련 코드
 
 | 파일 | 역할 |
 |------|------|
-| `src/lib/beacon.ts` | 뷰모델 · DB/JSON 파싱 · watch · 스냅샷 · diff |
+| `src/lib/beacon.ts` | 뷰모델 · 파싱 · watch · 스냅샷 · diff · 클라이언트 쓰기 |
+| `src/lib/beacon-sync.ts` | project overlay · artifact export · folio timeline |
+| `src/lib/beacon-timeline-consent.ts` | Timeline 기록 동의 |
 | `src/lib/storage.ts` | beacon 모드 save/load |
-| `src/app/api/beacon/*` | available · summary · folio · mtime · snapshots |
-| `src/components/beacon.tsx` | 프로세스 패널 |
+| `src/app/api/beacon/*` | summary · project · artifacts · timeline · folio · mtime · snapshots |
+| `src/components/beacon.tsx` | 프로세스 패널 (편집) |
 | `src/components/beacon-diff.tsx` | 스냅샷 Diff 뷰 |

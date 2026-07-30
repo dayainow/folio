@@ -10,6 +10,7 @@ import {
   GitCompare,
   Loader2,
   RefreshCw,
+  Save,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,16 +21,24 @@ import {
   fetchBeaconSnapshots,
   fetchBeaconSummary,
   loadBeaconFromDirectoryPicker,
+  putBeaconProject,
   watchBeaconFiles,
   type ArtifactItem,
   type BeaconViewModel,
+  type FolioArtifactOverlay,
   type FolioBeaconSnapshot,
   type FolioBeaconSnapshotMeta,
   type GateStatus,
+  type ProcessStageId,
   type StageState,
   type StageSummary,
   type TimelineItem,
-} from '@/lib/beacon';
+} from '@/lib/beacon'
+import {
+  getBeaconTimelineConsent,
+  setBeaconTimelineConsent,
+  subscribeBeaconTimelineConsent,
+} from '@/lib/beacon-timeline-consent'
 
 const AUTO_SNAPSHOT_MS = 5 * 60 * 1000;
 
@@ -129,14 +138,35 @@ function EmptyState({
   );
 }
 
-function ProjectCard({ view }: { view: BeaconViewModel }) {
-  const summary = view.summary!;
+function ProjectCard({
+  view,
+  nameDraft,
+  onNameChange,
+  editable,
+}: {
+  view: BeaconViewModel
+  nameDraft: string
+  onNameChange: (v: string) => void
+  editable: boolean
+}) {
+  const summary = view.summary!
   return (
     <Card className="rounded-2xl border border-gray-100 dark:border-gray-800 p-5 bg-card shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
+        <div className="min-w-0 flex-1">
           <div className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Beacon 프로세스</div>
-          <h2 className="mt-1 text-xl font-semibold tracking-tight">{summary.name}</h2>
+          {editable ? (
+            <label className="mt-1 block">
+              <span className="sr-only">프로젝트 이름</span>
+              <input
+                value={nameDraft}
+                onChange={(e) => onNameChange(e.target.value)}
+                className="w-full max-w-md rounded-lg border border-gray-200 bg-background px-2 py-1 text-xl font-semibold tracking-tight dark:border-gray-700"
+              />
+            </label>
+          ) : (
+            <h2 className="mt-1 text-xl font-semibold tracking-tight">{summary.name}</h2>
+          )}
           <p className="mt-1 text-sm text-muted-foreground">
             현재 Gate:{' '}
             <span className="text-foreground font-medium">
@@ -148,7 +178,7 @@ function ProjectCard({ view }: { view: BeaconViewModel }) {
           <p className="mt-0.5 text-[11px] text-muted-foreground">
             초기화 {formatWhen(summary.initializedAt)}
             {summary.scannedAt ? ` · 스캔 ${formatWhen(summary.scannedAt)}` : ''}
-            {view.source === 'file-picker' ? ' · 로컬 폴더' : ' · 서버 FS'}
+            {view.source === 'file-picker' ? ' · 로컬 폴더' : ' · 서버 FS · Folio 편집 가능'}
           </p>
         </div>
         <div className="min-w-[140px]">
@@ -167,10 +197,18 @@ function ProjectCard({ view }: { view: BeaconViewModel }) {
         </div>
       </div>
     </Card>
-  );
+  )
 }
 
-function StageGrid({ stages }: { stages: StageSummary[] }) {
+function StageGrid({
+  stages,
+  editable,
+  onGateChange,
+}: {
+  stages: StageSummary[]
+  editable: boolean
+  onGateChange: (id: StageSummary['id'], status: GateStatus) => void
+}) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
       {stages.map((stage) => (
@@ -192,18 +230,33 @@ function StageGrid({ stages }: { stages: StageSummary[] }) {
           <p className="mt-1 text-[11px] text-muted-foreground line-clamp-2 leading-snug">
             {stage.objective}
           </p>
-          <div
-            className={`mt-3 inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-medium ${gateTone(stage.gateStatus)}`}
-          >
-            {gateLabel(stage.gateStatus)}
-            {stage.totalRequirements > 0
-              ? ` · ${stage.satisfiedRequirements}/${stage.totalRequirements}`
-              : ''}
-          </div>
+          {editable ? (
+            <label className="mt-3 block">
+              <span className="sr-only">{stage.id} Gate 상태</span>
+              <select
+                className="h-7 w-full rounded-md border border-gray-200 bg-background px-1.5 text-[11px] dark:border-gray-700"
+                value={stage.gateStatus}
+                onChange={(e) => onGateChange(stage.id, e.target.value as GateStatus)}
+              >
+                <option value="ready">통과</option>
+                <option value="needs_evidence">근거 필요</option>
+                <option value="unknown">미확인</option>
+              </select>
+            </label>
+          ) : (
+            <div
+              className={`mt-3 inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-medium ${gateTone(stage.gateStatus)}`}
+            >
+              {gateLabel(stage.gateStatus)}
+              {stage.totalRequirements > 0
+                ? ` · ${stage.satisfiedRequirements}/${stage.totalRequirements}`
+                : ''}
+            </div>
+          )}
         </Card>
       ))}
     </div>
-  );
+  )
 }
 
 function TimelineList({ items }: { items: TimelineItem[] }) {
@@ -235,13 +288,21 @@ function TimelineList({ items }: { items: TimelineItem[] }) {
   );
 }
 
-function ArtifactChecklist({ items }: { items: ArtifactItem[] }) {
+function ArtifactChecklist({
+  items,
+  editable,
+  onToggle,
+}: {
+  items: ArtifactItem[]
+  editable: boolean
+  onToggle: (path: string, present: boolean) => void
+}) {
   if (items.length === 0) {
     return (
       <p className="text-sm text-muted-foreground py-6 text-center">
-        산출물 목록이 없습니다. 최신 스냅샷이 있으면 여기 표시됩니다.
+        산출물 목록이 없습니다. Docs에서 export 하거나 Beacon 스냅샷이 있으면 표시됩니다.
       </p>
-    );
+    )
   }
   return (
     <ul className="space-y-1.5 max-h-[420px] overflow-y-auto pr-1">
@@ -250,7 +311,20 @@ function ArtifactChecklist({ items }: { items: ArtifactItem[] }) {
           key={item.path}
           className="flex items-start gap-2 rounded-lg px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-900/60"
         >
-          {item.present ? (
+          {editable ? (
+            <button
+              type="button"
+              className="mt-0.5 shrink-0"
+              aria-label={`${item.name} ${item.present ? '완료 해제' : '완료 표시'}`}
+              onClick={() => onToggle(item.path, !item.present)}
+            >
+              {item.present ? (
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              ) : (
+                <Circle className="h-4 w-4 text-gray-300" />
+              )}
+            </button>
+          ) : item.present ? (
             <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
           ) : (
             <Circle className="h-4 w-4 mt-0.5 shrink-0 text-gray-300" />
@@ -265,7 +339,7 @@ function ArtifactChecklist({ items }: { items: ArtifactItem[] }) {
         </li>
       ))}
     </ul>
-  );
+  )
 }
 
 function sourceLabel(source: FolioBeaconSnapshotMeta['source']): string {
@@ -287,7 +361,15 @@ export function BeaconPanel() {
   const [diffBefore, setDiffBefore] = useState<FolioBeaconSnapshot | null>(null);
   const [diffAfter, setDiffAfter] = useState<FolioBeaconSnapshot | null>(null);
   const [diffLoading, setDiffLoading] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
+  const [stagesDraft, setStagesDraft] = useState<StageSummary[]>([]);
+  const [artifactsDraft, setArtifactsDraft] = useState<ArtifactItem[]>([]);
+  const [projectMtime, setProjectMtime] = useState<number | null>(null);
+  const [saveBusy, setSaveBusy] = useState(false);
+  const [conflict, setConflict] = useState<{ message: string; mtime: number | null } | null>(null);
+  const [timelineConsent, setTimelineConsent] = useState(false);
   const autoSnapAt = useRef(0);
+  const editable = view?.source === 'server';
 
   const refreshSnapshots = useCallback(async () => {
     const list = await fetchBeaconSnapshots();
@@ -307,6 +389,11 @@ export function BeaconPanel() {
     try {
       const data = await fetchBeaconSummary();
       setView(data);
+      setNameDraft(data.summary?.name ?? data.project?.name ?? '');
+      setStagesDraft(data.summary?.stages ?? []);
+      setArtifactsDraft(data.artifacts ?? []);
+      setProjectMtime(data.projectMtime ?? null);
+      setConflict(null);
       setLastUpdatedAt(new Date().toISOString());
       if (opts?.clearUpdateBadge !== false) {
         setUpdateAvailable(false);
@@ -389,9 +476,64 @@ export function BeaconPanel() {
   useEffect(() => {
     const handle = window.setTimeout(() => {
       void loadFromServer();
+      setTimelineConsent(getBeaconTimelineConsent());
     }, 0);
-    return () => window.clearTimeout(handle);
+    const unsub = subscribeBeaconTimelineConsent(setTimelineConsent);
+    return () => {
+      window.clearTimeout(handle);
+      unsub();
+    };
   }, [loadFromServer]);
+
+  const saveProcessEdits = useCallback(
+    async (strategy?: 'merge' | 'reapply') => {
+      if (!editable) return;
+      setSaveBusy(true);
+      setError(null);
+      try {
+        const gates = Object.fromEntries(
+          stagesDraft.map((s) => [s.id, { status: s.gateStatus, state: s.state }]),
+        ) as Partial<Record<ProcessStageId, { status: GateStatus; state: StageState }>>;
+
+        const artifacts: FolioArtifactOverlay[] = artifactsDraft.map((a) => ({
+          path: a.path,
+          name: a.name,
+          kind: a.kind,
+          category: a.scope,
+          present: a.present,
+          source: a.path.includes('/artifacts/folio/') ? 'folio' : 'beacon',
+          modifiedAt: a.modifiedAt,
+        }));
+
+        const result = await putBeaconProject({
+          expectedMtime: projectMtime,
+          strategy,
+          name: nameDraft.trim() || undefined,
+          gates,
+          artifacts,
+        });
+
+        if (!result.ok && result.conflict) {
+          setConflict({
+            message: result.message ?? '충돌이 감지되었습니다.',
+            mtime: result.mtime ?? null,
+          });
+          return;
+        }
+        if (!result.ok) {
+          setError(result.message ?? '저장 실패');
+          return;
+        }
+
+        setConflict(null);
+        setProjectMtime(result.mtime ?? null);
+        await loadFromServer();
+      } finally {
+        setSaveBusy(false);
+      }
+    },
+    [artifactsDraft, editable, loadFromServer, nameDraft, projectMtime, stagesDraft],
+  );
 
   // 변경 감지 폴링 + 자동 새로고침/스냅샷
   useEffect(() => {
@@ -451,7 +593,11 @@ export function BeaconPanel() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
           <Activity className="h-4 w-4" />
-          <span>읽기 전용 · Folio는 CLI 원본을 수정하지 않습니다</span>
+          <span>
+            {editable
+              ? '양방향 · Folio 오버레이는 project.json 에 append-only 로 저장'
+              : '폴더 선택 모드 · 서버 쓰기 비활성'}
+          </span>
           {view.source !== 'file-picker' && (
             <span className="text-[10px] rounded-full border border-gray-200 px-2 py-0.5 dark:border-gray-700">
               변경 감지 중
@@ -467,6 +613,18 @@ export function BeaconPanel() {
           </span>
         </div>
         <div className="flex flex-wrap gap-2">
+          {editable && (
+            <Button
+              type="button"
+              size="sm"
+              className="h-7 text-xs gap-1.5"
+              disabled={saveBusy || loading}
+              onClick={() => void saveProcessEdits()}
+            >
+              {saveBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+              프로세스 저장
+            </Button>
+          )}
           <Button
             type="button"
             size="sm"
@@ -504,10 +662,66 @@ export function BeaconPanel() {
         </div>
       </div>
 
+      <label className="inline-flex items-center gap-2 text-[11px] text-muted-foreground cursor-pointer">
+        <input
+          type="checkbox"
+          checked={timelineConsent}
+          onChange={(e) => {
+            setBeaconTimelineConsent(e.target.checked);
+            setTimelineConsent(e.target.checked);
+          }}
+          className="rounded border-gray-300"
+        />
+        Folio 저장/편집 이벤트를 Beacon Timeline에 기록 (기본 꺼짐)
+      </label>
+
       {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
 
-      <ProjectCard view={view} />
-      <StageGrid stages={view.summary.stages} />
+      {conflict && (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100"
+        >
+          <span className="flex-1">{conflict.message}</span>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs"
+            disabled={saveBusy}
+            onClick={() => void saveProcessEdits('merge')}
+          >
+            병합
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            className="h-7 text-xs"
+            disabled={saveBusy}
+            onClick={() => void saveProcessEdits('reapply')}
+          >
+            재적용
+          </Button>
+        </div>
+      )}
+
+      <ProjectCard
+        view={view}
+        nameDraft={nameDraft}
+        onNameChange={setNameDraft}
+        editable={editable}
+      />
+      <StageGrid
+        stages={stagesDraft.length ? stagesDraft : view.summary.stages}
+        editable={editable}
+        onGateChange={(id, status) => {
+          setStagesDraft((prev) =>
+            (prev.length ? prev : view.summary!.stages).map((s) =>
+              s.id === id ? { ...s, gateStatus: status } : s,
+            ),
+          );
+        }}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card className="rounded-2xl border border-gray-100 dark:border-gray-800 p-5 bg-card shadow-sm">
@@ -517,9 +731,19 @@ export function BeaconPanel() {
         <Card className="rounded-2xl border border-gray-100 dark:border-gray-800 p-5 bg-card shadow-sm">
           <h3 className="text-sm font-semibold tracking-tight mb-1">산출물 체크리스트</h3>
           <p className="text-[11px] text-muted-foreground mb-4">
-            최신 스냅샷 기준 · {view.artifacts.length}개
+            Beacon + Folio export · {(artifactsDraft.length ? artifactsDraft : view.artifacts).length}개
           </p>
-          <ArtifactChecklist items={view.artifacts} />
+          <ArtifactChecklist
+            items={artifactsDraft.length ? artifactsDraft : view.artifacts}
+            editable={editable}
+            onToggle={(path, present) => {
+              setArtifactsDraft((prev) =>
+                (prev.length ? prev : view.artifacts).map((a) =>
+                  a.path === path ? { ...a, present } : a,
+                ),
+              );
+            }}
+          />
         </Card>
       </div>
 

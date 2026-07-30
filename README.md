@@ -5,7 +5,7 @@
 
 | | |
 |--|--|
-| 버전 | **0.7.0** (Phase 1~6 완료) |
+| 버전 | **0.8.0-wip** (Phase 7) |
 | 라이선스 | private |
 
 ---
@@ -151,10 +151,10 @@ npm run qa:smoke && npm run lint && npm run typecheck
 
 ## 작업 관리
 
-- 현재: **Phase 1~6 완료** · **0.7.0** 정식 릴리즈
-- 완료: Phase 1~5 (**0.6.0**) · Phase 6 (**P20**~**P22**)
-- 진행 중: —
-- 다음: 운영 유지보수 · 필요 시 다음 Phase 기획
+- 현재: **Phase 7** · **0.8.0-wip**
+- 완료: Phase 1~6 (**0.7.0**)
+- 진행 중: **P23** Beacon 양방향 연동
+- 다음: Phase 7 후속 (필요 시)
 
 상세: [VERSION.md](./VERSION.md) · [docs/runbooks/](./docs/runbooks/)
 
@@ -168,3 +168,4 @@ npm run qa:smoke && npm run lint && npm run typecheck
 | 4 | 배포 · Beacon · 저장 모드 | ✅ |
 | 5 | 성능 · 접근성 · 문서화 · QA · 배포 자동화 | ✅ **0.6.0** |
 | 6 | 모니터 · Beacon 고도화 · 운영 런북 | ✅ **0.7.0** |
+| 7 | Beacon 양방향 연동 | 진행 중 (P23) |

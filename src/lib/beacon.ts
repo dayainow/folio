@@ -1,17 +1,52 @@
 /**
- * Beacon 프로세스 상태 읽기 (읽기 전용)
+ * Beacon 프로세스 상태 읽기 + Folio 오버레이(P23)
  * - 서버: BEACON_PROJECT_ROOT 또는 process.cwd() 아래 `.beacon/`
- * - 클라이언트: File System Access API 또는 `/api/beacon/summary`
+ * - 클라이언트: File System Access API 또는 `/api/beacon/*`
  */
 
 export type ProcessStageId = 'p0' | 'p1' | 'p2' | 'p3' | 'p4'
 export type GateStatus = 'ready' | 'needs_evidence' | 'unknown'
 export type StageState = 'ready' | 'current' | 'upcoming' | 'unknown'
 
+export interface FolioGateOverlay {
+  status: GateStatus
+  state?: StageState
+}
+
+export interface FolioArtifactOverlay {
+  path: string
+  name: string
+  kind: string
+  category?: string
+  present: boolean
+  source?: 'folio' | 'beacon'
+  docId?: string
+  modifiedAt?: string
+}
+
+export interface FolioProjectEdit {
+  at: string
+  op: string
+  stageId?: ProcessStageId
+  detail?: string
+}
+
+export interface FolioProjectOverlay {
+  updatedAt: string
+  baseVersion: number
+  baseMtime: number | null
+  name?: string
+  gates?: Partial<Record<ProcessStageId, FolioGateOverlay>>
+  artifacts?: FolioArtifactOverlay[]
+  edits: FolioProjectEdit[]
+}
+
 export interface BeaconProjectJson {
   version: number
   initializedAt: string
   name?: string
+  /** Folio append-only 오버레이 (CLI 원본 필드와 공존) */
+  folio?: FolioProjectOverlay
 }
 
 export interface StageSummary {
@@ -104,6 +139,8 @@ export interface BeaconViewModel {
   artifacts: ArtifactItem[]
   message?: string
   source: 'server' | 'file-picker' | 'none'
+  /** project.json mtime (ms) — 충돌 감지용 */
+  projectMtime?: number | null
 }
 
 export const STAGE_META: Record<
@@ -135,10 +172,31 @@ export function parseBeaconProjectJson(raw: string): BeaconProjectJson | null {
     if (typeof value.version !== 'number' || typeof value.initializedAt !== 'string') {
       return null
     }
+    const folio =
+      value.folio && typeof value.folio === 'object'
+        ? ({
+            updatedAt:
+              typeof value.folio.updatedAt === 'string'
+                ? value.folio.updatedAt
+                : value.initializedAt,
+            baseVersion:
+              typeof value.folio.baseVersion === 'number'
+                ? value.folio.baseVersion
+                : value.version,
+            baseMtime:
+              typeof value.folio.baseMtime === 'number' ? value.folio.baseMtime : null,
+            name: typeof value.folio.name === 'string' ? value.folio.name : undefined,
+            gates: value.folio.gates,
+            artifacts: Array.isArray(value.folio.artifacts) ? value.folio.artifacts : [],
+            edits: Array.isArray(value.folio.edits) ? value.folio.edits : [],
+          } satisfies FolioProjectOverlay)
+        : undefined
+
     return {
       version: value.version,
       initializedAt: value.initializedAt,
       name: typeof value.name === 'string' ? value.name : undefined,
+      folio,
     }
   } catch {
     return null
@@ -483,6 +541,7 @@ export function buildBeaconViewModel(input: {
   db?: BeaconDbPayload | null
   fallbackName?: string
   source: BeaconViewModel['source']
+  folioTimeline?: TimelineItem[]
 }): BeaconViewModel {
   if (!input.project) {
     return {
@@ -497,17 +556,64 @@ export function buildBeaconViewModel(input: {
   }
 
   const snapshot = input.db?.latestSnapshot ?? null
-  const summary = getProjectSummary({
+  let summary = getProjectSummary({
     project: input.project,
     snapshot,
     fallbackName: input.fallbackName,
   })
+
+  // Folio 오버레이 적용 (이름 · Gate)
+  const folio = input.project.folio
+  if (folio) {
+    const name = folio.name?.trim() || input.project.name?.trim() || summary.name
+    const stages = summary.stages.map((stage) => {
+      const gate = folio.gates?.[stage.id]
+      if (!gate) return stage
+      return {
+        ...stage,
+        gateStatus: gate.status,
+        state: gate.state ?? stage.state,
+      }
+    })
+    const readyStages = stages.filter((s) => s.gateStatus === 'ready').length
+    summary = {
+      ...summary,
+      name,
+      stages,
+      readyStages,
+      progressPercent: Math.round((readyStages / summary.totalStages) * 100),
+    }
+  }
+
+  const fromSnap = getArtifacts({ snapshot })
+  const artMap = new Map(fromSnap.map((a) => [a.path, a]))
+  for (const a of folio?.artifacts ?? []) {
+    artMap.set(a.path, {
+      path: a.path,
+      name: a.name,
+      kind: a.kind,
+      scope: a.category,
+      modifiedAt: a.modifiedAt,
+      present: a.present,
+    })
+  }
+  const artifacts = Array.from(artMap.values()).sort((a, b) => a.path.localeCompare(b.path))
+
+  const fromDb = getTimeline({ db: input.db, snapshot })
+  const tlMap = new Map(fromDb.map((t) => [t.id, t]))
+  for (const t of input.folioTimeline ?? []) {
+    tlMap.set(t.id, t)
+  }
+  const timeline = Array.from(tlMap.values())
+    .sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt))
+    .slice(0, 40)
+
   return {
     available: true,
     project: input.project,
     summary,
-    timeline: getTimeline({ db: input.db, snapshot }),
-    artifacts: getArtifacts({ snapshot }),
+    timeline,
+    artifacts,
     source: input.source,
   }
 }
@@ -1019,5 +1125,61 @@ export async function fetchBeaconSnapshot(id: string): Promise<FolioBeaconSnapsh
     return json.snapshot ?? null
   } catch {
     return null
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* P23 — 클라이언트 쓰기                                                      */
+/* -------------------------------------------------------------------------- */
+
+export type BeaconProjectPutResult = {
+  ok: boolean
+  conflict?: boolean
+  message?: string
+  project?: BeaconProjectJson
+  mtime?: number | null
+  artifactPath?: string
+}
+
+/** project.json Folio 오버레이 저장 */
+export async function putBeaconProject(body: {
+  expectedMtime: number | null
+  strategy?: 'merge' | 'reapply'
+  name?: string
+  gates?: Partial<Record<ProcessStageId, FolioGateOverlay>>
+  artifacts?: FolioArtifactOverlay[]
+}): Promise<BeaconProjectPutResult> {
+  try {
+    const res = await fetch('/api/beacon/project', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    const json = (await res.json()) as BeaconProjectPutResult
+    return json
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : 'network_error' }
+  }
+}
+
+/** Docs → Beacon artifact export */
+export async function exportDocToBeacon(body: {
+  title: string
+  content: string
+  category: string
+  docId?: string
+  expectedMtime?: number | null
+  strategy?: 'merge' | 'reapply'
+}): Promise<BeaconProjectPutResult> {
+  try {
+    const res = await fetch('/api/beacon/artifacts', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    const json = (await res.json()) as BeaconProjectPutResult
+    return json
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : 'network_error' }
   }
 }

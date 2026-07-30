@@ -6,75 +6,50 @@
 
 1. **Beacon 프로젝트 루트가 원본** — 프로세스 상태·산출물의 출처는 프로젝트 폴더다.
 2. **두 리포 분리** — Folio UI/앱과 beacon-project-os CLI·규약은 각각 독립 저장소로 유지한다.
-3. **Folio는 읽기만** — Beacon CLI가 생성하는 파일·DB는 Folio에서 **쓰지 않는다**.
-4. **UI보다 규약 우선** — 프로세스 탭 임베딩 전에 경로·파일 규약을 이 문서로 고정한다.
-
-## 경로 (이 워크스페이스)
-
-| 항목 | 경로 |
-|------|------|
-| Beacon 프로젝트 루트 | `/Users/dobedub/Documents/source/ax/folio` |
-| `.beacon/` | `/Users/dobedub/Documents/source/ax/folio/.beacon` |
-
-> 다른 머신·클론에서는 프로젝트 루트를 해당 checkout 경로로 치환한다. Folio 설정(향후)에는 절대/상대 루트를 한 번만 지정한다.
+3. **CLI 원본 필드 보존** — `version` / `initializedAt` 등 CLI 필드는 Folio가 덮어쓰지 않는다.
+4. **Folio 오버레이 (P23)** — 편집 내용은 `project.json` 의 `folio` 객체와 `folio.edits[]`(append-only)에 기록한다.
+5. **UI보다 규약 우선** — 경로·파일 규약을 이 문서로 고정한다.
 
 ## Folio 탭 구조 (목표)
 
 | 탭 | 역할 |
 |----|------|
 | 일지 | Journal |
-| 문서 | Docs |
+| 문서 | Docs (+ Beacon export) |
 | 일정 | Board |
-| **프로세스** | Beacon 상태 읽기 전용 뷰 |
-
-현재 구현은 일지/문서/일정(+통계·분석)과 **프로세스** 탭(`BeaconPanel`)이다.
+| **프로세스** | Beacon 상태 뷰 + Folio 오버레이 편집 |
 
 ## 프로세스 탭이 읽는 파일 / DB
-
-모두 **읽기 전용**. Folio는 생성·수정·삭제를 하지 않는다.
 
 | 경로 | 용도 |
 |------|------|
 | `.beacon/beacon.db` | Beacon SQLite DB (읽기 전용) |
-| `.beacon/project.json` | 프로젝트 메타·현재 단계 요약 |
-| `PROCESS.md` | 이 규약 문서 (루트) |
-| (선택) Project Book 등 Beacon이 두는 마크다운 | 프로세스 설명·체크리스트 표시 |
+| `.beacon/project.json` | 프로젝트 메타 + Folio `folio` 오버레이 |
+| `.beacon/folio-timeline.jsonl` | Folio Timeline append (동의 시) |
+| `.beacon/artifacts/folio/**` | Docs export 산출물 |
+| `.beacon/cache/folio-*.json` | 저장 모드 Beacon 캐시 |
+| `PROCESS.md` | 이 규약 문서 |
 
-Beacon CLI가 추가로 만드는 산출물도 동일하게 **읽기만** 허용한다.
+## 편집 규칙 (P23)
 
-## 편집 금지 원칙
-
-- Folio UI·API는 Beacon CLI 원본(`.beacon/project.json`, `beacon.db` 등)을 **업데이트하지 않는다**.
-- 프로세스 변경은 **Beacon CLI / beacon-project-os** 측에서만 수행한다.
-- 예외: 저장 모드가 Beacon일 때 Folio는 **`.beacon/cache/folio-*.json`에만** Journal/Docs/Board 캐시를 기록한다 (CLI 원본과 분리).
+- Folio는 `project.json`에 **append-only** 로 `folio.edits` 를 쌓고, `folio.gates` / `folio.artifacts` / `name` 오버레이를 갱신한다.
+- `beacon.db` 는 쓰지 않는다 (Timeline은 jsonl).
+- 외부(CLI) mtime 변경 시 충돌 → 병합(merge) 또는 재적용(reapply).
+- Timeline 자동 기록은 **사용자 동의** 후에만 (기본 off).
 
 ## 연동 구현 상태
 
 1. **`.beacon/project.json` 읽기** — ✅ P14
-2. **Gate / P0–P4 상태 요약** — ✅ P14 (`beacon.db` 스냅샷)
+2. **Gate / P0–P4 상태 요약** — ✅ P14
 3. **Timeline 요약** — ✅ P14
 4. **산출물 체크리스트** — ✅ P14
-5. **저장 모드 Beacon 캐시** — ✅ P14-2 (`.beacon/cache`만)
-
-구현:
-
-- `/api/beacon/summary` — Node에서 `BEACON_PROJECT_ROOT` 또는 `cwd` 아래 `.beacon` 읽기
-- `/api/beacon/available`, `/api/beacon/folio` — 가용성 · Folio 캐시 R/W
-- 브라우저 File System Access API — 서버 FS가 없을 때 `.beacon` 폴더 선택
-- 서버: `node:sqlite` (WAL), 브라우저: `sql.js`
-
-## 리포 관계 (요약)
-
-```
-beacon-project-os     →  CLI / 규약 / .beacon 스키마 (쓰기)
-        ↓ (프로젝트 폴더에 .beacon 생성)
-프로젝트 루트 (.beacon/, PROCESS.md, …)
-        ↓ (읽기 전용)
-folio                 →  프로세스 탭 UI (임베딩)
-```
+5. **저장 모드 Beacon 캐시** — ✅ P14-2
+6. **변경 감지 · Folio 스냅샷 Diff** — ✅ P21
+7. **프로세스 편집 · Docs export · Timeline 동의** — ✅ P23
 
 ## 변경 이력
 
 - 2026-07-28: 초안 — 경로·탭·읽기 전용·연동 순서 정리
-- 2026-07-28: P14 — 프로세스 탭 UI (`/api/beacon/summary`, sql.js, 폴더 선택)
-- 2026-07-29: P14-2 — `.beacon/cache/folio-*.json` 저장 모드 / Phase 4(0.5.0) 완료
+- 2026-07-28: P14 — 프로세스 탭 UI
+- 2026-07-29: P14-2 — `.beacon/cache` 저장 모드
+- 2026-07-30: P23 — Folio 양방향 오버레이 · artifact export · timeline 동의

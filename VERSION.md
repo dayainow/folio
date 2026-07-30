@@ -6,10 +6,10 @@
 
 | 항목 | 값 |
 |------|-----|
-| 버전 | **0.7.0** |
-| Phase | Phase 1~6 완료 |
-| 진행 중 | — |
-| 다음 | 운영 유지보수 · 필요 시 Phase 7 기획 |
+| 버전 | **0.8.0-wip** |
+| Phase | Phase 7 |
+| 진행 중 | P23 Beacon 양방향 연동 |
+| 다음 | Phase 7 후속 |
 
 ## 완료 항목
 
@@ -43,13 +43,19 @@
 | P19 | 배포 자동화 강화 · health · 0.6.0 릴리즈 | `3fecfdf` |
 | P20 | 모니터링/알림 | `1416576` |
 | P21 | Beacon 고도화 | `4ca166d` |
-| P22 | 운영 런북 · runtime API · 0.7.0 릴리즈 | *(본 커밋)* |
+| P22 | 운영 런북 · runtime API · 0.7.0 릴리즈 | `461cf0b` |
 
 ## 진행 중
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| — | — | Phase 1~6 완료 |
+| P23 | Beacon 양방향 연동 | 프로세스 편집 · Docs export · Timeline 동의 |
+
+## Phase 7 계획
+
+| ID | 요약 | 노트 |
+|----|------|------|
+| P23 | Beacon 양방향 | project.json Folio 오버레이 · artifact export · timeline |
 
 ## Phase 6 계획 (배포·운영)
 
@@ -57,9 +63,16 @@
 |----|------|------|
 | P20 | 모니터링/알림 | ✅ |
 | P21 | Beacon 고도화 | ✅ |
-| P22 | 운영 런북 | ✅ Incident · Backup · Deploy · Upgrade · `/api/runtime` |
+| P22 | 운영 런북 | ✅ |
 
 ## 변경 이력
+
+### 0.8.0-wip — 2026-07-30 (P23 Beacon 양방향)
+
+- 프로세스 탭: 이름 · Gate · 산출물 체크 편집 → `project.json` Folio 오버레이 (append-only edits)
+- 충돌 감지(mtime) · 병합/재적용
+- Docs 「Beacon으로 export」 → `.beacon/artifacts/folio/<category>/`
+- Timeline: 동의 시 Folio 이벤트를 `.beacon/folio-timeline.jsonl` 에 append (기본 off)
 
 ### 0.7.0 — 2026-07-29 (Phase 6 완료 · P22)
 

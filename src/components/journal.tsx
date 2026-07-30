@@ -228,6 +228,14 @@ export const JournalPanel = memo(function JournalPanel({
             setSaveState('error');
             setSaveError('클라우드/Beacon 동기화에 실패했지만 로컬에는 저장되었습니다.');
             showAppToast('원격 동기화 실패 · 로컬에는 저장됨', { withRetry: true });
+          } else {
+            void import('@/lib/beacon-timeline-consent').then(({ recordFolioTimelineEvent }) =>
+              recordFolioTimelineEvent({
+                title: `일지 저장 · ${date}`,
+                type: 'journal_save',
+                category: 'journal',
+              }),
+            );
           }
         })
         .catch(() => {

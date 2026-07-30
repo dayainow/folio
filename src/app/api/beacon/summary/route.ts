@@ -42,13 +42,17 @@ export async function GET() {
 
     const db = await readBeaconDb({ root })
     const fallbackName = await readFallbackName(root)
+    const { readFolioTimelineEvents } = await import('@/lib/beacon-sync')
+    const folioTimeline = await readFolioTimelineEvents(root)
     const view = buildBeaconViewModel({
       project,
       db,
       fallbackName,
       source: 'server',
+      folioTimeline,
     })
-    return NextResponse.json(view)
+    const mtimes = await import('@/lib/beacon').then((m) => m.getBeaconFileMtimes(root))
+    return NextResponse.json({ ...view, projectMtime: mtimes.projectJson })
   } catch (error) {
     return NextResponse.json(
       {
