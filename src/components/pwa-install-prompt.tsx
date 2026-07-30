@@ -20,9 +20,10 @@ type BeforeInstallPromptEvent = Event & {
 
 const INSTALL_DISMISS_KEY = 'folio_pwa_install_dismissed'
 
-/** PWA 설치 안내 + 푸시 알림 동의 */
+/** PWA 설치 안내 + 푸시 알림 동의 — hydrate 전에는 렌더하지 않아 CLS 방지 */
 export function PwaInstallPrompt() {
   const deferred = useRef<BeforeInstallPromptEvent | null>(null)
+  const [ready, setReady] = useState(false)
   const [canInstall, setCanInstall] = useState(false)
   const [dismissed, setDismissed] = useState(true)
   const [consent, setConsent] = useState<PushConsent>('unknown')
@@ -33,6 +34,7 @@ export function PwaInstallPrompt() {
     const handle = window.setTimeout(() => {
       setDismissed(localStorage.getItem(INSTALL_DISMISS_KEY) === '1')
       setConsent(getPushConsent())
+      setReady(true)
     }, 0)
 
     const onBip = (e: Event) => {
@@ -50,8 +52,9 @@ export function PwaInstallPrompt() {
     }
   }, [])
 
-  const showInstall = canInstall && !dismissed
-  const showPush = consent !== 'granted' && consent !== 'denied'
+  // 아직 결정하지 않은 경우(default)에만 푸시 안내 — unknown/granted/denied는 배너로 밀지 않음
+  const showInstall = ready && canInstall && !dismissed
+  const showPush = ready && consent === 'default'
 
   if (!showInstall && !showPush) return null
 

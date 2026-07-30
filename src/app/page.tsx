@@ -18,9 +18,26 @@ import { parseFolioDeepLink } from '@/lib/folio-links';
 import { Activity } from 'lucide-react';
 
 const PanelFallback = ({ label }: { label: string }) => (
-  <div className="py-16 text-center text-sm text-muted-foreground" role="status" aria-live="polite">
+  <div className="min-h-[28rem] py-10 text-center text-sm text-muted-foreground" role="status" aria-live="polite">
     {label} 로딩 중…
   </div>
+);
+
+const WidgetSkeleton = () => (
+  <section aria-hidden className="mb-6">
+    <div className="mb-2 flex h-11 items-center justify-between gap-2">
+      <div className="h-3 w-10 rounded bg-muted/50" />
+      <div className="h-8 w-16 rounded bg-muted/40" />
+    </div>
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          className="min-h-[11rem] h-44 rounded-2xl border border-gray-100 dark:border-gray-800 bg-muted/30 animate-pulse"
+        />
+      ))}
+    </div>
+  </section>
 );
 
 const JournalPanel = dynamic(
@@ -65,12 +82,12 @@ const TeamSidebar = dynamic(
 
 const WidgetDashboard = dynamic(
   () => import('@/components/widgets').then((m) => ({ default: m.WidgetDashboard })),
-  { ssr: false, loading: () => <PanelFallback label="위젯" /> },
+  { ssr: false, loading: () => <WidgetSkeleton /> },
 );
 
 const PwaInstallPrompt = dynamic(
   () => import('@/components/pwa-install-prompt').then((m) => ({ default: m.PwaInstallPrompt })),
-  { ssr: false },
+  { ssr: false, loading: () => null },
 );
 
 type TabValue = 'journal' | 'docs' | 'board' | 'process';
@@ -250,9 +267,9 @@ export default function Home() {
               onOpenManage={() => setTeamPanelOpen(true)}
             />
           )}
-          {authReady && (
+          {authReady ? (
             email ? (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 min-w-[5.5rem] justify-end">
                 <span className="text-xs text-muted-foreground max-w-[160px] truncate" title={email}>
                   {email}
                 </span>
@@ -277,6 +294,11 @@ export default function Home() {
                 로그인
               </Link>
             )
+          ) : (
+            <div
+              className="h-11 w-[4.5rem] sm:h-7 rounded-md bg-muted/40 animate-pulse"
+              aria-hidden
+            />
           )}
         </div>
       </header>

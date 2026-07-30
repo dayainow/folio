@@ -172,7 +172,7 @@ export function HealthStatus() {
             <span className={cn('h-1.5 w-1.5 rounded-full', styles.dot)} aria-hidden />
           )}
           <Activity className="h-3 w-3 opacity-70" aria-hidden />
-          <span className="hidden sm:inline">{label}</span>
+          <span className="hidden sm:inline min-w-[3.5rem] text-left">{label}</span>
         </Button>
 
         {open && (

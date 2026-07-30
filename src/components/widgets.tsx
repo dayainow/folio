@@ -102,7 +102,7 @@ function JournalWidget({
   onOpen?: () => void
 }) {
   return (
-    <Card className="rounded-2xl border border-gray-100 dark:border-gray-800 p-4 pr-12 bg-card shadow-sm h-full">
+    <Card className="rounded-2xl border border-gray-100 dark:border-gray-800 p-4 pr-12 bg-card shadow-sm h-full min-h-[11rem]">
       <div className="flex items-center gap-2 text-sm font-semibold tracking-tight mb-2">
         <BookOpen className="h-4 w-4" aria-hidden />
         오늘의 일지
@@ -141,7 +141,7 @@ function TasksWidget({
 }) {
   const inProgress = counts.in_progress
   return (
-    <Card className="rounded-2xl border border-gray-100 dark:border-gray-800 p-4 pr-12 bg-card shadow-sm h-full">
+    <Card className="rounded-2xl border border-gray-100 dark:border-gray-800 p-4 pr-12 bg-card shadow-sm h-full min-h-[11rem]">
       <div className="flex items-center gap-2 text-sm font-semibold tracking-tight mb-2">
         <Kanban className="h-4 w-4" aria-hidden />
         진행 중 태스크
@@ -186,7 +186,7 @@ function GateWidget({
   onOpen?: () => void
 }) {
   return (
-    <Card className="rounded-2xl border border-gray-100 dark:border-gray-800 p-4 pr-12 bg-card shadow-sm h-full">
+    <Card className="rounded-2xl border border-gray-100 dark:border-gray-800 p-4 pr-12 bg-card shadow-sm h-full min-h-[11rem]">
       <div className="flex items-center gap-2 text-sm font-semibold tracking-tight mb-2">
         <Activity className="h-4 w-4" aria-hidden />
         Gate 상태
@@ -340,20 +340,26 @@ export function WidgetDashboard({ onOpenTab }: WidgetDashboardProps) {
 
   if (!ready) {
     return (
-      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3" aria-hidden>
-        {[0, 1, 2].map((i) => (
-          <div
-            key={i}
-            className="h-36 rounded-2xl border border-gray-100 dark:border-gray-800 bg-muted/30 animate-pulse"
-          />
-        ))}
-      </div>
+      <section aria-hidden className="mb-6">
+        <div className="mb-2 flex h-11 items-center justify-between gap-2">
+          <div className="h-3 w-10 rounded bg-muted/50" />
+          <div className="h-8 w-16 rounded bg-muted/40" />
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="min-h-[11rem] h-44 rounded-2xl border border-gray-100 dark:border-gray-800 bg-muted/30 animate-pulse"
+            />
+          ))}
+        </div>
+      </section>
     )
   }
 
   return (
     <section aria-label="대시보드 위젯" className="mb-6">
-      <div className="mb-2 flex items-center justify-between gap-2">
+      <div className="mb-2 flex h-11 items-center justify-between gap-2">
         <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
           위젯
         </h2>
