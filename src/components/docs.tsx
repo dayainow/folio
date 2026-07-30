@@ -25,6 +25,7 @@ import {
 import { loadDocsWithFallback, saveDocWithFallback, deleteDocWithFallback, loadCategories, type DocEntry } from '@/lib/docs';
 import { readObsidianMarkdownFiles, uniqueDocTitle } from '@/lib/obsidian';
 import { exportDocToBeacon, fetchBeaconMtimes } from '@/lib/beacon';
+import { getBeaconAutoArtifact } from '@/lib/beacon-automation';
 import { recordFolioTimelineEvent } from '@/lib/beacon-timeline-consent';
 
 type EditPane = 'edit' | 'preview' | 'split';
@@ -201,6 +202,33 @@ export const DocsPanel = memo(function DocsPanel({
         type: 'docs_save',
         category: 'docs',
       });
+      if (getBeaconAutoArtifact()) {
+        void (async () => {
+          try {
+            const mtimes = await fetchBeaconMtimes();
+            if (!mtimes.available) return;
+            const result = await exportDocToBeacon({
+              title: updated.title,
+              content: updated.content,
+              category: updated.category,
+              docId: updated.id,
+              expectedMtime: mtimes.projectJson,
+            });
+            if (!result.ok && result.conflict) {
+              await exportDocToBeacon({
+                title: updated.title,
+                content: updated.content,
+                category: updated.category,
+                docId: updated.id,
+                expectedMtime: result.mtime ?? null,
+                strategy: 'merge',
+              });
+            }
+          } catch {
+            /* 자동 산출물은 저장 성공과 분리 */
+          }
+        })();
+      }
     } catch {
       setSaveState('error');
       setSaveError('문서 저장에 실패했습니다. 다시 시도해 주세요.');

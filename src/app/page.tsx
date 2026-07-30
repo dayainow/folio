@@ -10,6 +10,7 @@ import { GlobalSearch, type SearchNavigatePayload } from '@/components/global-se
 import { ThemeToggle } from '@/components/theme-toggle';
 import { StorageModeToggle } from '@/components/storage-mode-toggle';
 import { HealthStatus } from '@/components/health-status';
+import { BeaconChangeBadge } from '@/components/beacon-change-badge';
 import { getActiveTeamId } from '@/lib/team';
 import { Activity } from 'lucide-react';
 
@@ -196,6 +197,7 @@ export default function Home() {
         <div className="flex items-center gap-3">
           <span className="text-xs text-muted-foreground hidden sm:inline">프로젝트의 기록</span>
           <HealthStatus />
+          <BeaconChangeBadge />
           <StorageModeToggle />
           <ThemeToggle />
           {authReady && email && (

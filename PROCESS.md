@@ -46,6 +46,7 @@
 5. **저장 모드 Beacon 캐시** — ✅ P14-2
 6. **변경 감지 · Folio 스냅샷 Diff** — ✅ P21
 7. **프로세스 편집 · Docs export · Timeline 동의** — ✅ P23
+8. **자동 감지 · Gate 자동화 · Timeline 분석** — ✅ P24 (진행 중 UI)
 
 ## 변경 이력
 
@@ -53,3 +54,4 @@
 - 2026-07-28: P14 — 프로세스 탭 UI
 - 2026-07-29: P14-2 — `.beacon/cache` 저장 모드
 - 2026-07-30: P23 — Folio 양방향 오버레이 · artifact export · timeline 동의
+- 2026-07-30: P24 — 자동 감지 Diff/알림 · Gate PASS · Docs auto artifact · Timeline 분석

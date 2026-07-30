@@ -8,7 +8,7 @@
 |------|-----|
 | 버전 | **0.8.0-wip** |
 | Phase | Phase 7 |
-| 진행 중 | P23 Beacon 양방향 연동 |
+| 진행 중 | P24 Beacon 자동화/알림 |
 | 다음 | Phase 7 후속 |
 
 ## 완료 항목
@@ -44,18 +44,20 @@
 | P20 | 모니터링/알림 | `1416576` |
 | P21 | Beacon 고도화 | `4ca166d` |
 | P22 | 운영 런북 · runtime API · 0.7.0 릴리즈 | `461cf0b` |
+| P23 | Beacon 양방향 연동 | `b570b5c` |
 
 ## 진행 중
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| P23 | Beacon 양방향 연동 | 프로세스 편집 · Docs export · Timeline 동의 |
+| P24 | Beacon 자동화/알림 | 자동 감지 · Gate PASS · artifact · Timeline 분석 |
 
 ## Phase 7 계획
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| P23 | Beacon 양방향 | project.json Folio 오버레이 · artifact export · timeline |
+| P23 | Beacon 양방향 | ✅ Folio 오버레이 · artifact export · timeline |
+| P24 | Beacon 자동화/알림 | 진행 중 · 변경 감지 · Gate · analytics |
 
 ## Phase 6 계획 (배포·운영)
 
@@ -66,6 +68,13 @@
 | P22 | 운영 런북 | ✅ |
 
 ## 변경 이력
+
+### 0.8.0-wip — 2026-07-30 (P24 Beacon 자동화/알림)
+
+- 프로세스 탭 「자동 감지」 토글 · project.json 변경 시 live Diff · 헤더 뱃지 · 토스트
+- 체크리스트 100% → Gate 자동 PASS · 불일치 경고
+- Docs 저장 시 카테고리 기반 artifact 자동 생성 · 산출물 완료율 %
+- Timeline 분석: 주/월 변경 횟수 · 활동 히트맵 · 소스/카테고리
 
 ### 0.8.0-wip — 2026-07-30 (P23 Beacon 양방향)
 

@@ -15,6 +15,7 @@ import {
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { BeaconDiffView } from '@/components/beacon-diff';
+import { BeaconTimelineAnalytics } from '@/components/beacon-timeline-analytics';
 import {
   createBeaconSnapshotClient,
   fetchBeaconSnapshot,
@@ -33,12 +34,22 @@ import {
   type StageState,
   type StageSummary,
   type TimelineItem,
-} from '@/lib/beacon'
+} from '@/lib/beacon';
+import {
+  applyGateAutomation,
+  computeArtifactCompletion,
+  emitBeaconChange,
+  getBeaconAutoDetect,
+  setBeaconAutoDetect,
+  snapshotFromView,
+  subscribeBeaconAutoDetect,
+} from '@/lib/beacon-automation';
 import {
   getBeaconTimelineConsent,
   setBeaconTimelineConsent,
   subscribeBeaconTimelineConsent,
-} from '@/lib/beacon-timeline-consent'
+} from '@/lib/beacon-timeline-consent';
+import { showAppToast } from '@/lib/health-monitor';
 
 const AUTO_SNAPSHOT_MS = 5 * 60 * 1000;
 
@@ -368,7 +379,13 @@ export function BeaconPanel() {
   const [saveBusy, setSaveBusy] = useState(false);
   const [conflict, setConflict] = useState<{ message: string; mtime: number | null } | null>(null);
   const [timelineConsent, setTimelineConsent] = useState(false);
+  const [autoDetect, setAutoDetect] = useState(true);
+  const [liveDiffBefore, setLiveDiffBefore] = useState<FolioBeaconSnapshot | null>(null);
+  const [liveDiffAfter, setLiveDiffAfter] = useState<FolioBeaconSnapshot | null>(null);
+  const [gateWarnings, setGateWarnings] = useState<string[]>([]);
   const autoSnapAt = useRef(0);
+  const previousViewRef = useRef<BeaconViewModel | null>(null);
+  const autoDetectRef = useRef(true);
   const editable = view?.source === 'server';
 
   const refreshSnapshots = useCallback(async () => {
@@ -389,12 +406,19 @@ export function BeaconPanel() {
     try {
       const data = await fetchBeaconSummary();
       setView(data);
+      const gated = applyGateAutomation(data.summary?.stages ?? [], data.artifacts ?? []);
       setNameDraft(data.summary?.name ?? data.project?.name ?? '');
-      setStagesDraft(data.summary?.stages ?? []);
+      setStagesDraft(gated.stages);
       setArtifactsDraft(data.artifacts ?? []);
+      setGateWarnings(gated.warnings);
       setProjectMtime(data.projectMtime ?? null);
       setConflict(null);
       setLastUpdatedAt(new Date().toISOString());
+      if (gated.autoPassed.length > 0) {
+        showAppToast(
+          `Gate 자동 PASS: ${gated.autoPassed.map((id) => id.toUpperCase()).join(', ')}`,
+        );
+      }
       if (opts?.clearUpdateBadge !== false) {
         setUpdateAvailable(false);
       }
@@ -477,11 +501,19 @@ export function BeaconPanel() {
     const handle = window.setTimeout(() => {
       void loadFromServer();
       setTimelineConsent(getBeaconTimelineConsent());
+      const detect = getBeaconAutoDetect();
+      setAutoDetect(detect);
+      autoDetectRef.current = detect;
     }, 0);
-    const unsub = subscribeBeaconTimelineConsent(setTimelineConsent);
+    const unsubConsent = subscribeBeaconTimelineConsent(setTimelineConsent);
+    const unsubDetect = subscribeBeaconAutoDetect((enabled) => {
+      setAutoDetect(enabled);
+      autoDetectRef.current = enabled;
+    });
     return () => {
       window.clearTimeout(handle);
-      unsub();
+      unsubConsent();
+      unsubDetect();
     };
   }, [loadFromServer]);
 
@@ -535,7 +567,7 @@ export function BeaconPanel() {
     [artifactsDraft, editable, loadFromServer, nameDraft, projectMtime, stagesDraft],
   );
 
-  // 변경 감지 폴링 + 자동 새로고침/스냅샷
+  // 변경 감지 폴링 + 자동 새로고침/스냅샷/diff
   useEffect(() => {
     if (view?.source === 'file-picker') return;
 
@@ -543,11 +575,39 @@ export function BeaconPanel() {
       intervalMs: 5000,
       onChange: ({ changed }) => {
         if (!changed) return;
+        if (!autoDetectRef.current) {
+          setUpdateAvailable(true);
+          return;
+        }
         setUpdateAvailable(true);
         void (async () => {
+          const before = previousViewRef.current;
           await loadFromServer({ clearUpdateBadge: false });
           await takeSnapshot('change');
-          window.setTimeout(() => setUpdateAvailable(false), 4000);
+          // loadFromServer 직후 view는 아직 stale — summary 재조회로 live diff 구성
+          const after = await fetchBeaconSummary();
+          if (before?.project || after.project) {
+            setLiveDiffBefore(
+              snapshotFromView({
+                id: 'before-change',
+                project: before?.project ?? null,
+                summaryName: before?.summary?.name,
+                timeline: before?.timeline ?? [],
+              }),
+            );
+            setLiveDiffAfter(
+              snapshotFromView({
+                id: 'after-change',
+                project: after.project,
+                summaryName: after.summary?.name,
+                timeline: after.timeline,
+              }),
+            );
+          }
+          previousViewRef.current = after;
+          emitBeaconChange('project.json / beacon.db 변경 감지');
+          showAppToast('Beacon 변경 감지 · Diff를 확인하세요');
+          window.setTimeout(() => setUpdateAvailable(false), 6000);
         })();
       },
     });
@@ -563,6 +623,28 @@ export function BeaconPanel() {
     };
   }, [loadFromServer, takeSnapshot, view?.source]);
 
+  // 현재 view를 previous로 유지 (자동 감지 diff 기준)
+  useEffect(() => {
+    if (view?.available) previousViewRef.current = view;
+  }, [view]);
+
+  // 산출물 토글 시 Gate 자동화 재계산
+  useEffect(() => {
+    if (!stagesDraft.length) return;
+    const gated = applyGateAutomation(stagesDraft, artifactsDraft);
+    setGateWarnings(gated.warnings);
+    if (gated.autoPassed.length === 0) return;
+    setStagesDraft(gated.stages);
+    showAppToast(
+      `Gate 자동 PASS: ${gated.autoPassed.map((id) => id.toUpperCase()).join(', ')}`,
+    );
+    // stagesDraft는 의도적으로 deps에서 제외 (토글 시에만 재계산)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [artifactsDraft]);
+
+  const artifactStats = computeArtifactCompletion(
+    artifactsDraft.length ? artifactsDraft : (view?.artifacts ?? []),
+  );
   if (loading && !view) {
     return (
       <div className="flex items-center justify-center py-20 text-sm text-muted-foreground gap-2">
@@ -600,7 +682,7 @@ export function BeaconPanel() {
           </span>
           {view.source !== 'file-picker' && (
             <span className="text-[10px] rounded-full border border-gray-200 px-2 py-0.5 dark:border-gray-700">
-              변경 감지 중
+              {autoDetect ? '자동 감지 ON' : '자동 감지 OFF'}
             </span>
           )}
           {updateAvailable && (
@@ -662,20 +744,84 @@ export function BeaconPanel() {
         </div>
       </div>
 
-      <label className="inline-flex items-center gap-2 text-[11px] text-muted-foreground cursor-pointer">
-        <input
-          type="checkbox"
-          checked={timelineConsent}
-          onChange={(e) => {
-            setBeaconTimelineConsent(e.target.checked);
-            setTimelineConsent(e.target.checked);
-          }}
-          className="rounded border-gray-300"
-        />
-        Folio 저장/편집 이벤트를 Beacon Timeline에 기록 (기본 꺼짐)
-      </label>
+      <div className="flex flex-wrap gap-4">
+        <label className="inline-flex items-center gap-2 text-[11px] text-muted-foreground cursor-pointer">
+          <input
+            type="checkbox"
+            checked={autoDetect}
+            onChange={(e) => {
+              const next = e.target.checked;
+              setBeaconAutoDetect(next);
+              setAutoDetect(next);
+              autoDetectRef.current = next;
+            }}
+            className="rounded border-gray-300"
+          />
+          자동 감지 — project.json 변경 시 Diff · 토스트 · 헤더 뱃지
+        </label>
+        <label className="inline-flex items-center gap-2 text-[11px] text-muted-foreground cursor-pointer">
+          <input
+            type="checkbox"
+            checked={timelineConsent}
+            onChange={(e) => {
+              setBeaconTimelineConsent(e.target.checked);
+              setTimelineConsent(e.target.checked);
+            }}
+            className="rounded border-gray-300"
+          />
+          Folio 저장/편집 이벤트를 Beacon Timeline에 기록 (기본 꺼짐)
+        </label>
+      </div>
 
       {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+
+      {gateWarnings.length > 0 && (
+        <div
+          role="status"
+          className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100"
+        >
+          <div className="font-medium mb-1">Gate · 산출물 불일치</div>
+          <ul className="list-disc pl-4 space-y-0.5">
+            {gateWarnings.map((w) => (
+              <li key={w}>{w}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {liveDiffBefore && liveDiffAfter && (
+        <Card className="rounded-2xl border border-sky-200 dark:border-sky-900 p-5 bg-card shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
+            <div>
+              <h3 className="text-sm font-semibold tracking-tight flex items-center gap-1.5">
+                <GitCompare className="h-4 w-4" />
+                자동 감지 Diff
+              </h3>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">
+                `.beacon/project.json` 변경 직전 · 직후
+              </p>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="h-7 text-xs"
+              onClick={() => {
+                setLiveDiffBefore(null);
+                setLiveDiffAfter(null);
+              }}
+            >
+              닫기
+            </Button>
+          </div>
+          <BeaconDiffView
+            before={liveDiffBefore}
+            after={liveDiffAfter}
+            beforeLabel="변경 전"
+            afterLabel="변경 후"
+          />
+        </Card>
+      )}
 
       {conflict && (
         <div
@@ -729,9 +875,24 @@ export function BeaconPanel() {
           <TimelineList items={view.timeline} />
         </Card>
         <Card className="rounded-2xl border border-gray-100 dark:border-gray-800 p-5 bg-card shadow-sm">
-          <h3 className="text-sm font-semibold tracking-tight mb-1">산출물 체크리스트</h3>
+          <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1">
+            <h3 className="text-sm font-semibold tracking-tight">산출물 체크리스트</h3>
+            <span className="text-xs font-medium tabular-nums text-muted-foreground">
+              완료율 {artifactStats.percent}%
+              <span className="font-normal">
+                {' '}
+                ({artifactStats.done}/{artifactStats.total})
+              </span>
+            </span>
+          </div>
+          <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+            <div
+              className="h-full rounded-full bg-foreground/70 transition-[width]"
+              style={{ width: `${artifactStats.percent}%` }}
+            />
+          </div>
           <p className="text-[11px] text-muted-foreground mb-4">
-            Beacon + Folio export · {(artifactsDraft.length ? artifactsDraft : view.artifacts).length}개
+            Beacon + Folio export · {artifactStats.total}개 · 100% 시 Gate 자동 PASS
           </p>
           <ArtifactChecklist
             items={artifactsDraft.length ? artifactsDraft : view.artifacts}
@@ -746,6 +907,8 @@ export function BeaconPanel() {
           />
         </Card>
       </div>
+
+      <BeaconTimelineAnalytics events={view.timeline} />
 
       <Card className="rounded-2xl border border-gray-100 dark:border-gray-800 p-5 bg-card shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
