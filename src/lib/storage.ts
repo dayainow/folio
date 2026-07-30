@@ -137,8 +137,23 @@ export async function saveWithFallback(
   // 1) 로컬 선행 — cloud/beacon 대기를 기다리지 않음
   await options.localSave(data)
 
+  // IndexedDB 미러 (오프라인 복구용)
+  if (typeof window !== 'undefined') {
+    void import('@/lib/offline-sync').then(({ mirrorToIndexedDb, queueRemoteSync, isBrowserOffline }) => {
+      void mirrorToIndexedDb(type, data)
+      if (mode !== 'local' && isBrowserOffline()) {
+        void queueRemoteSync(type, options.resolveRemoteData?.() ?? data, `${type} offline`)
+      }
+    })
+  }
+
   if (mode === 'local') {
     return { mode, usedFallback: false }
+  }
+
+  // 오프라인이면 원격 시도 생략 · 큐에 적재됨
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    return { mode, usedFallback: true }
   }
 
   const remoteData = options.resolveRemoteData?.() ?? data
@@ -156,6 +171,11 @@ export async function saveWithFallback(
       )
       return { mode, usedFallback: false }
     } catch {
+      if (typeof window !== 'undefined') {
+        void import('@/lib/offline-sync').then(({ queueRemoteSync }) =>
+          queueRemoteSync(type, remoteData, `${type} beacon-fail`),
+        )
+      }
       return { mode, usedFallback: true }
     }
   }
@@ -168,7 +188,11 @@ export async function saveWithFallback(
     await withTimeout(options.cloudSave(remoteData), 5000, 'cloud-save')
     return { mode, usedFallback: false }
   } catch {
-    // 로컬은 이미 반영됨
+    if (typeof window !== 'undefined') {
+      void import('@/lib/offline-sync').then(({ queueRemoteSync }) =>
+        queueRemoteSync(type, remoteData, `${type} cloud-fail`),
+      )
+    }
     return { mode, usedFallback: true }
   }
 }

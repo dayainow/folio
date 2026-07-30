@@ -11,6 +11,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { StorageModeToggle } from '@/components/storage-mode-toggle';
 import { HealthStatus } from '@/components/health-status';
 import { BeaconChangeBadge } from '@/components/beacon-change-badge';
+import { OfflineStatusBadge } from '@/components/offline-status';
 import { MobileNav } from '@/components/mobile-nav';
 import { getActiveTeamId } from '@/lib/team';
 import { parseFolioDeepLink } from '@/lib/folio-links';
@@ -65,6 +66,11 @@ const TeamSidebar = dynamic(
 const WidgetDashboard = dynamic(
   () => import('@/components/widgets').then((m) => ({ default: m.WidgetDashboard })),
   { ssr: false, loading: () => <PanelFallback label="위젯" /> },
+);
+
+const PwaInstallPrompt = dynamic(
+  () => import('@/components/pwa-install-prompt').then((m) => ({ default: m.PwaInstallPrompt })),
+  { ssr: false },
 );
 
 type TabValue = 'journal' | 'docs' | 'board' | 'process';
@@ -165,6 +171,18 @@ export default function Home() {
     return () => window.clearTimeout(handle);
   }, []);
 
+  // 온라인 복구 시 오프라인 큐 동기화
+  useEffect(() => {
+    const onOnline = () => {
+      void import('@/lib/offline-sync').then(({ syncWhenOnline }) => syncWhenOnline());
+    };
+    window.addEventListener('online', onOnline);
+    if (navigator.onLine) {
+      window.setTimeout(onOnline, 1500);
+    }
+    return () => window.removeEventListener('online', onOnline);
+  }, []);
+
   const handleSignOut = async () => {
     try {
       const { signOut } = await import('@/lib/supabase');
@@ -220,6 +238,7 @@ export default function Home() {
         <div className="flex items-center gap-3">
           <span className="text-xs text-muted-foreground hidden sm:inline">프로젝트의 기록</span>
           <HealthStatus />
+          <OfflineStatusBadge />
           <BeaconChangeBadge />
           <StorageModeToggle />
           <ThemeToggle />
@@ -276,6 +295,8 @@ export default function Home() {
         className="flex-1 p-4 sm:p-6 max-w-6xl mx-auto w-full outline-none pb-24 md:pb-6"
       >
         <GlobalSearch onNavigate={handleSearchNavigate} />
+
+        <PwaInstallPrompt />
 
         <WidgetDashboard onOpenTab={(t) => handleTabChange(t)} />
 

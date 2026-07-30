@@ -69,6 +69,24 @@ Beacon: [docs/BEACON.md](./docs/BEACON.md) · [PROCESS.md](./PROCESS.md)
 
 ---
 
+## PWA / 오프라인
+
+- `public/manifest.json` · `@ducanh2912/next-pwa` Service Worker (프로덕션 빌드)
+- 정적 자산 CacheFirst · `/api/*` NetworkFirst
+- IndexedDB(`folio-offline`) 미러 + 동기화 큐 · 온라인 복구 시 자동 flush
+- 헤더 「오프라인 / 동기화」 뱃지 · 「홈 화면에 추가」 안내
+- 푸시: 사용자 동의 후 저장·팀 초대·Gate 변경 알림  
+  - Web Push: `NEXT_PUBLIC_VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` (`npx web-push generate-vapid-keys`)
+
+```bash
+npm run build   # --webpack (PWA SW 생성)
+npm run start
+```
+
+개발(`next dev`)에서는 SW가 비활성입니다.
+
+---
+
 ## Beacon 고도화 사용법
 
 프로젝트 루트에 `.beacon/` 이 있고 `BEACON_PROJECT_ROOT`(선택)가 맞으면 **프로세스** 탭이 활성화된다.
@@ -184,9 +202,9 @@ npm run qa:smoke && npm run lint && npm run typecheck
 ## 작업 관리
 
 - 현재: **Phase 8** · **0.9.0-wip**
-- 완료: Phase 1~7 (**0.8.0**)
-- 진행 중: **P25** 모바일·알림·위젯
-- 다음: Phase 8 후속 (PWA · Slack 채널 · 위젯 확장)
+- 완료: Phase 1~7 (**0.8.0**) · P25 모바일·알림·위젯
+- 진행 중: **P26** 오프라인/PWA
+- 다음: Phase 8 후속 (Slack 채널 · 위젯 확장)
 
 상세: [VERSION.md](./VERSION.md) · [docs/runbooks/](./docs/runbooks/)
 
@@ -201,13 +219,13 @@ npm run qa:smoke && npm run lint && npm run typecheck
 | 5 | 성능 · 접근성 · 문서화 · QA · 배포 자동화 | ✅ **0.6.0** |
 | 6 | 모니터 · Beacon 고도화 · 운영 런북 | ✅ **0.7.0** |
 | 7 | Beacon 양방향 · 자동화/알림 | ✅ **0.8.0** |
-| 8 | 모바일 · Slack 고급 · 커스텀 위젯 | 진행 중 (P25) |
+| 8 | 모바일 · Slack 고급 · 커스텀 위젯 · PWA | 진행 중 (P26) |
 
 ## Phase 8 계획
 
 | 영역 | 내용 |
 |------|------|
-| P25 모바일·알림·위젯 | 하단 네비 · Slack 「확인」 · 대시보드 위젯 DnD |
-| 모바일 UX | PWA 후보 |
+| P25 모바일·알림·위젯 | ✅ 하단 네비 · Slack 「확인」 · 대시보드 위젯 DnD |
+| P26 오프라인/PWA | manifest · Service Worker · IndexedDB · 푸시 알림 |
 | Slack 고급 | 채널 라우팅 · 인터랙티브 확장 |
 | 커스텀 위젯 | 위젯 종류·레이아웃 확장 |

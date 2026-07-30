@@ -227,6 +227,14 @@ export const JournalPanel = memo(function JournalPanel({
     try {
       saveJournal(date, draft, tags);
       setSaveState('saved');
+      void import('@/lib/push-notifications').then(({ showFolioPush }) =>
+        showFolioPush({
+          title: '일지 저장 완료',
+          body: `${date} 일지가 저장되었습니다.`,
+          url: `/?tab=journal&date=${encodeURIComponent(date)}`,
+          tag: 'journal-save',
+        }),
+      );
       saveFeedbackTimer.current = setTimeout(() => setSaveState('idle'), 2000);
       void saveJournalWithFallback(date, draft, tags)
         .then((result) => {

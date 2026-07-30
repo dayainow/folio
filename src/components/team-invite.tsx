@@ -47,6 +47,14 @@ export function TeamInvite({
       setLastToken(inv.token);
       setEmail('');
       setMessage(`${inv.email} 초대 생성됨 (토큰을 공유하세요)`);
+      void import('@/lib/push-notifications').then(({ showFolioPush }) =>
+        showFolioPush({
+          title: '팀 초대 생성',
+          body: `${inv.email} 님을 초대했습니다.`,
+          url: '/?tab=journal',
+          tag: 'team-invite',
+        }),
+      );
       onInvited?.(inv);
     } catch (err) {
       setError(err instanceof Error ? err.message : '초대 실패');

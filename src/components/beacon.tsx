@@ -416,6 +416,14 @@ export function BeaconPanel() {
         showAppToast(
           `Gate 자동 PASS: ${gated.autoPassed.map((id) => id.toUpperCase()).join(', ')}`,
         );
+        void import('@/lib/push-notifications').then(({ showFolioPush }) =>
+          showFolioPush({
+            title: 'Gate 상태 변경',
+            body: `자동 PASS: ${gated.autoPassed.map((id) => id.toUpperCase()).join(', ')}`,
+            url: '/?tab=process',
+            tag: 'gate-change',
+          }),
+        );
       }
       if (opts?.clearUpdateBadge !== false) {
         setUpdateAvailable(false);
@@ -642,6 +650,14 @@ export function BeaconPanel() {
       setStagesDraft(gated.stages);
       showAppToast(
         `Gate 자동 PASS: ${gated.autoPassed.map((id) => id.toUpperCase()).join(', ')}`,
+      );
+      void import('@/lib/push-notifications').then(({ showFolioPush }) =>
+        showFolioPush({
+          title: 'Gate 상태 변경',
+          body: `자동 PASS: ${gated.autoPassed.map((id) => id.toUpperCase()).join(', ')}`,
+          url: '/?tab=process',
+          tag: 'gate-change',
+        }),
       );
     }
   };

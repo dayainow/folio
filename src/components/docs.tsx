@@ -196,6 +196,14 @@ export const DocsPanel = memo(function DocsPanel({
       await saveDocWithFallback(updated);
       setSaveState('saved');
       window.setTimeout(() => setSaveState('idle'), 2000);
+      void import('@/lib/push-notifications').then(({ showFolioPush }) =>
+        showFolioPush({
+          title: '문서 저장 완료',
+          body: `「${updated.title}」이(가) 저장되었습니다.`,
+          url: `/?tab=docs&docId=${encodeURIComponent(updated.id)}`,
+          tag: 'docs-save',
+        }),
+      );
       void recordFolioTimelineEvent({
         title: `문서 저장 · ${updated.title}`,
         detail: updated.category,
