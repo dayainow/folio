@@ -382,7 +382,6 @@ export function BeaconPanel() {
   const [autoDetect, setAutoDetect] = useState(true);
   const [liveDiffBefore, setLiveDiffBefore] = useState<FolioBeaconSnapshot | null>(null);
   const [liveDiffAfter, setLiveDiffAfter] = useState<FolioBeaconSnapshot | null>(null);
-  const [gateWarnings, setGateWarnings] = useState<string[]>([]);
   const autoSnapAt = useRef(0);
   const previousViewRef = useRef<BeaconViewModel | null>(null);
   const autoDetectRef = useRef(true);
@@ -410,7 +409,6 @@ export function BeaconPanel() {
       setNameDraft(data.summary?.name ?? data.project?.name ?? '');
       setStagesDraft(gated.stages);
       setArtifactsDraft(data.artifacts ?? []);
-      setGateWarnings(gated.warnings);
       setProjectMtime(data.projectMtime ?? null);
       setConflict(null);
       setLastUpdatedAt(new Date().toISOString());
@@ -628,23 +626,26 @@ export function BeaconPanel() {
     if (view?.available) previousViewRef.current = view;
   }, [view]);
 
-  // 산출물 토글 시 Gate 자동화 재계산
-  useEffect(() => {
-    if (!stagesDraft.length) return;
-    const gated = applyGateAutomation(stagesDraft, artifactsDraft);
-    setGateWarnings(gated.warnings);
-    if (gated.autoPassed.length === 0) return;
-    setStagesDraft(gated.stages);
-    showAppToast(
-      `Gate 자동 PASS: ${gated.autoPassed.map((id) => id.toUpperCase()).join(', ')}`,
-    );
-    // stagesDraft는 의도적으로 deps에서 제외 (토글 시에만 재계산)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [artifactsDraft]);
+  const activeArtifacts = artifactsDraft.length ? artifactsDraft : (view?.artifacts ?? []);
+  const activeStages = stagesDraft.length ? stagesDraft : (view?.summary?.stages ?? []);
+  const gateAutomation = applyGateAutomation(activeStages, activeArtifacts);
+  const gateWarnings = gateAutomation.warnings;
+  const artifactStats = computeArtifactCompletion(activeArtifacts);
 
-  const artifactStats = computeArtifactCompletion(
-    artifactsDraft.length ? artifactsDraft : (view?.artifacts ?? []),
-  );
+  const toggleArtifact = (path: string, present: boolean) => {
+    const nextArts = activeArtifacts.map((a) =>
+      a.path === path ? { ...a, present } : a,
+    );
+    setArtifactsDraft(nextArts);
+    const gated = applyGateAutomation(activeStages, nextArts);
+    if (gated.autoPassed.length > 0) {
+      setStagesDraft(gated.stages);
+      showAppToast(
+        `Gate 자동 PASS: ${gated.autoPassed.map((id) => id.toUpperCase()).join(', ')}`,
+      );
+    }
+  };
+
   if (loading && !view) {
     return (
       <div className="flex items-center justify-center py-20 text-sm text-muted-foreground gap-2">
@@ -895,15 +896,9 @@ export function BeaconPanel() {
             Beacon + Folio export · {artifactStats.total}개 · 100% 시 Gate 자동 PASS
           </p>
           <ArtifactChecklist
-            items={artifactsDraft.length ? artifactsDraft : view.artifacts}
+            items={activeArtifacts}
             editable={editable}
-            onToggle={(path, present) => {
-              setArtifactsDraft((prev) =>
-                (prev.length ? prev : view.artifacts).map((a) =>
-                  a.path === path ? { ...a, present } : a,
-                ),
-              );
-            }}
+            onToggle={toggleArtifact}
           />
         </Card>
       </div>

@@ -51,6 +51,9 @@ BEACON_PROJECT_ROOT=/path/to/project
 - 충돌: mtime 불일치 시 병합/재적용
 - Timeline 동의 토글 (기본 off) → `POST /api/beacon/timeline`
 - Docs 「Beacon으로 export」 → `POST /api/beacon/artifacts`
+- **자동 감지 (P24)**: project.json 변경 → live Diff · 토스트 · 헤더 뱃지
+- **Gate 자동화 (P24)**: 체크리스트 100% → Gate PASS · 불일치 경고 · 산출물 완료율
+- **Timeline 분석 (P24)**: 주/월 건수 · 히트맵
 - API: `GET /api/beacon/summary`, `available`, `mtime`, `project`, `artifacts`, `timeline`
 - Folio 스냅샷 Diff: `.beacon/snapshots/`
 
@@ -74,8 +77,11 @@ BEACON_PROJECT_ROOT=/path/to/project
 |------|------|
 | `src/lib/beacon.ts` | 뷰모델 · 파싱 · watch · 스냅샷 · diff · 클라이언트 쓰기 |
 | `src/lib/beacon-sync.ts` | project overlay · artifact export · folio timeline |
+| `src/lib/beacon-automation.ts` | 자동 감지 · Gate PASS · Timeline 분석 |
 | `src/lib/beacon-timeline-consent.ts` | Timeline 기록 동의 |
 | `src/lib/storage.ts` | beacon 모드 save/load |
 | `src/app/api/beacon/*` | summary · project · artifacts · timeline · folio · mtime · snapshots |
-| `src/components/beacon.tsx` | 프로세스 패널 (편집) |
+| `src/components/beacon.tsx` | 프로세스 패널 (편집 · 자동화) |
+| `src/components/beacon-change-badge.tsx` | 헤더 변경 알림 뱃지 |
+| `src/components/beacon-timeline-analytics.tsx` | Timeline 주/월·히트맵 |
 | `src/components/beacon-diff.tsx` | 스냅샷 Diff 뷰 |

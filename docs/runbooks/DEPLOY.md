@@ -91,7 +91,7 @@ FOLIO_DEPLOY_TARGET=docker npm run runbook:deploy
 
 ```bash
 curl -sS https://<host>/api/health
-# {"status":"ok","version":"0.7.0","uptime":…,"timestamp":"…"}
+# {"status":"ok","version":"0.8.0","uptime":…,"timestamp":"…"}
 
 curl -sS https://<host>/api/runtime
 # nodeVersion, nextVersion, envFlags, uptime …

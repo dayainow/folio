@@ -5,7 +5,7 @@
 
 | | |
 |--|--|
-| 버전 | **0.8.0-wip** (Phase 7) |
+| 버전 | **0.8.0** (Phase 7 완료) |
 | 라이선스 | private |
 
 ---
@@ -26,7 +26,7 @@ Folio is a personal/team workspace stored in the browser (optionally Supabase / 
 | 일지 (Journal) | 날짜별 기록, 태그, 자동 저장, 통계, 알림(옵션) |
 | 문서 (Docs) | 마크다운 편집·미리보기·분할, Obsidian 가져오기 |
 | 일정 (Board) | 칸반 + 키보드 이동, Jira/GitHub, 즐겨찾기, 분석 |
-| 프로세스 | Beacon Gate / Timeline / 산출물 (읽기 전용) |
+| 프로세스 | Beacon Gate / Timeline / 산출물 · 양방향 편집 · 자동화 |
 | 팀 | 초대 · 멤버 · 문서/보드 공유 (Supabase) |
 | 검색 | ⌘/Ctrl+K 통합 검색 |
 | 저장 모드 | 로컬 / 클라우드 / Beacon |
@@ -66,6 +66,38 @@ npm run lint && npm run typecheck && npm run test && npm run build
 - [examples/team-setup.md](./examples/team-setup.md)
 
 Beacon: [docs/BEACON.md](./docs/BEACON.md) · [PROCESS.md](./PROCESS.md)
+
+---
+
+## Beacon 고도화 사용법
+
+프로젝트 루트에 `.beacon/` 이 있고 `BEACON_PROJECT_ROOT`(선택)가 맞으면 **프로세스** 탭이 활성화된다.
+
+### 기본 보기 · 편집 (P14 / P23)
+
+1. 프로세스 탭에서 Gate (P0–P4) · Timeline · 산출물 확인
+2. 이름 / Gate / 체크리스트 수정 후 **프로세스 저장** → `project.json` 의 `folio` 오버레이에 append-only 기록
+3. 외부(CLI)와 mtime 충돌 시 **병합** 또는 **재적용**
+4. Docs에서 **Beacon으로 export** → `.beacon/artifacts/folio/<category>/`
+5. Timeline 기록은 동의 토글 후에만 (기본 off)
+
+### 변경 감지 · Diff · 스냅샷 (P21 / P24)
+
+1. **자동 감지** 토글 ON → `.beacon/project.json` / `beacon.db` 변경 시 live Diff · 토스트 · 헤더 「Beacon 변경」 뱃지
+2. **스냅샷** 버튼 또는 변경/주기 백업 → `.beacon/snapshots/`
+3. 스냅샷 Diff에서 이전/이후 비교
+
+### Gate · 산출물 자동화 (P24)
+
+1. 산출물 체크리스트 완료율 100% → Gate 자동 PASS (UI draft · 저장 시 반영)
+2. Gate PASS인데 체크리스트 미완료면 경고 배너
+3. Docs 저장 시(기본 ON) 카테고리 기반 artifact 자동 생성
+
+### Timeline 분석 (P24)
+
+- 프로세스 탭 하단: 이번 주 / 이번 달 변경 횟수 · 28일 히트맵 · 소스/카테고리 집계
+
+상세 규약: [docs/BEACON.md](./docs/BEACON.md) · [PROCESS.md](./PROCESS.md)
 
 ---
 
@@ -151,10 +183,10 @@ npm run qa:smoke && npm run lint && npm run typecheck
 
 ## 작업 관리
 
-- 현재: **Phase 7** · **0.8.0-wip**
-- 완료: Phase 1~6 (**0.7.0**) · P23 Beacon 양방향
-- 진행 중: **P24** Beacon 자동화/알림
-- 다음: Phase 7 후속 (필요 시)
+- 현재: **Phase 7 완료** · **0.8.0**
+- 완료: Phase 1~7 (Beacon 양방향 · 자동화/알림)
+- 진행 중: —
+- 다음: **Phase 8** (모바일 · Slack 고급 · 커스텀 위젯)
 
 상세: [VERSION.md](./VERSION.md) · [docs/runbooks/](./docs/runbooks/)
 
@@ -168,4 +200,12 @@ npm run qa:smoke && npm run lint && npm run typecheck
 | 4 | 배포 · Beacon · 저장 모드 | ✅ |
 | 5 | 성능 · 접근성 · 문서화 · QA · 배포 자동화 | ✅ **0.6.0** |
 | 6 | 모니터 · Beacon 고도화 · 운영 런북 | ✅ **0.7.0** |
-| 7 | Beacon 양방향 연동 | 진행 중 (P24) |
+| 7 | Beacon 양방향 · 자동화/알림 | ✅ **0.8.0** |
+
+## Phase 8 계획
+
+| 영역 | 내용 |
+|------|------|
+| 모바일 UX | 반응형 개선 · PWA 후보 |
+| Slack 고급 | 채널 라우팅 · 인터랙티브 알림 |
+| 커스텀 위젯 | 대시보드 위젯 슬롯 · 사용자 배치 |

@@ -6,10 +6,10 @@
 
 | 항목 | 값 |
 |------|-----|
-| 버전 | **0.8.0-wip** |
-| Phase | Phase 7 |
-| 진행 중 | P24 Beacon 자동화/알림 |
-| 다음 | Phase 7 후속 |
+| 버전 | **0.8.0** |
+| Phase | Phase 7 완료 |
+| 진행 중 | — |
+| 다음 | Phase 8 (모바일 · Slack 고급 · 커스텀 위젯) |
 
 ## 완료 항목
 
@@ -45,19 +45,28 @@
 | P21 | Beacon 고도화 | `4ca166d` |
 | P22 | 운영 런북 · runtime API · 0.7.0 릴리즈 | `461cf0b` |
 | P23 | Beacon 양방향 연동 | `b570b5c` |
+| P24 | Beacon 자동화/알림 | `f4e4dce` |
 
 ## 진행 중
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| P24 | Beacon 자동화/알림 | 자동 감지 · Gate PASS · artifact · Timeline 분석 |
+| — | — | Phase 7 완료 · Phase 8 대기 |
 
 ## Phase 7 계획
 
 | ID | 요약 | 노트 |
 |----|------|------|
 | P23 | Beacon 양방향 | ✅ Folio 오버레이 · artifact export · timeline |
-| P24 | Beacon 자동화/알림 | 진행 중 · 변경 감지 · Gate · analytics |
+| P24 | Beacon 자동화/알림 | ✅ 변경 감지 · Gate PASS · analytics |
+
+## Phase 8 계획
+
+| ID | 요약 | 노트 |
+|----|------|------|
+| — | 모바일 UX | 반응형 · PWA 후보 |
+| — | Slack 고급 | 채널 라우팅 · 인터랙션 |
+| — | 커스텀 위젯 | 대시보드 위젯 슬롯 |
 
 ## Phase 6 계획 (배포·운영)
 
@@ -68,6 +77,17 @@
 | P22 | 운영 런북 | ✅ |
 
 ## 변경 이력
+
+### 0.8.0 — 2026-07-30 (Phase 7 완료)
+
+- 정식 릴리즈 **0.8.0** (Phase 7: Beacon 양방향 · 자동화/알림)
+- **P23** Beacon 양방향 연동 (`b570b5c`)
+  - 프로세스 탭: 이름 · Gate · 산출물 → `project.json` Folio 오버레이 (append-only edits)
+  - 충돌 감지(mtime) · 병합/재적용 · Docs export · Timeline 동의(기본 off)
+- **P24** Beacon 자동화/알림 (`f4e4dce`)
+  - 자동 감지 Diff · 헤더 뱃지 · 토스트 · Gate 자동 PASS · 산출물 완료율
+  - Docs 저장 시 artifact 자동 생성 · Timeline 주/월·히트맵 분석
+- README: Phase 1~7 완료 · Phase 8 계획 · Beacon 고도화 사용법
 
 ### 0.8.0-wip — 2026-07-30 (P24 Beacon 자동화/알림)
 
