@@ -5,7 +5,7 @@
 
 | | |
 |--|--|
-| 버전 | **0.9.0-wip** (Phase 8) |
+| 버전 | **0.9.0** (Phase 8 완료) |
 | 라이선스 | private |
 
 ---
@@ -31,6 +31,7 @@ Folio is a personal/team workspace stored in the browser (optionally Supabase / 
 | 검색 | ⌘/Ctrl+K 통합 검색 |
 | 저장 모드 | 로컬 / 클라우드 / Beacon |
 | 접근성 | 스킵 링크, 키보드, ARIA, 포커스 트랩 (P16) |
+| 모바일 / PWA | 하단 네비 · 위젯 · 오프라인 · 홈 화면 설치 |
 
 스택: Next.js 16 · React 19 · Tailwind v4 · shadcn/Base UI · Supabase · @dnd-kit
 
@@ -69,21 +70,43 @@ Beacon: [docs/BEACON.md](./docs/BEACON.md) · [PROCESS.md](./PROCESS.md)
 
 ---
 
-## PWA / 오프라인
+## PWA / 오프라인 사용법
 
-- `public/manifest.json` · `@ducanh2912/next-pwa` Service Worker (프로덕션 빌드)
-- 정적 자산 CacheFirst · `/api/*` NetworkFirst
-- IndexedDB(`folio-offline`) 미러 + 동기화 큐 · 온라인 복구 시 자동 flush
-- 헤더 「오프라인 / 동기화」 뱃지 · 「홈 화면에 추가」 안내
-- 푸시: 사용자 동의 후 저장·팀 초대·Gate 변경 알림  
-  - Web Push: `NEXT_PUBLIC_VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` (`npx web-push generate-vapid-keys`)
+### 설치 (홈 화면에 추가)
+
+1. 프로덕션 빌드 후 접속: `npm run build && npm run start` (또는 Vercel Production)
+2. Chrome/Edge: 주소창 설치 아이콘 또는 화면의 **「홈 화면에 추가」** 안내
+3. iOS Safari: 공유 → **홈 화면에 추가**
+4. `display: standalone` 으로 앱처럼 실행 (`public/manifest.json`)
+
+> `next dev` 에서는 Service Worker가 꺼져 있습니다. PWA 검증은 빌드/배포본에서 하세요.
+
+### 오프라인 · 동기화
+
+1. 네트워크 끊김 시 헤더에 **오프라인** 뱃지 표시
+2. 일지/문서/보드는 로컬 + IndexedDB(`folio-offline`)에 미러 저장
+3. 클라우드/Beacon 모드에서 원격 실패·오프라인 시 **동기화 큐**에 적재
+4. 온라인 복구 시 자동 flush · 헤더 **동기화 N** 뱃지로 수동 재시도 가능
+
+### 푸시 알림
+
+1. 화면의 **알림 허용** (또는 브라우저 권한) — 사용자 동의 후에만
+2. 트리거: 일지/문서 저장 완료 · 팀 초대 생성 · Gate 자동 PASS
+3. (선택) Web Push: `.env`에 VAPID 키  
+   `npx web-push generate-vapid-keys` → `NEXT_PUBLIC_VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY`
+
+### 캐시 전략
+
+| 대상 | 전략 |
+|------|------|
+| 정적 자산 (JS/CSS/이미지/폰트) | CacheFirst |
+| `/api/*` | NetworkFirst (타임아웃 후 캐시) |
+| 페이지 네비게이션 | NetworkFirst |
 
 ```bash
 npm run build   # --webpack (PWA SW 생성)
 npm run start
 ```
-
-개발(`next dev`)에서는 SW가 비활성입니다.
 
 ---
 
@@ -201,10 +224,10 @@ npm run qa:smoke && npm run lint && npm run typecheck
 
 ## 작업 관리
 
-- 현재: **Phase 8** · **0.9.0-wip**
-- 완료: Phase 1~7 (**0.8.0**) · P25 모바일·알림·위젯
-- 진행 중: **P26** 오프라인/PWA
-- 다음: Phase 8 후속 (Slack 채널 · 위젯 확장)
+- 현재: **Phase 8 완료** · **0.9.0**
+- 완료: Phase 1~8 (모바일 · 위젯 · PWA/오프라인)
+- 진행 중: —
+- 다음: **Phase 9** (실제 배포)
 
 상세: [VERSION.md](./VERSION.md) · [docs/runbooks/](./docs/runbooks/)
 
@@ -219,13 +242,12 @@ npm run qa:smoke && npm run lint && npm run typecheck
 | 5 | 성능 · 접근성 · 문서화 · QA · 배포 자동화 | ✅ **0.6.0** |
 | 6 | 모니터 · Beacon 고도화 · 운영 런북 | ✅ **0.7.0** |
 | 7 | Beacon 양방향 · 자동화/알림 | ✅ **0.8.0** |
-| 8 | 모바일 · Slack 고급 · 커스텀 위젯 · PWA | 진행 중 (P26) |
+| 8 | 모바일 · Slack · 위젯 · PWA/오프라인 | ✅ **0.9.0** |
 
-## Phase 8 계획
+## Phase 9 계획
 
 | 영역 | 내용 |
 |------|------|
-| P25 모바일·알림·위젯 | ✅ 하단 네비 · Slack 「확인」 · 대시보드 위젯 DnD |
-| P26 오프라인/PWA | manifest · Service Worker · IndexedDB · 푸시 알림 |
-| Slack 고급 | 채널 라우팅 · 인터랙티브 확장 |
-| 커스텀 위젯 | 위젯 종류·레이아웃 확장 |
+| 실제 배포 | Production Vercel · 커스텀 도메인 · HTTPS |
+| 운영 | 헬스/런북 검증 · 알림 채널 · 백업 드릴 |
+| 피드백 | UX · 성능 · 접근성 개선 |
