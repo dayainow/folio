@@ -20,7 +20,7 @@ import { parseFolioDeepLink } from '@/lib/folio-links';
 import { Activity, PanelRight, X } from 'lucide-react';
 
 const PanelFallback = ({ label }: { label: string }) => (
-  <div className="min-h-[28rem] py-10 text-center text-sm text-muted-foreground" role="status" aria-live="polite">
+  <div className="min-h-[12rem] py-8 text-center text-sm text-muted-foreground" role="status" aria-live="polite">
     {label} 로딩 중…
   </div>
 );
@@ -374,7 +374,7 @@ export default function Home() {
           id="main-content"
           ref={mainRef}
           tabIndex={-1}
-          className="min-w-0 flex-1 outline-none px-3 py-3 sm:px-4 sm:py-4 pb-24 lg:pb-4"
+          className="min-w-0 flex-1 outline-none px-3 py-2 sm:px-4 sm:py-3 pb-24 lg:pb-3"
         >
           <PwaInstallPrompt />
 

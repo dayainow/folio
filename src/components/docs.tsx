@@ -463,14 +463,18 @@ export const DocsPanel = memo(function DocsPanel({
     if (next) selectDoc(next);
   };
 
-  const editorMinH = writingFirst ? 'min-h-[80vh]' : 'min-h-[400px]';
-  const previewH = writingFirst ? 'h-[80vh]' : 'h-[450px]';
+  const editorMinH = writingFirst
+    ? 'h-[calc(100dvh-14rem)] max-h-[calc(100dvh-14rem)] min-h-[12rem] field-sizing-fixed lg:h-[calc(100dvh-12rem)] lg:max-h-[calc(100dvh-12rem)]'
+    : 'min-h-[400px]';
+  const previewH = writingFirst
+    ? 'h-[calc(100dvh-14rem)] max-h-[calc(100dvh-14rem)] lg:h-[calc(100dvh-12rem)] lg:max-h-[calc(100dvh-12rem)]'
+    : 'h-[450px]';
 
   return (
     <div
       className={
         writingFirst
-          ? 'grid grid-cols-1 gap-4 lg:grid-cols-[200px_1fr]'
+          ? 'grid grid-cols-1 gap-3 lg:grid-cols-[200px_1fr] lg:h-[calc(100dvh-5.5rem)] lg:min-h-0'
           : 'grid grid-cols-1 xl:grid-cols-[240px_1fr_280px] lg:grid-cols-[240px_1fr] gap-6'
       }
     >
@@ -566,7 +570,7 @@ export const DocsPanel = memo(function DocsPanel({
             </Badge>
           ))}
         </div>
-        <ScrollArea className={writingFirst ? 'h-[min(80vh,calc(100vh-220px))]' : 'h-[calc(100vh-300px)]'}>
+        <ScrollArea className={writingFirst ? 'h-[calc(100dvh-18rem)] lg:h-[calc(100dvh-14rem)]' : 'h-[calc(100vh-300px)]'}>
           <div
             ref={listRef}
             className="p-2 space-y-1"
@@ -607,7 +611,7 @@ export const DocsPanel = memo(function DocsPanel({
       {/* Editor */}
       <Card
         className={`rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col ${
-          writingFirst ? 'min-h-[80vh]' : 'min-h-[500px]'
+          writingFirst ? 'min-h-0 lg:h-full' : 'min-h-[500px]'
         }`}
       >
         {selectedId && docs.find(d => d.id === selectedId) ? (
@@ -737,7 +741,7 @@ export const DocsPanel = memo(function DocsPanel({
             <div className="flex-1 p-4">
               {editing ? (
                 editPane === 'split' ? (
-                  <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${editorMinH}`}>
+                  <div className="grid min-h-0 grid-cols-1 gap-4 md:grid-cols-2">
                     <WikiLinkTextarea
                       value={content}
                       onChange={setContent}
@@ -746,7 +750,9 @@ export const DocsPanel = memo(function DocsPanel({
                       placeholder="마크다운으로 작성 · [[문서명]] 링크 지원"
                       className={`${editorMinH} resize-none border border-gray-100 rounded-xl text-sm leading-relaxed font-mono`}
                     />
-                    <ScrollArea className={`${writingFirst ? 'h-[80vh]' : 'h-[400px]'} rounded-xl border border-gray-100 p-3`}>
+                    <ScrollArea
+                      className={`${writingFirst ? 'h-[calc(100dvh-14rem)] lg:h-[calc(100dvh-12rem)]' : 'h-[400px]'} rounded-xl border border-gray-100 p-3`}
+                    >
                       <MarkdownPreview content={content} docs={docs} onOpenDoc={openDocById} />
                     </ScrollArea>
                   </div>
@@ -803,20 +809,22 @@ export const DocsPanel = memo(function DocsPanel({
         )}
       </Card>
 
-      {/* 링크 그래프 — writing-first에서는 하단 축약 */}
-      <div
-        className={
-          writingFirst
-            ? 'min-h-[240px] lg:col-span-2'
-            : 'min-h-[320px] lg:col-span-2 xl:col-span-1 xl:min-h-[420px]'
-        }
-      >
-        <LinkGraphPanel
-          docs={docs}
-          selectedId={selectedId}
-          onSelectDoc={openDocById}
-        />
-      </div>
+      {/* 링크 그래프 — writing-first에서는 문서가 있을 때만 하단 축약 표시 */}
+      {(!writingFirst || docs.length > 0) && (
+        <div
+          className={
+            writingFirst
+              ? 'max-h-48 min-h-0 overflow-hidden lg:col-span-2'
+              : 'min-h-[320px] lg:col-span-2 xl:col-span-1 xl:min-h-[420px]'
+          }
+        >
+          <LinkGraphPanel
+            docs={docs}
+            selectedId={selectedId}
+            onSelectDoc={openDocById}
+          />
+        </div>
+      )}
     </div>
   );
 });

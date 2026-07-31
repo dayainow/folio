@@ -454,17 +454,26 @@ export const JournalPanel = memo(function JournalPanel({
     }
   };
 
-  const editorMinH = writingFirst ? 'min-h-[80vh]' : 'min-h-[400px]';
+  // writing-first: 헤더·서브탭·툴바·태그 영역을 제외한 나머지 뷰포트에 맞춤 (빈 상태 한 화면)
+  const editorClass = writingFirst
+    ? 'h-[calc(100dvh-19rem)] max-h-[calc(100dvh-19rem)] min-h-[12rem] field-sizing-fixed resize-none border-0 focus-visible:ring-0 text-[15px] leading-relaxed p-0 font-mono lg:h-[calc(100dvh-16.5rem)] lg:max-h-[calc(100dvh-16.5rem)]'
+    : 'min-h-[400px] resize-none border-0 focus-visible:ring-0 text-[15px] leading-relaxed p-0 font-mono';
 
   return (
     <div
       className={
         writingFirst
-          ? 'grid grid-cols-1 gap-4'
+          ? 'grid grid-cols-1'
           : 'grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6'
       }
     >
-      <Card className="rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm bg-card">
+      <Card
+        className={
+          writingFirst
+            ? 'flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-card shadow-sm dark:border-gray-800'
+            : 'rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm bg-card'
+        }
+      >
         <div
           className={
             writingFirst
@@ -652,7 +661,7 @@ export const JournalPanel = memo(function JournalPanel({
         {importMsg && (
           <p className="px-4 pt-2 text-[11px] text-gray-500">{importMsg}</p>
         )}
-        <div className={writingFirst ? 'p-3 sm:p-4' : 'p-4'}>
+        <div className={writingFirst ? 'shrink-0 px-3 pt-2 sm:px-4' : 'p-4'}>
           <label htmlFor="journal-draft" className="sr-only">
             일지 본문
           </label>
@@ -661,16 +670,16 @@ export const JournalPanel = memo(function JournalPanel({
             value={draft}
             onChange={e => setDraft(e.target.value)}
             placeholder="오늘 한 일, 회의 내용, 이슈, 배운 것... 자유롭게 적으세요.\nMarkdown 지원: # 제목, - 리스트, **굵게**"
-            className={`${editorMinH} resize-none border-0 focus-visible:ring-0 text-[15px] leading-relaxed p-0 font-mono`}
+            className={editorClass}
             aria-describedby="journal-draft-hint"
           />
           <p id="journal-draft-hint" className="sr-only">
             마크다운을 사용할 수 있습니다. 저장 버튼 또는 자동 저장으로 기록됩니다.
           </p>
         </div>
-        <div className="px-4 pb-4">
-          <Separator className="mb-3" />
-          <div className="space-y-2">
+        <div className={writingFirst ? 'shrink-0 px-3 pb-3 pt-1 sm:px-4' : 'px-4 pb-4'}>
+          <Separator className={writingFirst ? 'mb-2' : 'mb-3'} />
+          <div className={writingFirst ? 'space-y-1.5' : 'space-y-2'}>
             <div className="flex flex-wrap items-center gap-2" aria-label="현재 태그">
               <span className="text-xs text-gray-400">태그:</span>
               {currentTags.map(tag => (
@@ -709,15 +718,24 @@ export const JournalPanel = memo(function JournalPanel({
               className="h-8 text-xs"
               aria-describedby="journal-tag-hint"
             />
-            <p id="journal-tag-hint" className="text-[11px] text-gray-400">
-              Enter로 추가 · 빈 입력에서 Backspace로 마지막 태그 삭제
-            </p>
-            {allTags.length > 0 && (
+            {!writingFirst && (
+              <p id="journal-tag-hint" className="text-[11px] text-gray-400">
+                Enter로 추가 · 빈 입력에서 Backspace로 마지막 태그 삭제
+              </p>
+            )}
+            {writingFirst && <p id="journal-tag-hint" className="sr-only">Enter로 태그 추가</p>}
+            {allTags.length > 0 && (!writingFirst || tagDraft.trim()) && (
               <div className="space-y-1.5">
-                <span className="text-[11px] text-gray-400">기존 태그 {tagDraft.trim() ? '자동완성' : '제안'}</span>
+                {!writingFirst && (
+                  <span className="text-[11px] text-gray-400">
+                    기존 태그 {tagDraft.trim() ? '자동완성' : '제안'}
+                  </span>
+                )}
                 <div className="flex flex-wrap gap-1">
                   {suggestions.length === 0 ? (
-                    <span className="text-[11px] text-gray-300">추가할 태그 없음</span>
+                    !writingFirst ? (
+                      <span className="text-[11px] text-gray-300">추가할 태그 없음</span>
+                    ) : null
                   ) : (
                     suggestions.map(tag => (
                       <button

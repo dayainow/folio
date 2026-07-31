@@ -277,11 +277,11 @@ function DroppableColumn({
   return (
     <div
       ref={setNodeRef}
-      className={`rounded-2xl border p-3 ${col.color} dark:bg-gray-900/50 min-h-[400px] flex flex-col transition-all ${
+      className={`rounded-2xl border p-3 ${col.color} dark:bg-gray-900/50 flex min-h-[12rem] flex-col transition-all xl:min-h-0 xl:h-full ${
         isOver ? 'border-blue-400 ring-2 ring-blue-200 dark:ring-blue-900' : 'border-gray-100 dark:border-gray-800'
       }`}
     >
-      <div className="flex items-center justify-between mb-3 px-1">
+      <div className="flex items-center justify-between mb-3 px-1 shrink-0">
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">{col.label}</span>
           <Badge variant="secondary" className="text-xs">{count}</Badge>
@@ -290,8 +290,8 @@ function DroppableColumn({
           <Plus className="h-3 w-3" />
         </Button>
       </div>
-      <ScrollArea className="flex-1">
-        <div className="space-y-2 min-h-[320px]">
+      <ScrollArea className="min-h-0 flex-1">
+        <div className="min-h-[6rem] space-y-2 xl:min-h-[calc(100dvh-14rem)]">
           {children}
         </div>
       </ScrollArea>
@@ -861,7 +861,7 @@ export function BoardDndPanel({
         }}
       >
         <div
-          className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4"
+          className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:h-[calc(100dvh-11rem)] xl:grid-cols-4 xl:min-h-0"
           role="listbox"
           aria-label="칸반 보드. 카드 포커스 후 좌우 화살표로 컬럼 이동"
         >
@@ -875,7 +875,7 @@ export function BoardDndPanel({
                 onAdd={() => openNewTask(col.key)}
               >
                 {colTasks.length === 0 && (
-                  <div className="px-2 py-8 text-center text-xs text-gray-400" role="status">
+                  <div className="px-2 py-4 text-center text-xs text-gray-400" role="status">
                     <p className="font-medium text-gray-500 dark:text-gray-400 mb-1">비어 있음</p>
                     <p>+ 버튼으로 「{col.label}」에 태스크를 추가하세요</p>
                   </div>
