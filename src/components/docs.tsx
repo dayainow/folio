@@ -809,12 +809,12 @@ export const DocsPanel = memo(function DocsPanel({
         )}
       </Card>
 
-      {/* 링크 그래프 — writing-first에서는 문서가 있을 때만 하단 축약 표시 */}
+      {/* 링크 그래프 — writing-first: 하단 전체 폭, 고정 높이(잘림 방지) */}
       {(!writingFirst || docs.length > 0) && (
         <div
           className={
             writingFirst
-              ? 'max-h-48 min-h-0 overflow-hidden lg:col-span-2'
+              ? 'h-[22rem] lg:col-span-2'
               : 'min-h-[320px] lg:col-span-2 xl:col-span-1 xl:min-h-[420px]'
           }
         >
@@ -822,6 +822,7 @@ export const DocsPanel = memo(function DocsPanel({
             docs={docs}
             selectedId={selectedId}
             onSelectDoc={openDocById}
+            compact={writingFirst}
           />
         </div>
       )}

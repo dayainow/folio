@@ -35,16 +35,19 @@ export function LinkGraphPanel({
   docs,
   selectedId,
   onSelectDoc,
+  compact = false,
 }: {
   docs: DocRef[]
   selectedId?: string | null
   onSelectDoc: (docId: string) => void
+  /** 하단 배치 시 고정 높이로 잘림 없이 표시 */
+  compact?: boolean
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   // react-force-graph-2d 제네릭 ref 타입이 React 19 useRef와 맞지 않아 any 사용
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fgRef = useRef<any>(undefined)
-  const [size, setSize] = useState({ w: 260, h: 280 })
+  const [size, setSize] = useState({ w: 260, h: compact ? 200 : 280 })
 
   const graph = useMemo(() => buildDocGraph(docs), [docs])
 
@@ -62,6 +65,22 @@ export function LinkGraphPanel({
     return { nodes, links }
   }, [graph])
 
+  const fitGraph = useCallback(() => {
+    const fg = fgRef.current
+    if (!fg || graphData.nodes.length === 0) return
+    // 선택 포커스 중이면 전체 맞춤을 건너뜀
+    if (selectedId) {
+      const node = graphData.nodes.find((n) => n.id === selectedId)
+      if (node?.x != null && node?.y != null) {
+        fg.centerAt(node.x, node.y, 300)
+        fg.zoom(2.2, 300)
+        return
+      }
+    }
+    // 패딩을 넉넉히 줘서 라벨이 잘리지 않게 중앙 맞춤
+    fg.zoomToFit?.(400, compact ? 56 : 64)
+  }, [compact, graphData.nodes, selectedId])
+
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
@@ -70,20 +89,18 @@ export function LinkGraphPanel({
       if (!cr) return
       setSize({
         w: Math.max(180, Math.floor(cr.width)),
-        h: Math.max(200, Math.floor(cr.height)),
+        h: Math.max(compact ? 160 : 200, Math.floor(cr.height)),
       })
     })
     ro.observe(el)
     return () => ro.disconnect()
-  }, [])
+  }, [compact])
 
   useEffect(() => {
-    if (!selectedId || !fgRef.current) return
-    const node = graphData.nodes.find((n) => n.id === selectedId)
-    if (!node || node.x == null || node.y == null) return
-    fgRef.current.centerAt(node.x, node.y, 400)
-    fgRef.current.zoom(2.2, 400)
-  }, [selectedId, graphData.nodes])
+    // canvas 리사이즈 후 노드가 잘리지 않도록 재맞춤
+    const t = window.setTimeout(() => fitGraph(), 100)
+    return () => window.clearTimeout(t)
+  }, [size.w, size.h, fitGraph])
 
   const paintNode = useCallback(
     (node: NodeObject<GraphNode>, ctx: CanvasRenderingContext2D, globalScale: number) => {
@@ -120,8 +137,14 @@ export function LinkGraphPanel({
   }, [docs])
 
   return (
-    <div className="flex h-full min-h-[320px] flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
-      <div className="flex items-center justify-between gap-2 border-b border-gray-50 px-3 py-2.5">
+    <div
+      className={
+        compact
+          ? 'flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm'
+          : 'flex h-full min-h-[320px] flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm'
+      }
+    >
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-gray-50 px-3 py-2.5">
         <div className="flex items-center gap-1.5 text-sm font-medium text-gray-800">
           <Network className="h-4 w-4 text-gray-500" aria-hidden />
           링크 그래프
@@ -140,7 +163,10 @@ export function LinkGraphPanel({
       </div>
 
       {categories.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 border-b border-gray-50 px-3 py-2" aria-label="카테고리 색상">
+        <div
+          className="flex shrink-0 flex-wrap gap-1.5 border-b border-gray-50 px-3 py-2"
+          aria-label="카테고리 색상"
+        >
           {categories.map((cat) => (
             <span key={cat} className="inline-flex items-center gap-1 text-[10px] text-gray-600">
               <span
@@ -154,7 +180,14 @@ export function LinkGraphPanel({
         </div>
       )}
 
-      <div ref={containerRef} className="relative min-h-[240px] flex-1 bg-gray-50/40">
+      <div
+        ref={containerRef}
+        className={
+          compact
+            ? 'relative min-h-0 flex-1 bg-gray-50/40'
+            : 'relative min-h-[240px] flex-1 bg-gray-50/40'
+        }
+      >
         {graph.nodeCount === 0 ? (
           <p className="absolute inset-0 flex items-center justify-center px-4 text-center text-xs text-gray-400">
             문서가 없으면 그래프가 비어 있습니다
@@ -186,6 +219,7 @@ export function LinkGraphPanel({
               const id = (node as GraphNode).id
               if (id) onSelectDoc(id)
             }}
+            onEngineStop={fitGraph}
             cooldownTicks={80}
             enableNodeDrag
             enableZoomInteraction
@@ -194,7 +228,7 @@ export function LinkGraphPanel({
         )}
       </div>
 
-      <p className="border-t border-gray-50 px-3 py-2 text-[10px] text-gray-400">
+      <p className="shrink-0 border-t border-gray-50 px-3 py-2 text-[10px] text-gray-400">
         노드 클릭 → 문서 열기 · 드래그/줌 가능 · 본문에{' '}
         <code className="rounded bg-gray-100 px-1">[[문서명]]</code> 링크
       </p>
