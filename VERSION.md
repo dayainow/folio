@@ -55,7 +55,7 @@
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| P27 | 실제 배포 | Vercel · Docker 최적화 · 도메인/SSL · 롤백 |
+| P27 | 실제 배포 | Vercel · Docker 최적화 · 도메인/SSL · 롤백 (`d11e16f`) |
 
 ## Phase 7 계획
 
@@ -90,11 +90,12 @@
 
 ## 변경 이력
 
-### 1.0.0-wip — 2026-07-31 (P27 실제 배포)
+### 1.0.0-wip — 2026-07-31 (P27 실제 배포) — `d11e16f`
 
 - `vercel.json`: rewrites(`/health`,`/runtime`) · API no-store · static immutable · 보안 헤더
 - `.env.production.example`: Production 환경변수 템플릿
 - `docs/DEPLOY.md`: Vercel 단계별 · 커스텀 도메인 · SSL 자동 갱신
+- `docs/runbooks/DEPLOY.md`: Dashboard Promote · `vercel rollback` · `git revert`
 - Dockerfile: runner apk/wget 제거 · node fetch HEALTHCHECK · dockerignore 강화
 - `docs/runbooks/DEPLOY.md`: Vercel Dashboard/CLI · git revert · Docker 롤백 상세
 
