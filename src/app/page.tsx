@@ -374,7 +374,7 @@ export default function Home() {
           id="main-content"
           ref={mainRef}
           tabIndex={-1}
-          className="min-w-0 flex-1 outline-none px-3 py-2 sm:px-4 sm:py-3 pb-24 lg:pb-3"
+          className="min-w-0 flex-1 outline-none px-3 pt-5 pb-24 sm:px-4 sm:pt-7 lg:pb-6"
         >
           <PwaInstallPrompt />
 
@@ -382,7 +382,7 @@ export default function Home() {
             <Tabs value={tab} onValueChange={handleTabChange} className="w-full">
               <TabsContent value="journal" className="mt-0">
                 <Tabs defaultValue="journal-write" className="w-full">
-                  <TabsList className="mb-2 h-auto gap-1 border-0 bg-transparent p-0">
+                  <TabsList className="mb-3 h-auto gap-1 border-0 bg-transparent p-0">
                     <TabsTrigger
                       value="journal-write"
                       className="h-7 rounded-md px-2.5 text-[11px] data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800"

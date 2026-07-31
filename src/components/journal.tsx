@@ -454,9 +454,9 @@ export const JournalPanel = memo(function JournalPanel({
     }
   };
 
-  // writing-first: 헤더·서브탭·툴바·태그 영역을 제외한 나머지 뷰포트에 맞춤 (빈 상태 한 화면)
+  // writing-first: 입력칸은 중간 높이로 두어 한눈에 들어오게 (상단 여백·태그까지 한 화면)
   const editorClass = writingFirst
-    ? 'h-[calc(100dvh-19rem)] max-h-[calc(100dvh-19rem)] min-h-[12rem] field-sizing-fixed resize-none border-0 focus-visible:ring-0 text-[15px] leading-relaxed p-0 font-mono lg:h-[calc(100dvh-16.5rem)] lg:max-h-[calc(100dvh-16.5rem)]'
+    ? 'h-[min(18rem,38vh)] max-h-[18rem] min-h-[12rem] field-sizing-fixed resize-none border-0 focus-visible:ring-0 text-[15px] leading-relaxed p-0 font-mono lg:h-[min(20rem,40vh)] lg:max-h-[20rem]'
     : 'min-h-[400px] resize-none border-0 focus-visible:ring-0 text-[15px] leading-relaxed p-0 font-mono';
 
   return (
