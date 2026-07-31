@@ -80,4 +80,20 @@ const counts = buildTagCounts([{ tags: ['a', 'b'] }, { tags: ['a'] }])
 assert(counts.find((c) => c.tag === 'a')?.count === 2, '태그 빈도')
 assert(counts.find((c) => c.tag === 'b')?.count === 1, '태그 단일')
 
-console.log('qa:smoke OK — debounce/flush, board move, tag counts')
+// --- wiki-link 파서 (P31) ---
+const WIKI_RE = /\[\[([^\]|#]+?)(?:\|([^\]]+))?\]\]/g
+function extractWiki(content) {
+  const links = []
+  let m
+  const re = new RegExp(WIKI_RE.source, 'g')
+  while ((m = re.exec(content)) !== null) {
+    links.push({ target: m[1].trim(), alias: (m[2] || m[1]).trim() })
+  }
+  return links
+}
+const wiki = extractWiki('see [[API 명세|API]] and [[프로젝트 규칙]]')
+assert(wiki.length === 2, 'wiki link count')
+assert(wiki[0].target === 'API 명세' && wiki[0].alias === 'API', 'wiki alias')
+assert(wiki[1].target === '프로젝트 규칙', 'wiki plain')
+
+console.log('qa:smoke OK — debounce/flush, board move, tag counts, wiki links')

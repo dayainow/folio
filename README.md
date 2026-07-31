@@ -5,7 +5,7 @@
 
 | | |
 |--|--|
-| 버전 | **1.0.0** (Phase 9 완료) |
+| 버전 | **1.1.0-wip** (Phase 10) |
 | 라이선스 | private |
 
 ---
@@ -24,7 +24,7 @@ Folio is a personal/team workspace stored in the browser (optionally Supabase / 
 | 영역 | 내용 |
 |------|------|
 | 일지 (Journal) | 날짜별 기록, 태그, 자동 저장, 통계, 알림(옵션) |
-| 문서 (Docs) | 마크다운 편집·미리보기·분할, Obsidian 가져오기 |
+| 문서 (Docs) | 마크다운 편집·미리보기·분할, `[[wiki]]` 링크 그래프, Obsidian 가져오기 |
 | 일정 (Board) | 칸반 + 키보드 이동, Jira/GitHub, 즐겨찾기, 분석 |
 | 프로세스 | Beacon Gate / Timeline / 산출물 · 양방향 편집 · 자동화 |
 | 팀 | 초대 · 멤버 · 문서/보드 공유 (Supabase) |
@@ -265,10 +265,10 @@ npm run qa:smoke && npm run lint && npm run typecheck
 
 ## 작업 관리
 
-- 현재: **Phase 9 완료** · **1.0.0**
-- 완료: Phase 1~9 (실제 배포 · Vercel/Docker · 도메인/SSL · 롤백)
-- 진행 중: —
-- 다음: 운영 고도화 · 피드백 반영
+- 현재: **Phase 10** · **1.1.0-wip**
+- 완료: Phase 1~9 (**1.0.0**)
+- 진행 중: **P31** 문서 링크 그래프
+- 다음: P32 내보내기 · P33 MCP
 
 상세: [VERSION.md](./VERSION.md) · [docs/DEPLOY.md](./docs/DEPLOY.md) · [docs/runbooks/](./docs/runbooks/)
 
@@ -285,10 +285,20 @@ npm run qa:smoke && npm run lint && npm run typecheck
 | 7 | Beacon 양방향 · 자동화/알림 | ✅ **0.8.0** |
 | 8 | 모바일 · Slack · 위젯 · PWA/오프라인 | ✅ **0.9.0** |
 | 9 | 실제 배포 · 운영 | ✅ **1.0.0** |
+| 10 | 링크 그래프 · 내보내기 · MCP | 진행 중 (P31) |
 
-## 이후 계획
+## Phase 10 계획
 
 | 영역 | 내용 |
 |------|------|
-| 운영 고도화 | 알림 채널 · 백업 드릴 · 헬스 검증 |
-| 피드백 | UX · 성능 · 접근성 개선 |
+| P31 문서 링크 그래프 | `[[문서명]]` 파싱 · force-graph · 자동완성 · 역링크 |
+| P32 내보내기/다운로드 | 일지/문서 PDF·MD · Board CSV/JSON · ZIP |
+| P33 MCP 연동 | Folio API · IDE/Git 기록 · webhook/CLI |
+
+## Docs wiki-link 사용법
+
+1. 문서 본문에 `[[문서명]]` 또는 `[[문서명|별칭]]` 입력
+2. 편집 중 `[[` 입력 시 기존 문서 자동완성 (↑↓ · Enter)
+3. 우측(또는 하단) **링크 그래프**에서 노드 클릭 → 해당 문서 이동
+4. 문서 하단 **역링크**로 나를 가리키는 문서 확인
+5. 저장하면 그래프가 문서 집합 기준으로 갱신됩니다

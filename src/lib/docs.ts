@@ -63,7 +63,7 @@ function getDefaults(): DocEntry[] {
     {
       id: crypto.randomUUID(),
       title: '프로젝트 규칙',
-      content: '# 프로젝트 규칙\n\n- 모든 이슈는 Jira에 생성한다\n- 코드 리뷰는 24시간 내에\n- 데일리 스탠드업 10시\n- PR은 최대 300줄',
+      content: '# 프로젝트 규칙\n\n- 모든 이슈는 Jira에 생성한다\n- 코드 리뷰는 24시간 내에\n- 데일리 스탠드업 10시\n- PR은 최대 300줄\n- API는 [[API 명세]] 를 따른다',
       category: 'Policy',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),

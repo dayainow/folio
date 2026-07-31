@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef, memo, type ReactNode, type ChangeEvent, type KeyboardEvent } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef, memo, type ReactNode, type ChangeEvent, type KeyboardEvent } from 'react';
+import dynamic from 'next/dynamic';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -21,19 +21,44 @@ import {
   Upload,
   Loader2,
   Share2,
+  Link2,
 } from 'lucide-react';
 import { loadDocsWithFallback, saveDocWithFallback, deleteDocWithFallback, loadCategories, type DocEntry } from '@/lib/docs';
 import { readObsidianMarkdownFiles, uniqueDocTitle } from '@/lib/obsidian';
 import { exportDocToBeacon, fetchBeaconMtimes } from '@/lib/beacon';
 import { getBeaconAutoArtifact } from '@/lib/beacon-automation';
 import { recordFolioTimelineEvent } from '@/lib/beacon-timeline-consent';
+import { findBacklinks, wikiLinksToMarkdown } from '@/lib/link-parser';
+import { WikiLinkTextarea } from '@/components/wiki-link-textarea';
+
+const LinkGraphPanel = dynamic(
+  () => import('@/components/link-graph').then((m) => ({ default: m.LinkGraphPanel })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex min-h-[320px] items-center justify-center rounded-2xl border border-gray-100 text-xs text-gray-400">
+        그래프 로딩…
+      </div>
+    ),
+  },
+);
 
 type EditPane = 'edit' | 'preview' | 'split';
 
-function MarkdownPreview({ content }: { content: string }) {
+function MarkdownPreview({
+  content,
+  docs,
+  onOpenDoc,
+}: {
+  content: string;
+  docs: DocEntry[];
+  onOpenDoc?: (docId: string) => void;
+}) {
   if (!content.trim()) {
     return <p className="text-sm text-gray-400">(빈 문서)</p>;
   }
+
+  const md = wikiLinksToMarkdown(content, docs);
 
   return (
     <div
@@ -60,7 +85,32 @@ function MarkdownPreview({ content }: { content: string }) {
         '[&_input]:mr-2',
       ].join(' ')}
     >
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          a: ({ href, children }) => {
+            if (href?.startsWith('#doc:') && onOpenDoc) {
+              const id = href.slice('#doc:'.length);
+              return (
+                <button
+                  type="button"
+                  className="text-blue-600 underline underline-offset-2"
+                  onClick={() => onOpenDoc(id)}
+                >
+                  {children}
+                </button>
+              );
+            }
+            return (
+              <a href={href} target="_blank" rel="noreferrer">
+                {children}
+              </a>
+            );
+          },
+        }}
+      >
+        {md}
+      </ReactMarkdown>
     </div>
   );
 }
@@ -359,6 +409,19 @@ export const DocsPanel = memo(function DocsPanel({
     .filter(d => !filterCat || d.category === filterCat)
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 
+  const openDocById = useCallback(
+    (id: string) => {
+      const doc = docs.find((d) => d.id === id);
+      if (doc) void selectDoc(doc);
+    },
+    [docs, selectDoc],
+  );
+
+  const backlinks = useMemo(
+    () => (selectedId ? findBacklinks(docs, selectedId) : []),
+    [docs, selectedId],
+  );
+
   const paneButton = (pane: EditPane, label: string, icon: ReactNode) => (
     <Button
       key={pane}
@@ -389,7 +452,7 @@ export const DocsPanel = memo(function DocsPanel({
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
+    <div className="grid grid-cols-1 xl:grid-cols-[240px_1fr_280px] lg:grid-cols-[240px_1fr] gap-6">
       {/* Sidebar */}
       <Card className="rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="p-3 border-b border-gray-50 space-y-2">
@@ -582,44 +645,79 @@ export const DocsPanel = memo(function DocsPanel({
               {editing ? (
                 editPane === 'split' ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 min-h-[400px]">
-                    <Textarea
+                    <WikiLinkTextarea
                       value={content}
-                      onChange={e => setContent(e.target.value)}
-                      placeholder="마크다운으로 문서를 작성하세요..."
+                      onChange={setContent}
+                      docs={docs}
+                      excludeDocId={selectedId}
+                      placeholder="마크다운으로 작성 · [[문서명]] 링크 지원"
                       className="min-h-[400px] resize-none border border-gray-100 rounded-xl text-sm leading-relaxed font-mono"
                     />
                     <ScrollArea className="h-[400px] rounded-xl border border-gray-100 p-3">
-                      <MarkdownPreview content={content} />
+                      <MarkdownPreview content={content} docs={docs} onOpenDoc={openDocById} />
                     </ScrollArea>
                   </div>
                 ) : editPane === 'preview' ? (
                   <ScrollArea className="h-[450px]">
-                    <MarkdownPreview content={content} />
+                    <MarkdownPreview content={content} docs={docs} onOpenDoc={openDocById} />
                   </ScrollArea>
                 ) : (
-                  <Textarea
+                  <WikiLinkTextarea
                     value={content}
-                    onChange={e => setContent(e.target.value)}
-                    placeholder="마크다운으로 문서를 작성하세요..."
+                    onChange={setContent}
+                    docs={docs}
+                    excludeDocId={selectedId}
+                    placeholder="마크다운으로 작성 · [[ 입력 시 문서 자동완성"
                     className="min-h-[400px] resize-none border-0 focus-visible:ring-0 text-sm leading-relaxed p-0 font-mono"
                   />
                 )
               ) : (
                 <ScrollArea className="h-[450px]">
-                  <MarkdownPreview content={content} />
+                  <MarkdownPreview content={content} docs={docs} onOpenDoc={openDocById} />
                 </ScrollArea>
               )}
             </div>
+
+            {backlinks.length > 0 && (
+              <div className="border-t border-gray-50 px-4 py-3">
+                <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-gray-600">
+                  <Link2 className="h-3.5 w-3.5" aria-hidden />
+                  역링크 ({backlinks.length})
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {backlinks.map((d) => (
+                    <button
+                      key={d.id}
+                      type="button"
+                      onClick={() => openDocById(d.id)}
+                      className="rounded-lg border border-gray-100 bg-gray-50 px-2 py-1 text-[11px] text-gray-700 hover:bg-gray-100"
+                    >
+                      {d.title}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
             <div className="text-center">
               <FileText className="h-10 w-10 mx-auto mb-2 text-gray-300" />
               <p>문서를 선택하거나 새 문서를 만드세요</p>
+              <p className="mt-1 text-[11px] text-gray-400">본문에 [[문서명]] 으로 링크를 걸 수 있습니다</p>
             </div>
           </div>
         )}
       </Card>
+
+      {/* 링크 그래프 — xl: 우측 / 그 외: 하단 풀폭 */}
+      <div className="min-h-[320px] lg:col-span-2 xl:col-span-1 xl:min-h-[420px]">
+        <LinkGraphPanel
+          docs={docs}
+          selectedId={selectedId}
+          onSelectDoc={openDocById}
+        />
+      </div>
     </div>
   );
 });
