@@ -130,6 +130,7 @@ GitHub Webhook: `POST /api/mcp/git-webhook` + `FOLIO_MCP_WEBHOOK_SECRET`
 
 | 주제 | 문서 |
 |------|------|
+| **내부 사용 가이드** | [docs/INTERNAL.md](docs/INTERNAL.md) |
 | 설치·시작 | [docs/GETTING-STARTED.md](docs/GETTING-STARTED.md) |
 | **기여 가이드** | [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) |
 | **MCP 가이드** | [docs/MCP-GUIDE.md](docs/MCP-GUIDE.md) |

@@ -157,9 +157,11 @@ export const JournalPanel = memo(function JournalPanel({
     return () => window.clearTimeout(handle);
   }, [focusDate, ready, selectDate, onFocusHandled]);
 
+  const onDraftChangeRef = useRef(onDraftChange);
+  onDraftChangeRef.current = onDraftChange;
   useEffect(() => {
-    onDraftChange?.(date, draft);
-  }, [date, draft, onDraftChange]);
+    onDraftChangeRef.current?.(date, draft);
+  }, [date, draft]);
 
   useEffect(() => {
     void import('@/lib/notify-client').then(({ fetchIntegrationsStatus }) =>

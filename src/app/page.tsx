@@ -107,6 +107,13 @@ export default function Home() {
     setActiveTeamIdState(teamId);
   }, []);
 
+  const handleDraftChange = useCallback((date: string, content: string) => {
+    setJournalPreview((prev) => {
+      if (prev?.date === date && prev?.content === content) return prev;
+      return { date, content };
+    });
+  }, []);
+
   const handleTabChange = useCallback((v: string) => {
     setTab(v as TabValue);
     setMobileSidebarOpen(false);
