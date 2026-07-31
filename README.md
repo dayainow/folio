@@ -56,10 +56,12 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 ![일정](screenshots/board.png)
 
 ### 프로세스 — Beacon Gate(P0–P4) · Timeline · 산출물 체크 · 스냅샷
-![프로세스](screenshots/process.png)
+![프로세스 - Gate와 산출물](screenshots/process.png)
+![프로세스 - Timeline 이력](screenshots/process-2.png)
 
 ### 가이드 — 앱 안에서 바로 보는 온보딩/기능 안내(`/guide`)
-![가이드](screenshots/guide.png)
+![가이드 - 시작하기](screenshots/guide.png)
+![가이드 - 단계별 안내](screenshots/guide-2.png)
 
 ---
 
