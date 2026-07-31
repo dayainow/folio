@@ -22,12 +22,35 @@ export interface AiSummaryResponse {
 }
 
 /**
- * 룰 기반 폴백 요약 엔진 (Local Rule-based Summarizer)
+ * Safe JSON Parser: LLM이 백틱이나 마크다운 코드 블록으로 감싸 반환하더라도 정규식으로 순수 JSON 추출
+ */
+function cleanAndParseJson(rawText: string): Record<string, unknown> {
+  const cleaned = rawText
+    .replace(/^```(json)?\s*/i, '')
+    .replace(/\s*```$/, '')
+    .trim();
+
+  // 만약 텍스트 내에 첫 '{'와 마지막 '}'가 있다면 그 구간만 추출
+  const startIdx = cleaned.indexOf('{');
+  const endIdx = cleaned.lastIndexOf('}');
+  if (startIdx !== -1 && endIdx !== -1 && startIdx <= endIdx) {
+    const jsonStr = cleaned.slice(startIdx, endIdx + 1);
+    return JSON.parse(jsonStr) as Record<string, unknown>;
+  }
+  return JSON.parse(cleaned) as Record<string, unknown>;
+}
+
+/**
+ * 스마트 룰 기반 폴백 요약 엔진 (Deep Rule-based Summarizer)
+ * - High Priority 미완료 태스크 감지
+ * - 일지 태그와 일정 태그 간 교차 분석(Core Themes)
+ * - 최근 수정 문서 및 완료 속도 분석
  */
 export function generateRuleBasedSummary(req: AiSummaryRequest): AiSummaryResponse {
   const generatedAt = new Date().toISOString();
   const highlights: string[] = [];
-  const keywordsSet = new Set<string>();
+  const journalTagsSet = new Set<string>();
+  const boardTagsSet = new Set<string>();
   const actionItems: string[] = [];
   const summaryLines: string[] = [];
 
@@ -35,82 +58,106 @@ export function generateRuleBasedSummary(req: AiSummaryRequest): AiSummaryRespon
   const docs = req.docEntries ?? [];
   const cards = req.boardCards ?? [];
 
+  // 1. 일지 영역
   if (req.type === 'journal' || req.type === 'weekly' || req.type === 'all') {
     if (journals.length > 0) {
       summaryLines.push(`### 📝 일지 요약 (총 ${journals.length}건)`);
       journals.slice(0, 5).forEach((j) => {
         const firstLine = j.content.split('\n')[0]?.replace(/^#+\s*/, '') || '내용 없음';
         summaryLines.push(`- **${j.date}**: ${firstLine}`);
-        (j.tags ?? []).forEach((t) => keywordsSet.add(t));
+        (j.tags ?? []).forEach((t: string) => journalTagsSet.add(t));
       });
-      highlights.push(`최근 ${journals.length}개 일지 작성됨`);
+      highlights.push(`최근 ${journals.length}개 일지가 꾸준히 기록되었습니다.`);
     } else {
-      summaryLines.push('📝 일지 기록이 없습니다.');
+      summaryLines.push('📝 기간 내 작성된 일지 기록이 없습니다.');
     }
   }
 
+  // 2. 문서 영역
   if (req.type === 'docs' || req.type === 'weekly' || req.type === 'all') {
     if (docs.length > 0) {
-      summaryLines.push(`\n### 📚 문서 현황 (총 ${docs.length}건)`);
+      summaryLines.push(`\n### 📚 문서 및 지식 베이스 (총 ${docs.length}건)`);
       const catCount: Record<string, number> = {};
       docs.forEach((d) => {
         catCount[d.category] = (catCount[d.category] || 0) + 1;
-        if (d.category) keywordsSet.add(d.category);
+        if (d.category) journalTagsSet.add(d.category);
       });
 
       const catSummary = Object.entries(catCount)
         .map(([cat, count]) => `${cat}: ${count}개`)
         .join(', ');
-      summaryLines.push(`- 카테고리별 문서 분포: ${catSummary}`);
+      summaryLines.push(`- 카테고리 분포: ${catSummary}`);
 
       const recentDocs = [...docs]
         .sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''))
         .slice(0, 3);
-      summaryLines.push(`- 최근 수정된 문서: ${recentDocs.map((d) => `[[${d.title}]]`).join(', ')}`);
-      highlights.push(`총 ${docs.length}개 문서가 카테고리별로 관리 중입니다.`);
+      summaryLines.push(`- 최근 변경 문서: ${recentDocs.map((d) => `[[${d.title}]]`).join(', ')}`);
+      highlights.push(`지식 베이스에 총 ${docs.length}개의 문서가 체계적으로 분류되어 있습니다.`);
     } else {
       summaryLines.push('\n📚 문서 데이터가 없습니다.');
     }
   }
 
+  // 3. 일정/태스크 영역
   if (req.type === 'board' || req.type === 'weekly' || req.type === 'all') {
     if (cards.length > 0) {
       const doneCards = cards.filter((c) => c.status === 'done');
       const inProgressCards = cards.filter((c) => c.status === 'in_progress');
       const reviewCards = cards.filter((c) => c.status === 'review');
       const backlogCards = cards.filter((c) => c.status === 'backlog');
+      const highPriorityPending = cards.filter(
+        (c) => c.priority === 'high' && c.status !== 'done'
+      );
 
-      summaryLines.push(`\n### 📋 보드 태스크 현황 (총 ${cards.length}건)`);
+      summaryLines.push(`\n### 📋 일정 및 태스크 처리 현황 (총 ${cards.length}건)`);
       summaryLines.push(
         `- **Done**: ${doneCards.length}건 | **In Progress**: ${inProgressCards.length}건 | **Review**: ${reviewCards.length}건 | **Backlog**: ${backlogCards.length}건`
       );
 
       cards.forEach((c) => {
-        (c.tags ?? []).forEach((t: string) => keywordsSet.add(t));
+        (c.tags ?? []).forEach((t: string) => boardTagsSet.add(t));
       });
 
       if (doneCards.length > 0) {
-        highlights.push(`성공적으로 완료된 태스크: ${doneCards.length}개`);
+        highlights.push(`이번 기간 중 성공적으로 Done 처리된 태스크가 ${doneCards.length}건 있습니다.`);
       }
-      if (inProgressCards.length > 0) {
-        actionItems.push(`[진행 중 태스크 점검] ${inProgressCards.slice(0, 3).map((c) => c.title).join(', ')}`);
+
+      if (highPriorityPending.length > 0) {
+        actionItems.push(
+          `[🔥 긴급 우선순위 점검] ${highPriorityPending
+            .slice(0, 3)
+            .map((c) => c.title)
+            .join(', ')} (High Priority)`
+        );
       }
       if (reviewCards.length > 0) {
-        actionItems.push(`[리뷰 대기] ${reviewCards.slice(0, 3).map((c) => c.title).join(', ')} 검토`);
+        actionItems.push(`[리뷰 대기 태스크] ${reviewCards.slice(0, 3).map((c) => c.title).join(', ')} 검토 및 머지 완료하기`);
+      }
+      if (inProgressCards.length > 0 && highPriorityPending.length === 0) {
+        actionItems.push(`[진행 중 작업 점검] ${inProgressCards.slice(0, 3).map((c) => c.title).join(', ')} 상태 확인`);
       }
     } else {
       summaryLines.push('\n📋 보드 태스크 데이터가 없습니다.');
     }
   }
 
+  // 4. 일지/일정 교차 분석 (Core Theme 추출)
+  const crossThemes = Array.from(journalTagsSet).filter((t) => boardTagsSet.has(t));
+  if (crossThemes.length > 0) {
+    summaryLines.push(`\n💡 **핵심 교차 집중 주제**: #${crossThemes.join(', #')}`);
+    highlights.push(`일지와 보드에서 공통적으로 활발히 다뤄진 핵심 키워드: #${crossThemes.join(', #')}`);
+  }
+
+  const mergedKeywords = Array.from(new Set([...Array.from(journalTagsSet), ...Array.from(boardTagsSet)]));
+
   if (actionItems.length === 0) {
-    actionItems.push('새로운 일지 및 태스크를 추가하여 프로젝트 기록을 최신 상태로 유지하세요.');
+    actionItems.push('새로운 목표 태스크를 계획하고 일지 기록을 시작해보세요.');
   }
 
   return {
     summary: summaryLines.join('\n'),
-    highlights: highlights.length > 0 ? highlights : ['프로젝트 기록이 잘 유지되고 있습니다.'],
-    keywords: Array.from(keywordsSet).slice(0, 10),
+    highlights: highlights.length > 0 ? highlights : ['프로젝트 워크플로우가 안정적으로 유지되고 있습니다.'],
+    keywords: mergedKeywords.slice(0, 10),
     actionItems,
     source: 'rule-based',
     generatedAt,
@@ -118,22 +165,22 @@ export function generateRuleBasedSummary(req: AiSummaryRequest): AiSummaryRespon
 }
 
 /**
- * AI 요약 생성 핸들러 (LLM 호출 + 룰 기반 폴백)
+ * AI 요약 생성 핸들러 (Gemini LLM 호출 + 안전 파서 + 로컬 룰 엔진 폴백)
  */
 export async function generateAiSummary(req: AiSummaryRequest): Promise<AiSummaryResponse> {
   const geminiApiKey = process.env.GEMINI_API_KEY;
+  const modelName = process.env.GEMINI_MODEL_NAME || 'gemini-1.5-flash';
 
   if (!geminiApiKey) {
-    // API 키가 없으면 룰 기반 엔진 실행
     return generateRuleBasedSummary(req);
   }
 
   try {
-    const prompt = `다음 프로젝트 데이터를 분석하여 마크다운 형태의 짧고 명확한 요약, 하이라이트(성과 1-3개), 주요 키워드(최대 5개), 다음 액션 아이템(1-3개)을 JSON 형식으로 추출해줘.
+    const prompt = `당신은 Folio 워크스페이스의 수석 프로젝트 애널리스트입니다. 다음 프로젝트 데이터(일지, 문서, 칸반 보드)를 분석하여 마크다운 형태의 짧고 가독성 좋은 요약, 하이라이트(성과 1~3개), 주요 키워드(최대 5개), 다음 액션 아이템(긴급도 우선 1~3개)을 JSON 형식으로 추출해주세요.
 
 JSON 응답 포맷:
 {
-  "summary": "마크다운 형식 요약 문자열",
+  "summary": "마크다운 형식 요약 문자열 (주요 마일스톤 및 상태 요약)",
   "highlights": ["성과 1", "성과 2"],
   "keywords": ["키워드1", "키워드2"],
   "actionItems": ["할일 1", "할일 2"]
@@ -141,18 +188,21 @@ JSON 응답 포맷:
 
 요청 타입: ${req.type}
 기간: ${req.period || '최근'}
-일지 목록: ${JSON.stringify((req.journalEntries || []).slice(0, 10))}
-문서 목록: ${JSON.stringify((req.docEntries || []).slice(0, 10).map((d) => ({ title: d.title, category: d.category })))}
-보드 카드 목록: ${JSON.stringify((req.boardCards || []).slice(0, 15).map((c) => ({ title: c.title, status: c.status, tags: c.tags })))}`;
+일지 목록(상위 10개): ${JSON.stringify((req.journalEntries || []).slice(0, 10))}
+문서 목록(상위 10개): ${JSON.stringify((req.docEntries || []).slice(0, 10).map((d) => ({ title: d.title, category: d.category })))}
+보드 카드 목록(상위 15개): ${JSON.stringify((req.boardCards || []).slice(0, 15).map((c) => ({ title: c.title, status: c.status, priority: c.priority, tags: c.tags })))}`;
 
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiApiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { responseMimeType: 'application/json' },
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.3,
+          },
         }),
       }
     );
@@ -165,18 +215,18 @@ JSON 응답 포맷:
     const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!rawText) throw new Error('Empty AI response');
 
-    const parsed = JSON.parse(rawText);
+    const parsed = cleanAndParseJson(rawText);
 
     return {
-      summary: parsed.summary || '요약을 생성할 수 없습니다.',
-      highlights: Array.isArray(parsed.highlights) ? parsed.highlights : [],
-      keywords: Array.isArray(parsed.keywords) ? parsed.keywords : [],
-      actionItems: Array.isArray(parsed.actionItems) ? parsed.actionItems : [],
+      summary: typeof parsed.summary === 'string' ? parsed.summary : '요약을 생성할 수 없습니다.',
+      highlights: Array.isArray(parsed.highlights) ? (parsed.highlights as string[]) : [],
+      keywords: Array.isArray(parsed.keywords) ? (parsed.keywords as string[]) : [],
+      actionItems: Array.isArray(parsed.actionItems) ? (parsed.actionItems as string[]) : [],
       source: 'ai',
       generatedAt: new Date().toISOString(),
     };
   } catch (err) {
-    console.warn('[AI Summary] Gemini API call failed, falling back to rule-based summary:', err);
+    console.warn('[AI Summary] LLM 호출 실패, 심층 룰 기반 엔진으로 폴백:', err);
     return generateRuleBasedSummary(req);
   }
 }

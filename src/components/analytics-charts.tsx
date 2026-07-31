@@ -191,6 +191,15 @@ export function ProductivityTrendChart({
         />
         <Line
           type="monotone"
+          dataKey="movingAverage"
+          name="7일 이동평균"
+          stroke="#06b6d4"
+          strokeWidth={2}
+          strokeDasharray="3 3"
+          dot={false}
+        />
+        <Line
+          type="monotone"
           dataKey="completedTasks"
           name="완료 태스크"
           stroke="#22c55e"

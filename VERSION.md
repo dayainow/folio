@@ -75,10 +75,10 @@
 | ID | 요약 | 노트 |
 |----|------|------|
 | P35 | 가이드/매뉴얼 | ✅ ONBOARDING · FEATURES · TROUBLESHOOTING · `/guide` · `e24c1ae` |
-| P36 | AI 요약 | ✅ Gemini API + 로컬 룰 기반 요약 엔진 폴백 & `AiSummaryWidget` |
-| P37 | 고급 분석 | ✅ 생산성 스코어 및 일지/태스크 종합 생산성 추이 차트 연동 |
-| P38 | Slack 연동 고도화 | ✅ Slack Block Kit 요약 리포트 자동 생성 및 원클릭 전송 |
-| — | 1.2.0 정식 | ✅ Phase 11 완료 릴리즈 |
+| P36 | AI 요약 | ✅ Safe JSON 파서 + 스마트 룰 엔진(우선순위 감지/태그 교차 분석) 고도화 |
+| P37 | 고급 분석 | ✅ 다차원 가중치 생산성 점수 · 7일 이동평균선 · +WoW% 성장률 분석 |
+| P38 | Slack 연동 고도화 | ✅ Rich Block Kit (Header/Divider/Highlights/Actions) 리포트 전송 |
+| — | 1.2.0 정식 | ✅ Phase 11 심층 아키텍처 고도화 릴리즈 |
 
 ## Phase 10 계획 (완료)
 

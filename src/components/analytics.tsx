@@ -372,18 +372,45 @@ export const CombinedProductivitySection = memo(function CombinedProductivitySec
 
   if (!metrics) return null;
 
+  const wowColor =
+    metrics.wowGrowthPercent > 0
+      ? 'bg-green-500/10 text-green-600 dark:text-green-400'
+      : metrics.wowGrowthPercent < 0
+        ? 'bg-red-500/10 text-red-600 dark:text-red-400'
+        : 'bg-gray-500/10 text-gray-600';
+
   return (
     <div className="space-y-4 mt-6 border-t pt-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold">⚡ 주간 생산성 & AI 인사이트</h2>
-        <span className="text-xs text-muted-foreground">
-          총 스코어: <strong className="text-purple-600 dark:text-purple-400">{metrics.totalProductivityScore}점</strong>
-        </span>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-semibold">⚡ 주간 생산성 & AI 인사이트</h2>
+          <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${wowColor}`}>
+            {metrics.wowGrowthPercent >= 0 ? '+' : ''}
+            {metrics.wowGrowthPercent}% WoW
+          </span>
+        </div>
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          {metrics.priorityBreakdown && (
+            <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px]">
+              우선순위 완료: <strong className="text-red-500">H {metrics.priorityBreakdown.high}</strong> ·{' '}
+              <strong className="text-yellow-500">M {metrics.priorityBreakdown.medium}</strong> ·{' '}
+              <strong className="text-blue-500">L {metrics.priorityBreakdown.low}</strong>
+            </span>
+          )}
+          <span>
+            총 가중치 스코어:{' '}
+            <strong className="text-purple-600 dark:text-purple-400 text-sm font-semibold">
+              {metrics.totalProductivityScore}점
+            </strong>
+          </span>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2 rounded-2xl border border-gray-100 dark:border-gray-800 p-4 bg-card shadow-sm">
-          <h3 className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-3">일지/태스크 종합 생산성 추이</h3>
+          <h3 className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-3">
+            일지/문서/태스크 다차원 가중치 생산성 추이 (7일 이동평균선 포함)
+          </h3>
           <ProductivityTrendChart data={metrics.trend} />
         </Card>
 

@@ -5,6 +5,7 @@
  */
 import { loadJournalsWithFallback, type JournalEntry } from '@/lib/journal';
 import { loadTasksWithFallback, type Task, DEFAULT_COLUMNS } from '@/lib/board';
+import { loadDocs } from '@/lib/docs';
 
 export type AnalyticsRange = '1w' | '1m' | '3m' | 'all';
 
@@ -336,47 +337,121 @@ export interface ProductivityTrendPoint {
   date: string;
   journalCount: number;
   completedTasks: number;
+  docCount: number;
   productivityScore: number;
+  movingAverage: number;
 }
 
 export interface CombinedProductivityMetrics {
   trend: ProductivityTrendPoint[];
   totalProductivityScore: number;
   avgWeeklyScore: number;
+  wowGrowthPercent: number;
+  priorityBreakdown: {
+    high: number;
+    medium: number;
+    low: number;
+  };
 }
 
 export async function getCombinedProductivityMetrics(
   range: AnalyticsRange = '1m'
 ): Promise<CombinedProductivityMetrics> {
-  const journalAnalytics = await getJournalAnalytics(range);
-  const boardAnalytics = await getBoardAnalytics(range);
+  const [journalAnalytics, tasks] = await Promise.all([
+    getJournalAnalytics(range),
+    loadTasksWithFallback(),
+  ]);
 
-  const dateMap = new Map<string, { journalCount: number; completedTasks: number }>();
+  const docs = typeof window !== 'undefined' ? loadDocs() : [];
 
+  const dateMap = new Map<
+    string,
+    {
+      journalCount: number;
+      completedTasks: number;
+      docCount: number;
+      weightedTaskScore: number;
+    }
+  >();
+
+  // 1. 일지 횟수 매핑
   journalAnalytics.daily.forEach((dp) => {
-    dateMap.set(dp.date, { journalCount: dp.count, completedTasks: 0 });
+    dateMap.set(dp.date, {
+      journalCount: dp.count,
+      completedTasks: 0,
+      docCount: 0,
+      weightedTaskScore: 0,
+    });
   });
 
-  boardAnalytics.statusChanges
-    .filter((sc) => sc.status === 'done')
-    .forEach((sc) => {
-      const existing = dateMap.get(sc.date) || { journalCount: 0, completedTasks: 0 };
-      dateMap.set(sc.date, {
-        journalCount: existing.journalCount,
-        completedTasks: existing.completedTasks + sc.count,
-      });
+  // 2. 문서 변경 횟수 매핑
+  docs.forEach((d) => {
+    const dateStr = (d.updatedAt || d.createdAt || '').slice(0, 10);
+    if (!dateStr) return;
+    const existing = dateMap.get(dateStr) || {
+      journalCount: 0,
+      completedTasks: 0,
+      docCount: 0,
+      weightedTaskScore: 0,
+    };
+    dateMap.set(dateStr, {
+      ...existing,
+      docCount: existing.docCount + 1,
     });
+  });
+
+  // 3. 완료된 태스크 가중치 매핑 (High=50, Med=30, Low=15)
+  const priorityBreakdown = { high: 0, medium: 0, low: 0 };
+  const doneTasks = tasks.filter((t) => t.status === 'done');
+
+  doneTasks.forEach((t) => {
+    const dateStr = (t.updatedAt || t.createdAt || '').slice(0, 10);
+    if (!dateStr) return;
+
+    const existing = dateMap.get(dateStr) || {
+      journalCount: 0,
+      completedTasks: 0,
+      docCount: 0,
+      weightedTaskScore: 0,
+    };
+
+    const weight = t.priority === 'high' ? 50 : t.priority === 'medium' ? 30 : 15;
+    if (t.priority === 'high') priorityBreakdown.high++;
+    else if (t.priority === 'medium') priorityBreakdown.medium++;
+    else priorityBreakdown.low++;
+
+    dateMap.set(dateStr, {
+      ...existing,
+      completedTasks: existing.completedTasks + 1,
+      weightedTaskScore: existing.weightedTaskScore + weight,
+    });
+  });
 
   const sortedDates = Array.from(dateMap.keys()).sort((a, b) => a.localeCompare(b));
 
-  const trend: ProductivityTrendPoint[] = sortedDates.map((date) => {
+  const rawTrend = sortedDates.map((date) => {
     const data = dateMap.get(date)!;
-    const productivityScore = data.journalCount * 20 + data.completedTasks * 30;
+    // 공식: 일지*15 + 문서*15 + 완료 태스크 가중합
+    const productivityScore =
+      data.journalCount * 15 + data.docCount * 15 + data.weightedTaskScore;
     return {
       date,
       journalCount: data.journalCount,
       completedTasks: data.completedTasks,
+      docCount: data.docCount,
       productivityScore,
+    };
+  });
+
+  // 4. 7일 이동 평균선(Moving Average) 계산
+  const trend: ProductivityTrendPoint[] = rawTrend.map((point, i) => {
+    const windowStart = Math.max(0, i - 6);
+    const windowSlice = rawTrend.slice(windowStart, i + 1);
+    const sum = windowSlice.reduce((acc, curr) => acc + curr.productivityScore, 0);
+    const movingAverage = Math.round(sum / windowSlice.length);
+    return {
+      ...point,
+      movingAverage,
     };
   });
 
@@ -385,10 +460,21 @@ export async function getCombinedProductivityMetrics(
     trend.length > 0 ? (totalProductivityScore / trend.length) * 7 : 0
   );
 
+  // 5. 전주 대비 성장률 (WoW Growth Percent)
+  const last7 = trend.slice(-7);
+  const prev7 = trend.slice(-14, -7);
+  const last7Sum = last7.reduce((a, b) => a + b.productivityScore, 0);
+  const prev7Sum = prev7.reduce((a, b) => a + b.productivityScore, 0);
+
+  const wowGrowthPercent =
+    prev7Sum > 0 ? Math.round(((last7Sum - prev7Sum) / prev7Sum) * 100) : last7Sum > 0 ? 100 : 0;
+
   return {
     trend,
     totalProductivityScore,
     avgWeeklyScore,
+    wowGrowthPercent,
+    priorityBreakdown,
   };
 }
 
