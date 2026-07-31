@@ -5,7 +5,7 @@
 
 | | |
 |--|--|
-| 버전 | **1.0.0-wip** (Phase 9) |
+| 버전 | **1.0.0** (Phase 9 완료) |
 | 라이선스 | private |
 
 ---
@@ -144,28 +144,68 @@ npm run start
 
 ## 배포 / Deploy
 
-상세: [docs/DEPLOY.md](./docs/DEPLOY.md) · 환경변수: [docs/env.example](./docs/env.example) · [.env.production.example](./.env.production.example)
+상세: [docs/DEPLOY.md](./docs/DEPLOY.md) · 런북: [docs/runbooks/DEPLOY.md](./docs/runbooks/DEPLOY.md)  
+환경변수: [docs/env.example](./docs/env.example) · [.env.production.example](./.env.production.example)
 
 | 방식 | 요약 |
 |------|------|
 | Vercel | `main` → Production · PR → Preview (`vercel.json`) |
 | Docker | `Dockerfile` 멀티스테이지 · `docker compose up --build` |
 | CI | lint · typecheck · `qa:smoke` · build (`.github/workflows/ci.yml`) |
-| Deploy | main 푸시 시 Vercel CLI (시크릿 설정 시) 또는 Vercel Git 연동 |
 | Health | `GET /api/health` · `/health` rewrite → `{ status, version, uptime }` |
 | Domain | Settings → Domains · SSL 자동(Let’s Encrypt) |
 
-```bash
-# Vercel
-npx vercel --prod
+브랜치: feature → PR (Preview) → `main` 머지 (Production)
 
-# Docker
-cp docs/env.example .env.local   # 값 채움
-docker compose up --build
-curl -s http://localhost:3000/api/health
+### Vercel Production 배포 가이드
+
+1. [vercel.com](https://vercel.com) → GitHub `dayainow/folio` Import (Framework: Next.js)
+2. Project → **Settings → Environment Variables** 에 `.env.production.example` 기준으로 Production 값 등록  
+   (`NEXT_PUBLIC_SUPABASE_*`, `NEXT_PUBLIC_FOLIO_URL`, 선택: Jira/웹훅/VAPID/`FOLIO_VERSION`)
+3. Supabase Auth → Site URL / Redirect URLs 에 Production·`*.vercel.app` 등록
+4. `main` 머지 또는 CLI로 배포:
+
+```bash
+npx vercel link          # 최초 1회
+npx vercel --prod        # Production
+# 또는: npm run runbook:deploy
 ```
 
-브랜치: feature → PR (Preview) → `main` 머지 (Production)
+5. 검증:
+
+```bash
+curl -sS https://<host>/api/health
+curl -sS https://<host>/api/runtime
+```
+
+6. (선택) **Settings → Domains** 에 커스텀 도메인 · SSL은 Vercel 자동 갱신  
+7. 롤백: Deployments → 이전 배포 **Promote to Production** 또는 `npx vercel rollback`
+
+### Docker 로컬 배포 가이드
+
+```bash
+cp docs/env.example .env.local   # 값 채움 (Supabase 등)
+docker compose up --build -d
+curl -s http://localhost:3000/api/health
+# → {"status":"ok","version":"1.0.0",…}
+
+# 로그 / 중지
+docker compose logs -f folio
+docker compose down
+```
+
+직접 빌드:
+
+```bash
+docker build -t folio:1.0.0 \
+  --build-arg FOLIO_VERSION=1.0.0 \
+  --build-arg NEXT_PUBLIC_SUPABASE_URL="$NEXT_PUBLIC_SUPABASE_URL" \
+  --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY="$NEXT_PUBLIC_SUPABASE_ANON_KEY" \
+  .
+docker run --rm -p 3000:3000 --env-file .env.local folio:1.0.0
+```
+
+> HEALTHCHECK는 `node fetch`로 `/api/health`를 주기적으로 확인한다.
 
 ---
 
@@ -225,10 +265,10 @@ npm run qa:smoke && npm run lint && npm run typecheck
 
 ## 작업 관리
 
-- 현재: **Phase 9** · **1.0.0-wip**
-- 완료: Phase 1~8 (**0.9.0**)
-- 진행 중: **P27** 실제 배포
-- 다음: 운영 고도화 · **1.0.0** 정식
+- 현재: **Phase 9 완료** · **1.0.0**
+- 완료: Phase 1~9 (실제 배포 · Vercel/Docker · 도메인/SSL · 롤백)
+- 진행 중: —
+- 다음: 운영 고도화 · 피드백 반영
 
 상세: [VERSION.md](./VERSION.md) · [docs/DEPLOY.md](./docs/DEPLOY.md) · [docs/runbooks/](./docs/runbooks/)
 
@@ -244,12 +284,11 @@ npm run qa:smoke && npm run lint && npm run typecheck
 | 6 | 모니터 · Beacon 고도화 · 운영 런북 | ✅ **0.7.0** |
 | 7 | Beacon 양방향 · 자동화/알림 | ✅ **0.8.0** |
 | 8 | 모바일 · Slack · 위젯 · PWA/오프라인 | ✅ **0.9.0** |
-| 9 | 실제 배포 · 운영 | 진행 중 (P27) |
+| 9 | 실제 배포 · 운영 | ✅ **1.0.0** |
 
-## Phase 9 계획
+## 이후 계획
 
 | 영역 | 내용 |
 |------|------|
-| P27 실제 배포 | Vercel/Docker · 도메인/SSL · 롤백 런북 |
-| 운영 | 헬스/런북 검증 · 알림 채널 · 백업 드릴 |
-| 1.0.0 정식 | Production 안정화 후 릴리즈 |
+| 운영 고도화 | 알림 채널 · 백업 드릴 · 헬스 검증 |
+| 피드백 | UX · 성능 · 접근성 개선 |

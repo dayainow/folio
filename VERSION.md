@@ -6,10 +6,10 @@
 
 | 항목 | 값 |
 |------|-----|
-| 버전 | **1.0.0-wip** |
-| Phase | Phase 9 |
-| 진행 중 | P27 실제 배포 |
-| 다음 | Phase 9 후속 · 1.0.0 정식 |
+| 버전 | **1.0.0** |
+| Phase | Phase 9 완료 |
+| 진행 중 | — |
+| 다음 | 운영 고도화 · 피드백 반영 |
 
 ## 완료 항목
 
@@ -50,12 +50,12 @@
 | P25 | 모바일·알림·위젯 | `98b838a` |
 | P26 | 오프라인/PWA | `525422e` |
 | — | Phase 8 완료 · 0.9.0 릴리즈 | `ea94c5a` |
+| P27 | 실제 배포 | `d11e16f` |
+| — | Phase 9 완료 · 1.0.0 릴리즈 | _(본 커밋)_ |
 
 ## 진행 중
 
-| ID | 요약 | 노트 |
-|----|------|------|
-| P27 | 실제 배포 | Vercel · Docker 최적화 · 도메인/SSL · 롤백 (`d11e16f`) |
+없음 (Phase 1~9 완료 · **1.0.0**)
 
 ## Phase 7 계획
 
@@ -75,10 +75,8 @@
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| P27 | 실제 배포 | 진행 중 · Vercel/Docker · 도메인 · 롤백 |
-| — | 운영 고도화 | 알림 채널 · 백업 검증 |
-| — | 피드백 반영 | UX · 성능 · 접근성 |
-| — | 1.0.0 정식 | Production 안정화 후 |
+| P27 | 실제 배포 | ✅ Vercel/Docker · 도메인/SSL · 롤백 |
+| — | 1.0.0 정식 | ✅ Phase 9 완료 릴리즈 |
 
 ## Phase 6 계획 (배포·운영)
 
@@ -90,6 +88,15 @@
 
 ## 변경 이력
 
+### 1.0.0 — 2026-07-31 (Phase 9 완료)
+
+- 정식 릴리즈 **1.0.0** (Phase 9: 실제 배포 · Vercel/Docker · 도메인/SSL · 롤백)
+- **P27** 실제 배포 (`d11e16f`)
+  - `vercel.json` rewrites/headers/Cache-Control
+  - `.env.production.example` · Dockerfile 최적화 · HEALTHCHECK
+  - `docs/DEPLOY.md` · `docs/runbooks/DEPLOY.md` 도메인/SSL/롤백
+- README: Phase 1~9 완료 · Vercel Production · Docker 로컬 배포 가이드
+
 ### 1.0.0-wip — 2026-07-31 (P27 실제 배포) — `d11e16f`
 
 - `vercel.json`: rewrites(`/health`,`/runtime`) · API no-store · static immutable · 보안 헤더
@@ -97,7 +104,6 @@
 - `docs/DEPLOY.md`: Vercel 단계별 · 커스텀 도메인 · SSL 자동 갱신
 - `docs/runbooks/DEPLOY.md`: Dashboard Promote · `vercel rollback` · `git revert`
 - Dockerfile: runner apk/wget 제거 · node fetch HEALTHCHECK · dockerignore 강화
-- `docs/runbooks/DEPLOY.md`: Vercel Dashboard/CLI · git revert · Docker 롤백 상세
 
 ### 0.9.0 — 2026-07-30 (Phase 8 완료)
 

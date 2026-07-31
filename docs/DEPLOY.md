@@ -1,7 +1,7 @@
 # Folio 배포 가이드
 
 로컬 · Vercel · Docker · 커스텀 도메인 · SSL · CI/CD.  
-(P13 도입 · P19 강화 · **P27** 실제 배포 준비 · 1.0.0-wip)
+(P13 도입 · P19 강화 · **P27** 실제 배포 · **1.0.0**)
 
 ## 환경변수
 
@@ -59,7 +59,7 @@ GET /health          # vercel.json rewrite → /api/health
 응답 예:
 
 ```json
-{ "status": "ok", "version": "1.0.0-wip", "uptime": 42, "timestamp": "…" }
+{ "status": "ok", "version": "1.0.0", "uptime": 42, "timestamp": "…" }
 ```
 
 - Docker `HEALTHCHECK` / Compose `healthcheck` → `/api/health` (node `fetch`)
@@ -103,7 +103,7 @@ Project → **Settings → Environment Variables** 에 [.env.production.example]
 |------|------------|---------|-------------|
 | `NEXT_PUBLIC_SUPABASE_*` | ✅ | ✅ | 선택 |
 | `NEXT_PUBLIC_FOLIO_URL` | ✅ (커스텀 도메인) | Preview URL | localhost |
-| `FOLIO_VERSION` | ✅ `1.0.0-wip` 등 | 선택 | 선택 |
+| `FOLIO_VERSION` | ✅ `1.0.0` 등 | 선택 | 선택 |
 | `JIRA_*` / 웹훅 / `GITHUB_*` | ✅ 필요 시 | 선택 | 선택 |
 | `VAPID_*` | 푸시 사용 시 | 선택 | 선택 |
 
@@ -193,7 +193,7 @@ curl -sS https://<host>/api/runtime
 docker build -t folio:local \
   --build-arg NEXT_PUBLIC_SUPABASE_URL="$NEXT_PUBLIC_SUPABASE_URL" \
   --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY="$NEXT_PUBLIC_SUPABASE_ANON_KEY" \
-  --build-arg FOLIO_VERSION=1.0.0-wip \
+  --build-arg FOLIO_VERSION=1.0.0 \
   .
 
 docker run --rm -p 3000:3000 --env-file .env.local folio:local

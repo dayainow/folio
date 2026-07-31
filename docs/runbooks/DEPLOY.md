@@ -1,6 +1,6 @@
 # 배포 런북 (Deploy)
 
-Vercel · Docker 배포, 헬스체크, **롤백**. (P22 · **P27** · 1.0.0-wip)
+Vercel · Docker 배포, 헬스체크, **롤백**. (P22 · **P27** · **1.0.0**)
 
 상세 배경: [docs/DEPLOY.md](../DEPLOY.md) · 환경변수: [.env.production.example](../../.env.production.example) · [docs/env.example](../env.example)
 
@@ -40,7 +40,7 @@ feature/* ──PR──▶ Preview
 |------|--------|--------|
 | `NEXT_PUBLIC_*` | Production + Preview | build-arg + runtime |
 | `JIRA_*` / 웹훅 / `GITHUB_*` | Production (필요 시 Preview) | `.env.local` / `env_file` |
-| `FOLIO_VERSION` | 선택 (`1.0.0-wip`) | Dockerfile ARG / compose |
+| `FOLIO_VERSION` | 선택 (`1.0.0`) | Dockerfile ARG / compose |
 | `BEACON_PROJECT_ROOT` | 보통 미사용 | 자가호스팅 시 설정 |
 
 시크릿은 `NEXT_PUBLIC_` 로 올리지 않는다. `.env*.local` 은 커밋하지 않는다.
@@ -89,7 +89,7 @@ curl -sS http://localhost:3000/api/health
 
 ```bash
 curl -sS https://<host>/api/health
-# {"status":"ok","version":"1.0.0-wip",…}
+# {"status":"ok","version":"1.0.0",…}
 
 curl -sS https://<host>/health          # rewrite
 curl -sS https://<host>/api/runtime
@@ -173,7 +173,7 @@ git log -3 --oneline
 ```bash
 docker compose down
 
-# 이전 태그/이미지로 지정해 기동 (예: folio:1.0.0-wip-prev)
+# 이전 태그/이미지로 지정해 기동 (예: folio:1.0.0-prev)
 docker tag folio:local folio:broken
 docker pull <registry>/folio:<previous-tag>   # 레지스트리 사용 시
 # 또는 로컬에 남은 이미지 ID
