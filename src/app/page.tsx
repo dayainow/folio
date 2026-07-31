@@ -17,7 +17,7 @@ import { FullExportButton } from '@/components/full-export-button';
 import { McpSyncButton } from '@/components/mcp-sync-button';
 import { getActiveTeamId } from '@/lib/team';
 import { parseFolioDeepLink } from '@/lib/folio-links';
-import { Activity } from 'lucide-react';
+import { Activity, PanelRight, X } from 'lucide-react';
 
 const PanelFallback = ({ label }: { label: string }) => (
   <div className="min-h-[28rem] py-10 text-center text-sm text-muted-foreground" role="status" aria-live="polite">
@@ -25,21 +25,12 @@ const PanelFallback = ({ label }: { label: string }) => (
   </div>
 );
 
-const WidgetSkeleton = () => (
-  <section aria-hidden className="mb-6">
-    <div className="mb-2 flex h-11 items-center justify-between gap-2">
-      <div className="h-3 w-10 rounded bg-muted/50" />
-      <div className="h-8 w-16 rounded bg-muted/40" />
-    </div>
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {[0, 1, 2].map((i) => (
-        <div
-          key={i}
-          className="min-h-[11rem] h-44 rounded-2xl border border-gray-100 dark:border-gray-800 bg-muted/30 animate-pulse"
-        />
-      ))}
-    </div>
-  </section>
+const SidebarSkeleton = () => (
+  <div aria-hidden className="flex flex-col gap-3 p-1">
+    {[0, 1, 2].map((i) => (
+      <div key={i} className="h-24 animate-pulse rounded-xl bg-muted/40" />
+    ))}
+  </div>
 );
 
 const JournalPanel = dynamic(
@@ -82,9 +73,9 @@ const TeamSidebar = dynamic(
   { ssr: false },
 );
 
-const WidgetDashboard = dynamic(
-  () => import('@/components/widgets').then((m) => ({ default: m.WidgetDashboard })),
-  { ssr: false, loading: () => <WidgetSkeleton /> },
+const WidgetSidebar = dynamic(
+  () => import('@/components/widgets').then((m) => ({ default: m.WidgetSidebar })),
+  { ssr: false, loading: () => <SidebarSkeleton /> },
 );
 
 const PwaInstallPrompt = dynamic(
@@ -105,6 +96,10 @@ export default function Home() {
     typeof window !== 'undefined' ? getActiveTeamId() : null,
   );
   const [teamPanelOpen, setTeamPanelOpen] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [journalPreview, setJournalPreview] = useState<{ date: string; content: string } | null>(
+    null,
+  );
   const mainRef = useRef<HTMLElement>(null);
   const panelFocusRef = useRef<HTMLDivElement>(null);
 
@@ -114,7 +109,7 @@ export default function Home() {
 
   const handleTabChange = useCallback((v: string) => {
     setTab(v as TabValue);
-    // 탭 전환 시 패널 첫 포커스 가능 영역으로 이동
+    setMobileSidebarOpen(false);
     window.setTimeout(() => {
       const root = panelFocusRef.current;
       if (!root) return;
@@ -174,7 +169,6 @@ export default function Home() {
     };
   }, []);
 
-  // Slack 「확인」 등 딥링크 (마운트 후 적용 · hydration 안전)
   useEffect(() => {
     const handle = window.setTimeout(() => {
       const parsed = parseFolioDeepLink(window.location.search);
@@ -190,7 +184,6 @@ export default function Home() {
     return () => window.clearTimeout(handle);
   }, []);
 
-  // 온라인 복구 시 오프라인 큐 동기화
   useEffect(() => {
     const onOnline = () => {
       void import('@/lib/offline-sync').then(({ syncWhenOnline }) => syncWhenOnline());
@@ -228,82 +221,137 @@ export default function Home() {
     setFocusTaskId(payload.hit.id);
   };
 
+  const sidebarFooter = (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <StorageModeToggle />
+        <ThemeToggle />
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <FullExportButton />
+        <McpSyncButton />
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <HealthStatus />
+        <OfflineStatusBadge />
+        <BeaconChangeBadge />
+      </div>
+      {authReady && email && (
+        <TeamSwitcher
+          enabled
+          activeTeamId={activeTeamId}
+          onActiveTeamChange={handleActiveTeamChange}
+          onOpenManage={() => setTeamPanelOpen(true)}
+        />
+      )}
+      {authReady ? (
+        email ? (
+          <div className="flex items-center justify-between gap-2 pt-1">
+            <span className="truncate text-[11px] text-muted-foreground" title={email}>
+              {email}
+            </span>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 px-2 text-[11px]"
+              onClick={() => void handleSignOut()}
+            >
+              로그아웃
+            </Button>
+          </div>
+        ) : (
+          <Link
+            href="/login"
+            className={cn(
+              buttonVariants({ size: 'sm', variant: 'outline' }),
+              'h-8 w-full text-xs',
+            )}
+          >
+            로그인
+          </Link>
+        )
+      ) : null}
+    </div>
+  );
+
+  const sidebar = (
+    <WidgetSidebar
+      onOpenTab={(t) => handleTabChange(t)}
+      journalPreview={journalPreview}
+      footer={sidebarFooter}
+      className="h-full"
+    />
+  );
+
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="flex min-h-screen flex-col bg-background">
       <a href="#main-content" className="skip-link">
         본문으로 건너뛰기
       </a>
+
+      {/* 최소 헤더: 로고 + 탭 + 검색 */}
       <header
-        className="border-b border-gray-100 dark:border-gray-800 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between bg-background/80 backdrop-blur sticky top-0 z-50 gap-3"
+        className="sticky top-0 z-50 border-b border-gray-100 bg-background/90 px-3 backdrop-blur dark:border-gray-800 sm:px-4"
         role="banner"
       >
-        <div className="flex items-center gap-3">
-          <div className="flex flex-col leading-none">
+        <div className="mx-auto flex h-12 max-w-[1600px] items-center gap-2 sm:gap-3">
+          <div className="flex shrink-0 items-center gap-2">
             <span
-              className="relative inline-block text-[22px] font-bold tracking-[-0.07em] text-foreground"
+              className="relative inline-block text-lg font-bold tracking-[-0.07em] text-foreground"
               style={{ fontFamily: 'var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif' }}
             >
               Folio
               <span
                 aria-hidden
-                className="absolute -right-2 top-0.5 h-1.5 w-1.5 rotate-45 rounded-[1px] bg-foreground"
+                className="absolute -right-1.5 top-0.5 h-1 w-1 rotate-45 rounded-[1px] bg-foreground"
               />
             </span>
-            <span className="mt-1 text-[10px] font-medium tracking-[0.18em] text-muted-foreground">
-              project records
-            </span>
           </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-muted-foreground hidden sm:inline">프로젝트의 기록</span>
-          <FullExportButton />
-          <McpSyncButton />
-          <HealthStatus />
-          <OfflineStatusBadge />
-          <BeaconChangeBadge />
-          <StorageModeToggle />
-          <ThemeToggle />
-          {authReady && email && (
-            <TeamSwitcher
-              enabled
-              activeTeamId={activeTeamId}
-              onActiveTeamChange={handleActiveTeamChange}
-              onOpenManage={() => setTeamPanelOpen(true)}
-            />
-          )}
-          {authReady ? (
-            email ? (
-              <div className="flex items-center gap-2 min-w-[5.5rem] justify-end">
-                <span className="text-xs text-muted-foreground max-w-[160px] truncate" title={email}>
-                  {email}
-                </span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-11 min-h-[44px] px-3 text-xs sm:h-7 sm:min-h-0"
-                  onClick={() => void handleSignOut()}
-                  aria-label="로그아웃"
-                >
-                  로그아웃
-                </Button>
-              </div>
-            ) : (
-              <Link
-                href="/login"
-                className={cn(
-                  buttonVariants({ size: 'sm' }),
-                  'h-11 min-h-[44px] px-3 text-xs sm:h-7 sm:min-h-0 bg-gray-900 text-white hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white',
-                )}
-              >
-                로그인
-              </Link>
-            )
-          ) : (
-            <div
-              className="h-11 w-[4.5rem] sm:h-7 rounded-md bg-muted/40 animate-pulse"
-              aria-hidden
-            />
-          )}
+
+          <nav aria-label="주요 패널" className="hidden min-w-0 flex-1 md:block">
+            <ul className="flex items-center gap-0.5">
+              {(
+                [
+                  { value: 'journal' as const, label: '일지' },
+                  { value: 'docs' as const, label: '문서' },
+                  { value: 'board' as const, label: '일정' },
+                  { value: 'process' as const, label: '프로세스', icon: true },
+                ] as const
+              ).map((item) => (
+                <li key={item.value}>
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange(item.value)}
+                    aria-current={tab === item.value ? 'page' : undefined}
+                    className={cn(
+                      'inline-flex h-8 items-center gap-1 rounded-lg px-3 text-xs transition-colors',
+                      tab === item.value
+                        ? 'bg-gray-100 font-medium text-foreground dark:bg-gray-800'
+                        : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground',
+                    )}
+                  >
+                    {'icon' in item && item.icon ? <Activity className="h-3 w-3" /> : null}
+                    {item.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          <div className="ml-auto flex items-center gap-1">
+            <GlobalSearch variant="icon" onNavigate={handleSearchNavigate} />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 lg:hidden"
+              aria-label="요약 패널 열기"
+              aria-expanded={mobileSidebarOpen}
+              onClick={() => setMobileSidebarOpen(true)}
+            >
+              <PanelRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -314,118 +362,124 @@ export default function Home() {
         onActiveTeamChange={handleActiveTeamChange}
       />
 
-      <main
-        id="main-content"
-        ref={mainRef}
-        tabIndex={-1}
-        className="flex-1 p-4 sm:p-6 max-w-6xl mx-auto w-full outline-none pb-24 md:pb-6"
-      >
-        <GlobalSearch onNavigate={handleSearchNavigate} />
-
-        <PwaInstallPrompt />
-
-        <WidgetDashboard onOpenTab={(t) => handleTabChange(t)} />
-
-        <div ref={panelFocusRef}>
-        <Tabs
-          value={tab}
-          onValueChange={handleTabChange}
-          className="w-full"
+      <div className="mx-auto flex w-full max-w-[1600px] flex-1">
+        <main
+          id="main-content"
+          ref={mainRef}
+          tabIndex={-1}
+          className="min-w-0 flex-1 outline-none px-3 py-3 sm:px-4 sm:py-4 pb-24 lg:pb-4"
         >
-          <TabsList
-            aria-label="주요 패널"
-            className="hidden md:inline-flex bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-1 rounded-xl mb-6 w-fit"
-          >
-            <TabsTrigger value="journal" className="gap-2 min-h-[44px] px-4 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:shadow-sm">
-              📓 일지
-            </TabsTrigger>
-            <TabsTrigger value="docs" className="gap-2 min-h-[44px] px-4 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:shadow-sm">
-              📄 문서
-            </TabsTrigger>
-            <TabsTrigger value="board" className="gap-2 min-h-[44px] px-4 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:shadow-sm">
-              📋 일정
-            </TabsTrigger>
-            <TabsTrigger value="process" className="gap-2 min-h-[44px] px-4 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:shadow-sm">
-              <Activity className="h-3.5 w-3.5" />
-              프로세스
-            </TabsTrigger>
-          </TabsList>
+          <PwaInstallPrompt />
 
-          <TabsContent value="journal" className="mt-0">
-            <Tabs defaultValue="journal-write" className="w-full">
-              <TabsList className="bg-transparent border-0 p-0 mb-4 h-auto gap-1">
-                <TabsTrigger
-                  value="journal-write"
-                  className="rounded-lg px-3 h-8 text-xs data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800"
-                >
-                  일지
-                </TabsTrigger>
-                <TabsTrigger
-                  value="journal-stats"
-                  className="rounded-lg px-3 h-8 text-xs data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800"
-                >
-                  통계
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="journal-write" className="mt-0">
-                <JournalPanel
-                  focusDate={focusJournalDate}
-                  onFocusHandled={() => setFocusJournalDate(null)}
+          <div ref={panelFocusRef}>
+            <Tabs value={tab} onValueChange={handleTabChange} className="w-full">
+              <TabsContent value="journal" className="mt-0">
+                <Tabs defaultValue="journal-write" className="w-full">
+                  <TabsList className="mb-2 h-auto gap-1 border-0 bg-transparent p-0">
+                    <TabsTrigger
+                      value="journal-write"
+                      className="h-7 rounded-md px-2.5 text-[11px] data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800"
+                    >
+                      일지
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="journal-stats"
+                      className="h-7 rounded-md px-2.5 text-[11px] data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800"
+                    >
+                      통계
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="journal-write" className="mt-0">
+                    <JournalPanel
+                      focusDate={focusJournalDate}
+                      onFocusHandled={() => setFocusJournalDate(null)}
+                      onDraftChange={(date, content) => setJournalPreview({ date, content })}
+                      writingFirst
+                    />
+                  </TabsContent>
+                  <TabsContent value="journal-stats" className="mt-0">
+                    <JournalAnalyticsPanel />
+                  </TabsContent>
+                </Tabs>
+              </TabsContent>
+              <TabsContent value="docs" className="mt-0">
+                <DocsPanel
+                  focusDocId={focusDocId}
+                  onFocusHandled={() => setFocusDocId(null)}
+                  writingFirst
                 />
               </TabsContent>
-              <TabsContent value="journal-stats" className="mt-0">
-                <JournalAnalyticsPanel />
+              <TabsContent value="board" className="mt-0">
+                <Tabs defaultValue="board-kanban" className="w-full">
+                  <TabsList className="mb-2 h-auto gap-1 border-0 bg-transparent p-0">
+                    <TabsTrigger
+                      value="board-kanban"
+                      className="h-7 rounded-md px-2.5 text-[11px] data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800"
+                    >
+                      일정
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="board-analytics"
+                      className="h-7 rounded-md px-2.5 text-[11px] data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800"
+                    >
+                      분석
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="board-kanban" className="mt-0">
+                    <BoardPanel
+                      focusTaskId={focusTaskId}
+                      onFocusHandled={() => setFocusTaskId(null)}
+                    />
+                  </TabsContent>
+                  <TabsContent value="board-analytics" className="mt-0">
+                    <BoardAnalyticsPanel />
+                  </TabsContent>
+                </Tabs>
+              </TabsContent>
+              <TabsContent value="process" className="mt-0">
+                <BeaconPanel />
               </TabsContent>
             </Tabs>
-          </TabsContent>
-          <TabsContent value="docs" className="mt-0">
-            <DocsPanel
-              focusDocId={focusDocId}
-              onFocusHandled={() => setFocusDocId(null)}
-            />
-          </TabsContent>
-          <TabsContent value="board" className="mt-0">
-            <Tabs defaultValue="board-kanban" className="w-full">
-              <TabsList className="bg-transparent border-0 p-0 mb-4 h-auto gap-1">
-                <TabsTrigger
-                  value="board-kanban"
-                  className="rounded-lg px-3 h-8 text-xs data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800"
-                >
-                  일정
-                </TabsTrigger>
-                <TabsTrigger
-                  value="board-analytics"
-                  className="rounded-lg px-3 h-8 text-xs data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800"
-                >
-                  분석
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="board-kanban" className="mt-0">
-                <BoardPanel
-                  focusTaskId={focusTaskId}
-                  onFocusHandled={() => setFocusTaskId(null)}
-                />
-              </TabsContent>
-              <TabsContent value="board-analytics" className="mt-0">
-                <BoardAnalyticsPanel />
-              </TabsContent>
-            </Tabs>
-          </TabsContent>
-          <TabsContent value="process" className="mt-0">
-            <BeaconPanel />
-          </TabsContent>
-        </Tabs>
+          </div>
+        </main>
+
+        {/* 데스크톱 우측 사이드바 280px */}
+        <aside className="hidden w-[280px] shrink-0 border-l border-gray-100 p-3 dark:border-gray-800 lg:block">
+          <div className="sticky top-14 max-h-[calc(100vh-3.5rem)] overflow-y-auto">
+            {sidebar}
+          </div>
+        </aside>
+      </div>
+
+      {/* 모바일: 하단 시트 */}
+      {mobileSidebarOpen && (
+        <div className="fixed inset-0 z-[60] lg:hidden" role="dialog" aria-modal aria-label="요약 패널">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/40"
+            aria-label="닫기"
+            onClick={() => setMobileSidebarOpen(false)}
+          />
+          <div className="absolute inset-x-0 bottom-0 max-h-[75vh] overflow-y-auto rounded-t-2xl border border-gray-100 bg-background p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-xl dark:border-gray-800">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-sm font-semibold">요약</span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9"
+                aria-label="패널 닫기"
+                onClick={() => setMobileSidebarOpen(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            {sidebar}
+          </div>
         </div>
-      </main>
+      )}
 
       <MobileNav value={tab} onChange={(v) => handleTabChange(v)} />
-
-      <footer
-        className="hidden md:block px-6 py-3 border-t border-gray-50 dark:border-gray-900 text-center text-xs text-muted-foreground"
-        role="contentinfo"
-      >
-        Folio · 브라우저에 저장되는 개인 워크스페이스
-      </footer>
     </div>
   );
 }

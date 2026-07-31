@@ -127,9 +127,12 @@ function MarkdownPreview({
 export const DocsPanel = memo(function DocsPanel({
   focusDocId,
   onFocusHandled,
+  writingFirst = false,
 }: {
   focusDocId?: string | null;
   onFocusHandled?: () => void;
+  /** 글쓰기 우선: 에디터 확대 · 링크 그래프 축약 */
+  writingFirst?: boolean;
 } = {}) {
   const [docs, setDocs] = useState<DocEntry[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
@@ -460,8 +463,17 @@ export const DocsPanel = memo(function DocsPanel({
     if (next) selectDoc(next);
   };
 
+  const editorMinH = writingFirst ? 'min-h-[80vh]' : 'min-h-[400px]';
+  const previewH = writingFirst ? 'h-[80vh]' : 'h-[450px]';
+
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[240px_1fr_280px] lg:grid-cols-[240px_1fr] gap-6">
+    <div
+      className={
+        writingFirst
+          ? 'grid grid-cols-1 gap-4 lg:grid-cols-[200px_1fr]'
+          : 'grid grid-cols-1 xl:grid-cols-[240px_1fr_280px] lg:grid-cols-[240px_1fr] gap-6'
+      }
+    >
       {/* Sidebar */}
       <Card className="rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="p-3 border-b border-gray-50 space-y-2">
@@ -554,7 +566,7 @@ export const DocsPanel = memo(function DocsPanel({
             </Badge>
           ))}
         </div>
-        <ScrollArea className="h-[calc(100vh-300px)]">
+        <ScrollArea className={writingFirst ? 'h-[min(80vh,calc(100vh-220px))]' : 'h-[calc(100vh-300px)]'}>
           <div
             ref={listRef}
             className="p-2 space-y-1"
@@ -593,7 +605,11 @@ export const DocsPanel = memo(function DocsPanel({
       </Card>
 
       {/* Editor */}
-      <Card className="rounded-2xl border border-gray-100 shadow-sm overflow-hidden min-h-[500px] flex flex-col">
+      <Card
+        className={`rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col ${
+          writingFirst ? 'min-h-[80vh]' : 'min-h-[500px]'
+        }`}
+      >
         {selectedId && docs.find(d => d.id === selectedId) ? (
           <>
             <div className="flex items-center justify-between p-4 border-b border-gray-50 gap-3">
@@ -721,21 +737,21 @@ export const DocsPanel = memo(function DocsPanel({
             <div className="flex-1 p-4">
               {editing ? (
                 editPane === 'split' ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 min-h-[400px]">
+                  <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${editorMinH}`}>
                     <WikiLinkTextarea
                       value={content}
                       onChange={setContent}
                       docs={docs}
                       excludeDocId={selectedId}
                       placeholder="마크다운으로 작성 · [[문서명]] 링크 지원"
-                      className="min-h-[400px] resize-none border border-gray-100 rounded-xl text-sm leading-relaxed font-mono"
+                      className={`${editorMinH} resize-none border border-gray-100 rounded-xl text-sm leading-relaxed font-mono`}
                     />
-                    <ScrollArea className="h-[400px] rounded-xl border border-gray-100 p-3">
+                    <ScrollArea className={`${writingFirst ? 'h-[80vh]' : 'h-[400px]'} rounded-xl border border-gray-100 p-3`}>
                       <MarkdownPreview content={content} docs={docs} onOpenDoc={openDocById} />
                     </ScrollArea>
                   </div>
                 ) : editPane === 'preview' ? (
-                  <ScrollArea className="h-[450px]">
+                  <ScrollArea className={previewH}>
                     <MarkdownPreview content={content} docs={docs} onOpenDoc={openDocById} />
                   </ScrollArea>
                 ) : (
@@ -745,11 +761,11 @@ export const DocsPanel = memo(function DocsPanel({
                     docs={docs}
                     excludeDocId={selectedId}
                     placeholder="마크다운으로 작성 · [[ 입력 시 문서 자동완성"
-                    className="min-h-[400px] resize-none border-0 focus-visible:ring-0 text-sm leading-relaxed p-0 font-mono"
+                    className={`${editorMinH} resize-none border-0 focus-visible:ring-0 text-sm leading-relaxed p-0 font-mono`}
                   />
                 )
               ) : (
-                <ScrollArea className="h-[450px]">
+                <ScrollArea className={previewH}>
                   <MarkdownPreview content={content} docs={docs} onOpenDoc={openDocById} />
                 </ScrollArea>
               )}
@@ -787,8 +803,14 @@ export const DocsPanel = memo(function DocsPanel({
         )}
       </Card>
 
-      {/* 링크 그래프 — xl: 우측 / 그 외: 하단 풀폭 */}
-      <div className="min-h-[320px] lg:col-span-2 xl:col-span-1 xl:min-h-[420px]">
+      {/* 링크 그래프 — writing-first에서는 하단 축약 */}
+      <div
+        className={
+          writingFirst
+            ? 'min-h-[240px] lg:col-span-2'
+            : 'min-h-[320px] lg:col-span-2 xl:col-span-1 xl:min-h-[420px]'
+        }
+      >
         <LinkGraphPanel
           docs={docs}
           selectedId={selectedId}

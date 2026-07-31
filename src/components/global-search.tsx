@@ -30,6 +30,8 @@ export type SearchNavigatePayload =
 
 interface GlobalSearchProps {
   onNavigate: (payload: SearchNavigatePayload) => void;
+  /** icon: 헤더용 검색 아이콘 → 클릭 시 확장 */
+  variant?: 'default' | 'icon';
 }
 
 function formatDate(iso: string): string {
@@ -98,7 +100,8 @@ function SectionLabel({ children }: { children: ReactNode }) {
   );
 }
 
-export function GlobalSearch({ onNavigate }: GlobalSearchProps) {
+export function GlobalSearch({ onNavigate, variant = 'default' }: GlobalSearchProps) {
+  const [expanded, setExpanded] = useState(variant !== 'icon');
   const inputRef = useRef<HTMLInputElement>(null);
   const panelId = useId();
   const [query, setQuery] = useState('');
@@ -127,8 +130,11 @@ export function GlobalSearch({ onNavigate }: GlobalSearchProps) {
     const onKeyDown = (e: KeyboardEvent | globalThis.KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
-        inputRef.current?.focus();
-        setOpen(true);
+        setExpanded(true);
+        window.setTimeout(() => {
+          inputRef.current?.focus();
+          setOpen(true);
+        }, 0);
       }
     };
     window.addEventListener('keydown', onKeyDown);
@@ -253,8 +259,35 @@ export function GlobalSearch({ onNavigate }: GlobalSearchProps) {
     return groups;
   }, [results]);
 
+  if (variant === 'icon' && !expanded) {
+    return (
+      <div className="relative" id={panelId}>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9"
+          aria-label="통합 검색 열기 (⌘K)"
+          onClick={() => {
+            setExpanded(true);
+            window.setTimeout(() => inputRef.current?.focus(), 0);
+          }}
+        >
+          <Search className="h-4 w-4" />
+        </Button>
+      </div>
+    );
+  }
+
   return (
-    <div className="relative w-full max-w-xl mb-4" id={panelId}>
+    <div
+      className={
+        variant === 'icon'
+          ? 'relative w-[min(100vw-8rem,20rem)] sm:w-72'
+          : 'relative w-full max-w-xl mb-4'
+      }
+      id={panelId}
+    >
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
         <Input
@@ -272,9 +305,22 @@ export function GlobalSearch({ onNavigate }: GlobalSearchProps) {
           onFocus={() => {
             if (query.trim()) setOpen(true);
           }}
-          onKeyDown={onInputKeyDown}
-          placeholder="전체 검색… Journal · Docs · Board"
-          className="pl-9 pr-16 h-11 min-h-[44px] rounded-xl border-gray-200 bg-gray-50/80 focus-visible:bg-white"
+          onBlur={() => {
+            if (variant === 'icon' && !query.trim() && !showPanel) {
+              window.setTimeout(() => setExpanded(false), 150);
+            }
+          }}
+          onKeyDown={e => {
+            if (e.key === 'Escape' && variant === 'icon') {
+              setExpanded(false);
+              setOpen(false);
+              setQuery('');
+              return;
+            }
+            onInputKeyDown(e);
+          }}
+          placeholder="검색…"
+          className="pl-9 pr-16 h-9 min-h-[36px] rounded-xl border-gray-200 bg-gray-50/80 focus-visible:bg-white"
           aria-label="통합 검색"
           aria-expanded={showPanel}
           aria-controls={`${panelId}-list`}
@@ -282,7 +328,7 @@ export function GlobalSearch({ onNavigate }: GlobalSearchProps) {
           aria-activedescendant={activeOptionId}
           autoComplete="off"
         />
-        <kbd className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 hidden sm:inline-flex h-6 items-center gap-0.5 rounded-md border border-gray-200 bg-white px-1.5 text-[10px] font-medium text-gray-400">
+        <kbd className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 hidden sm:inline-flex h-5 items-center gap-0.5 rounded-md border border-gray-200 bg-white px-1.5 text-[10px] font-medium text-gray-400">
           ⌘K
         </kbd>
       </div>

@@ -66,9 +66,15 @@ function joinTags(tags: string[]): string {
 export const JournalPanel = memo(function JournalPanel({
   focusDate,
   onFocusHandled,
+  onDraftChange,
+  writingFirst = false,
 }: {
   focusDate?: string | null;
   onFocusHandled?: () => void;
+  /** 우측 사이드바 미리보기 연동 */
+  onDraftChange?: (date: string, content: string) => void;
+  /** 글쓰기 우선: 에디터 확대 · 보조 패널 접기 */
+  writingFirst?: boolean;
 } = {}) {
   const [date, setDate] = useState(todayStr);
   const [filterTag, setFilterTag] = useState<string | null>(null);
@@ -150,6 +156,10 @@ export const JournalPanel = memo(function JournalPanel({
     }, 0);
     return () => window.clearTimeout(handle);
   }, [focusDate, ready, selectDate, onFocusHandled]);
+
+  useEffect(() => {
+    onDraftChange?.(date, draft);
+  }, [date, draft, onDraftChange]);
 
   useEffect(() => {
     void import('@/lib/notify-client').then(({ fetchIntegrationsStatus }) =>
@@ -442,23 +452,54 @@ export const JournalPanel = memo(function JournalPanel({
     }
   };
 
+  const editorMinH = writingFirst ? 'min-h-[80vh]' : 'min-h-[400px]';
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
+    <div
+      className={
+        writingFirst
+          ? 'grid grid-cols-1 gap-4'
+          : 'grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6'
+      }
+    >
       <Card className="rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm bg-card">
-        <div className="flex items-center justify-between p-4 border-b border-gray-50 dark:border-gray-800">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={prevDay} className="h-8 w-8" aria-label="이전 날짜">
+        <div
+          className={
+            writingFirst
+              ? 'flex flex-wrap items-center justify-between gap-2 border-b border-gray-50 px-3 py-2 dark:border-gray-800'
+              : 'flex items-center justify-between p-4 border-b border-gray-50 dark:border-gray-800'
+          }
+        >
+          <div className={`flex items-center ${writingFirst ? 'gap-1.5' : 'gap-3'}`}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={prevDay}
+              className={writingFirst ? 'h-7 w-7' : 'h-8 w-8'}
+              aria-label="이전 날짜"
+            >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-gray-400" aria-hidden />
-              <span className="font-medium text-sm" aria-live="polite">{date}</span>
+            <div className="flex items-center gap-1.5">
+              <Calendar className={`${writingFirst ? 'h-3.5 w-3.5' : 'h-4 w-4'} text-gray-400`} aria-hidden />
+              <span
+                className={`font-medium tabular-nums ${writingFirst ? 'text-xs' : 'text-sm'}`}
+                aria-live="polite"
+              >
+                {date}
+              </span>
             </div>
-            <Button variant="ghost" size="icon" onClick={nextDay} className="h-8 w-8" aria-label="다음 날짜">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={nextDay}
+              className={writingFirst ? 'h-7 w-7' : 'h-8 w-8'}
+              aria-label="다음 날짜"
+            >
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
-          <div className="flex items-center gap-2">
+          <div className={`flex flex-wrap items-center ${writingFirst ? 'gap-1.5' : 'gap-2'}`}>
             <input
               ref={fileInputRef}
               type="file"
@@ -609,7 +650,7 @@ export const JournalPanel = memo(function JournalPanel({
         {importMsg && (
           <p className="px-4 pt-2 text-[11px] text-gray-500">{importMsg}</p>
         )}
-        <div className="p-4">
+        <div className={writingFirst ? 'p-3 sm:p-4' : 'p-4'}>
           <label htmlFor="journal-draft" className="sr-only">
             일지 본문
           </label>
@@ -618,7 +659,7 @@ export const JournalPanel = memo(function JournalPanel({
             value={draft}
             onChange={e => setDraft(e.target.value)}
             placeholder="오늘 한 일, 회의 내용, 이슈, 배운 것... 자유롭게 적으세요.\nMarkdown 지원: # 제목, - 리스트, **굵게**"
-            className="min-h-[400px] resize-none border-0 focus-visible:ring-0 text-[15px] leading-relaxed p-0 font-mono"
+            className={`${editorMinH} resize-none border-0 focus-visible:ring-0 text-[15px] leading-relaxed p-0 font-mono`}
             aria-describedby="journal-draft-hint"
           />
           <p id="journal-draft-hint" className="sr-only">
@@ -698,6 +739,7 @@ export const JournalPanel = memo(function JournalPanel({
         </div>
       </Card>
 
+      {!writingFirst && (
       <div className="space-y-4">
         <Card className="rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-4 bg-card">
           <h3 className="text-sm font-semibold mb-3">날짜 범위</h3>
@@ -790,6 +832,7 @@ export const JournalPanel = memo(function JournalPanel({
           </ScrollArea>
         </Card>
       </div>
+      )}
     </div>
   );
 });
