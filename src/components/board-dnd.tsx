@@ -277,7 +277,7 @@ function DroppableColumn({
   return (
     <div
       ref={setNodeRef}
-      className={`rounded-2xl border p-3 ${col.color} dark:bg-gray-900/50 flex min-h-[12rem] flex-col transition-all xl:min-h-0 xl:h-full ${
+      className={`rounded-2xl border p-3 ${col.color} dark:bg-gray-900/50 flex min-h-[12rem] flex-col transition-all xl:min-h-0 xl:max-h-[calc(100dvh-11rem)] ${
         isOver ? 'border-blue-400 ring-2 ring-blue-200 dark:ring-blue-900' : 'border-gray-100 dark:border-gray-800'
       }`}
     >
@@ -291,7 +291,7 @@ function DroppableColumn({
         </Button>
       </div>
       <ScrollArea className="min-h-0 flex-1">
-        <div className="min-h-[6rem] space-y-2 xl:min-h-[calc(100dvh-14rem)]">
+        <div className="min-h-[6rem] space-y-2">
           {children}
         </div>
       </ScrollArea>
@@ -861,7 +861,7 @@ export function BoardDndPanel({
         }}
       >
         <div
-          className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:h-[calc(100dvh-11rem)] xl:grid-cols-4 xl:min-h-0"
+          className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:max-h-[calc(100dvh-11rem)] xl:grid-cols-4 xl:min-h-0 xl:items-start"
           role="listbox"
           aria-label="칸반 보드. 카드 포커스 후 좌우 화살표로 컬럼 이동"
         >

@@ -193,21 +193,22 @@ export function buildDocGraph(docs: DocRef[]): DocGraphData {
 
 /** 카테고리별 그래프 노드 색 */
 export function categoryColor(category: string): string {
+  // 전체 테마와 어울리도록 파스텔 톤(밝고 부드러운 색)으로 통일
   const map: Record<string, string> = {
-    'Dev Guide': '#2563eb',
-    API: '#059669',
-    Policy: '#dc2626',
-    Design: '#7c3aed',
-    Deploy: '#ea580c',
-    Meeting: '#0891b2',
-    'Obsidian Import': '#64748b',
+    'Dev Guide': '#93c5fd', // blue-300
+    API: '#6ee7b7', // emerald-300
+    Policy: '#fca5a5', // red-300
+    Design: '#c4b5fd', // violet-300
+    Deploy: '#fdba74', // orange-300
+    Meeting: '#67e8f9', // cyan-300
+    'Obsidian Import': '#cbd5e1', // slate-300
   }
   if (map[category]) return map[category]
-  // 해시 기반 팔레트
+  // 해시 기반 팔레트 — 명도를 높여 파스텔로
   let h = 0
   for (let i = 0; i < category.length; i++) h = (h * 31 + category.charCodeAt(i)) >>> 0
   const hue = h % 360
-  return `hsl(${hue} 55% 42%)`
+  return `hsl(${hue} 65% 72%)`
 }
 
 /**
