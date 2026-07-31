@@ -84,3 +84,23 @@ export async function sendSlackNotification(
 
   return { ok: true }
 }
+
+/** AI 요약 및 리포트 전용 Block Kit 알림 */
+export async function sendSlackSummaryReport(summary: {
+  title: string
+  summary: string
+  highlights: string[]
+  actionItems: string[]
+  folioUrl?: string
+}): Promise<{ ok: boolean; skipped?: boolean }> {
+  const folioUrl = summary.folioUrl || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+
+  const bodyText = `*📊 ${summary.title}*\n\n${summary.summary}\n\n*🎯 주요 성과*\n${summary.highlights.map((h) => `• ${h}`).join('\n')}\n\n*🚀 액션 아이템*\n${summary.actionItems.map((a) => `• ${a}`).join('\n')}`
+
+  return sendSlackNotification({
+    text: `[Folio 리포트] ${summary.title}`,
+    body: bodyText,
+    actions: [{ text: 'Folio에서 열기', url: folioUrl }],
+  })
+}
+

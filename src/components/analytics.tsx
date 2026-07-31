@@ -7,11 +7,22 @@ import { Button } from '@/components/ui/button';
 import {
   getBoardAnalytics,
   getJournalAnalytics,
+  getCombinedProductivityMetrics,
   type AnalyticsRange,
   type BoardAnalytics,
   type JournalAnalytics,
+  type CombinedProductivityMetrics,
 } from '@/lib/analytics';
 import { DEFAULT_COLUMNS } from '@/lib/board';
+import { AiSummaryWidget } from '@/components/ai-summary-widget';
+
+const ProductivityTrendChart = dynamic(
+  () => import('@/components/analytics-charts').then((m) => ({ default: m.ProductivityTrendChart })),
+  {
+    ssr: false,
+    loading: () => <p className="text-xs text-gray-400 py-8 text-center">차트 로딩…</p>,
+  },
+);
 
 const JournalCharts = dynamic(
   () => import('@/components/analytics-charts').then((m) => ({ default: m.JournalCharts })),
@@ -351,3 +362,34 @@ export const BoardAnalyticsPanel = memo(function BoardAnalyticsPanel() {
     </div>
   );
 });
+
+export const CombinedProductivitySection = memo(function CombinedProductivitySection() {
+  const [metrics, setMetrics] = useState<CombinedProductivityMetrics | null>(null);
+
+  useEffect(() => {
+    void getCombinedProductivityMetrics('1m').then(setMetrics);
+  }, []);
+
+  if (!metrics) return null;
+
+  return (
+    <div className="space-y-4 mt-6 border-t pt-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold">⚡ 주간 생산성 & AI 인사이트</h2>
+        <span className="text-xs text-muted-foreground">
+          총 스코어: <strong className="text-purple-600 dark:text-purple-400">{metrics.totalProductivityScore}점</strong>
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card className="lg:col-span-2 rounded-2xl border border-gray-100 dark:border-gray-800 p-4 bg-card shadow-sm">
+          <h3 className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-3">일지/태스크 종합 생산성 추이</h3>
+          <ProductivityTrendChart data={metrics.trend} />
+        </Card>
+
+        <AiSummaryWidget type="weekly" className="h-full" />
+      </div>
+    </div>
+  );
+});
+

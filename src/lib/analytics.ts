@@ -331,3 +331,64 @@ export async function getBoardAnalytics(range: AnalyticsRange): Promise<BoardAna
   const tasks = await loadTasksWithFallback();
   return computeBoardAnalytics(tasks, range);
 }
+
+export interface ProductivityTrendPoint {
+  date: string;
+  journalCount: number;
+  completedTasks: number;
+  productivityScore: number;
+}
+
+export interface CombinedProductivityMetrics {
+  trend: ProductivityTrendPoint[];
+  totalProductivityScore: number;
+  avgWeeklyScore: number;
+}
+
+export async function getCombinedProductivityMetrics(
+  range: AnalyticsRange = '1m'
+): Promise<CombinedProductivityMetrics> {
+  const journalAnalytics = await getJournalAnalytics(range);
+  const boardAnalytics = await getBoardAnalytics(range);
+
+  const dateMap = new Map<string, { journalCount: number; completedTasks: number }>();
+
+  journalAnalytics.daily.forEach((dp) => {
+    dateMap.set(dp.date, { journalCount: dp.count, completedTasks: 0 });
+  });
+
+  boardAnalytics.statusChanges
+    .filter((sc) => sc.status === 'done')
+    .forEach((sc) => {
+      const existing = dateMap.get(sc.date) || { journalCount: 0, completedTasks: 0 };
+      dateMap.set(sc.date, {
+        journalCount: existing.journalCount,
+        completedTasks: existing.completedTasks + sc.count,
+      });
+    });
+
+  const sortedDates = Array.from(dateMap.keys()).sort((a, b) => a.localeCompare(b));
+
+  const trend: ProductivityTrendPoint[] = sortedDates.map((date) => {
+    const data = dateMap.get(date)!;
+    const productivityScore = data.journalCount * 20 + data.completedTasks * 30;
+    return {
+      date,
+      journalCount: data.journalCount,
+      completedTasks: data.completedTasks,
+      productivityScore,
+    };
+  });
+
+  const totalProductivityScore = trend.reduce((acc, curr) => acc + curr.productivityScore, 0);
+  const avgWeeklyScore = Math.round(
+    trend.length > 0 ? (totalProductivityScore / trend.length) * 7 : 0
+  );
+
+  return {
+    trend,
+    totalProductivityScore,
+    avgWeeklyScore,
+  };
+}
+

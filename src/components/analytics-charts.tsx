@@ -164,4 +164,43 @@ export function BoardStatusBarChart({
   );
 }
 
+export function ProductivityTrendChart({
+  data,
+}: {
+  data: Array<{ date: string; productivityScore: number; journalCount: number; completedTasks: number }>;
+}) {
+  if (!data || data.length === 0) {
+    return <EmptyChart message="생산성 데이터가 없습니다" />;
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height={260}>
+      <LineChart data={data} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+        <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+        <YAxis allowDecimals={false} tick={{ fontSize: 10 }} width={32} />
+        <Tooltip contentStyle={{ fontSize: 12 }} />
+        <Legend wrapperStyle={{ fontSize: 11 }} />
+        <Line
+          type="monotone"
+          dataKey="productivityScore"
+          name="생산성 점수"
+          stroke="#8b5cf6"
+          strokeWidth={2.5}
+          dot={{ r: 3 }}
+        />
+        <Line
+          type="monotone"
+          dataKey="completedTasks"
+          name="완료 태스크"
+          stroke="#22c55e"
+          strokeWidth={1.5}
+          strokeDasharray="4 4"
+        />
+      </LineChart>
+    </ResponsiveContainer>
+  );
+}
+
 export { STATUS_COLORS };
+

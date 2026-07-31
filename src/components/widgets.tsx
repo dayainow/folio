@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { loadJournalsWithFallback } from '@/lib/journal'
 import { loadTasksWithFallback, type Task } from '@/lib/board'
 import { fetchBeaconSummary, type ProjectSummary } from '@/lib/beacon'
+import { AiSummaryWidget } from '@/components/ai-summary-widget'
 import { cn } from '@/lib/utils'
 
 export type WidgetSidebarProps = {
@@ -193,6 +194,9 @@ export function WidgetSidebar({
           </button>
         )}
       </section>
+
+      {/* AI 요약 위젯 */}
+      <AiSummaryWidget compact />
 
       {footer && (
         <div className="mt-auto space-y-2 border-t border-gray-100 pt-3 dark:border-gray-800">
