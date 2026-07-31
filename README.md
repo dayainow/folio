@@ -126,6 +126,18 @@ GitHub Webhook: `POST /api/mcp/git-webhook` + `FOLIO_MCP_WEBHOOK_SECRET`
 
 ---
 
+## 가이드 (처음 쓰는 분)
+
+앱 헤더 **가이드** → [`/guide`](http://localhost:3000/guide) 또는 아래 문서:
+
+| 문서 | 내용 |
+|------|------|
+| **[온보딩 10분](docs/ONBOARDING.md)** | Folio 열기 → 저장 모드 → 일지 → 태그 → 문서 → 일정 |
+| **[기능 상세](docs/FEATURES.md)** | 일지·문서·일정·프로세스·검색·저장·내보내기·MCP |
+| **[문제 해결](docs/TROUBLESHOOTING.md)** | 저장/로그인/Beacon/PWA/데이터 복구 |
+
+---
+
 ## 사용 가이드
 
 | 주제 | 문서 |
@@ -162,15 +174,15 @@ npm run runbook:backup
 
 - **v1.0** ✅ — 일지·문서·일정·검색·팀·배포
 - **v1.1** ✅ — 링크 그래프·내보내기·MCP·Writing-first
-- **v1.2** — AI 요약·고급 분석·Slack 고급
+- **v1.2** (진행) — 가이드/매뉴얼 · AI 요약·고급 분석·Slack 고급
 - **v2.0** — 모바일 네이티브·실시간 협업
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 10 완료** (v1.1.0)
+- 현재 Phase: **Phase 11** (v1.2.0-wip)
 - 진행 중: —
-- 완료: Phase 1~10 전부 (P31~P34 포함)
-- 다음: Phase 11 / v1.2
+- 완료: Phase 1~10 · P35 가이드/매뉴얼 (`/guide`)
+- 다음: AI 요약 · 고급 분석 · Slack 고급 · 1.2.0 정식
 
 ---
 
@@ -183,4 +195,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · v1.1.0
+**Folio** — 프로젝트의 기록, 한 곳에서. · v1.2.0-wip

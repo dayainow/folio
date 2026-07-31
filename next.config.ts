@@ -72,6 +72,14 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   // Next 16: next-pwa(webpack)와 turbopack 공존 경고 억제
   turbopack: {},
+  // /guide 가 docs/*.md 를 읽도록 standalone 트레이싱에 포함
+  outputFileTracingIncludes: {
+    '/guide': [
+      './docs/ONBOARDING.md',
+      './docs/FEATURES.md',
+      './docs/TROUBLESHOOTING.md',
+    ],
+  },
   experimental: {
     optimizePackageImports: [
       'lucide-react',

@@ -20,7 +20,7 @@ backups
 !.env.example
 !.env.production.example
 
-# Docs / agents (이미지에 불필요)
+# Docs / agents (이미지에 불필요 — 인앱 가이드 3종만 포함)
 README.md
 VERSION.md
 AGENTS.md
@@ -28,6 +28,9 @@ CLAUDE.md
 PROCESS.md
 **/*.md
 docs
+!docs/ONBOARDING.md
+!docs/FEATURES.md
+!docs/TROUBLESHOOTING.md
 examples
 agent-transcripts
 

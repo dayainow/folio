@@ -17,7 +17,7 @@ import { FullExportButton } from '@/components/full-export-button';
 import { McpSyncButton } from '@/components/mcp-sync-button';
 import { getActiveTeamId } from '@/lib/team';
 import { parseFolioDeepLink } from '@/lib/folio-links';
-import { Activity, PanelRight, X } from 'lucide-react';
+import { Activity, BookOpen, PanelRight, X } from 'lucide-react';
 
 const PanelFallback = ({ label }: { label: string }) => (
   <div className="min-h-[12rem] py-8 text-center text-sm text-muted-foreground" role="status" aria-live="polite">
@@ -346,6 +346,17 @@ export default function Home() {
           </nav>
 
           <div className="ml-auto flex items-center gap-1">
+            <Link
+              href="/guide"
+              className={cn(
+                buttonVariants({ size: 'sm', variant: 'ghost' }),
+                'h-8 gap-1 px-2 text-xs text-muted-foreground sm:px-2.5',
+              )}
+              aria-label="가이드"
+            >
+              <BookOpen className="h-3.5 w-3.5" aria-hidden />
+              <span className="hidden sm:inline">가이드</span>
+            </Link>
             <GlobalSearch variant="icon" onNavigate={handleSearchNavigate} />
             <Button
               type="button"
