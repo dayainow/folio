@@ -99,7 +99,7 @@
 
 ## 변경 이력
 
-### 1.1.0-wip — 2026-07-31 (P32 내보내기/다운로드)
+### 1.1.0-wip — 2026-07-31 (P32 내보내기/다운로드) — `86750d4`
 
 - `src/lib/export.ts`: 일지 MD · 문서 MD/ZIP · Board CSV/JSON · 전체 ZIP 번들
 - `jszip` · `ExportMenu` 진행 표시 · 헤더 전체 내보내기
