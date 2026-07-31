@@ -6,10 +6,10 @@
 
 | 항목 | 값 |
 |------|-----|
-| 버전 | **1.1.0-wip** |
-| Phase | Phase 10 |
+| 버전 | **1.1.0** |
+| Phase | Phase 10 완료 |
 | 진행 중 | — |
-| 다음 | Phase 10 마무리 · 1.1.0 정식 |
+| 다음 | Phase 11 / v1.2 (AI 요약 · 고급 분석 · Slack 고급) |
 
 ## 완료 항목
 
@@ -56,21 +56,23 @@
 | P32 | 내보내기/다운로드 | `86750d4` |
 | P33 | MCP 연동 | `813c3ea` / UX `9dd8874` |
 | P34 | Writing-first 레이아웃 | `92ef4e6` |
+| — | Phase 10 완료 · 1.1.0 릴리즈 | (본 커밋) |
 
 ## 진행 중
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| — | — | Phase 10 마무리 대기 |
+| — | — | — |
 
-## Phase 10 계획
+## Phase 10 계획 (완료)
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| P31 | 문서 링크 그래프 | ✅ `[[wiki]]` · force-graph |
-| P32 | 내보내기/다운로드 | ✅ MD/CSV/JSON/ZIP |
-| P33 | MCP 연동 | ✅ IDE/Git/CLI · UX |
-| P34 | Writing-first 레이아웃 | ✅ 위젯→사이드바 · 에디터 확대 |
+| P31 | 문서 링크 그래프 | ✅ `[[wiki]]` · force-graph · `45e3e40` |
+| P32 | 내보내기/다운로드 | ✅ MD/CSV/JSON/ZIP · `86750d4` |
+| P33 | MCP 연동 | ✅ IDE/Git/CLI · UX · `813c3ea` / `9dd8874` |
+| P34 | Writing-first 레이아웃 | ✅ 위젯→사이드바 · 에디터 확대 · `92ef4e6` |
+| — | 1.1.0 정식 | ✅ Phase 10 완료 릴리즈 |
 
 ## Phase 7 계획
 
@@ -102,6 +104,19 @@
 | P22 | 운영 런북 | ✅ |
 
 ## 변경 이력
+
+### 1.1.0 — 2026-07-31 (Phase 10 완료)
+
+- 정식 릴리즈 **1.1.0** (Phase 10: 링크 그래프 · 내보내기 · MCP · Writing-first 레이아웃)
+- **P31** 문서 링크 그래프 (`45e3e40`)
+  - `[[문서명]]` / `[[문서명|별칭]]` 파서 · force-graph · `[[` 자동완성 · 역링크
+- **P32** 내보내기/다운로드 (`86750d4`)
+  - 일지 MD · 문서 MD/ZIP · Board CSV/JSON · 전체 ZIP · ExportMenu
+- **P33** MCP 연동 (`813c3ea`, UX `9dd8874`)
+  - Folio MCP 서버 · git-webhook · `mcp:link` · MCP-GUIDE · UI **MCP 가져오기**
+- **P34** Writing-first 레이아웃 (`92ef4e6`)
+  - 위젯 → 우측 280px 사이드바 · 에디터 `min-h-[80vh]` · 검색 아이콘 확장 · 모바일 하단 시트
+- `package.json` 버전 **1.1.0** · README Phase 1~10 완료 표 · CONTRIBUTING
 
 ### 1.1.0-wip — 2026-07-31 (P34 Writing-first 레이아웃) — `92ef4e6`
 
