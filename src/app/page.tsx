@@ -400,7 +400,7 @@ export default function Home() {
                     <JournalPanel
                       focusDate={focusJournalDate}
                       onFocusHandled={() => setFocusJournalDate(null)}
-                      onDraftChange={(date, content) => setJournalPreview({ date, content })}
+                      onDraftChange={handleDraftChange}
                       writingFirst
                     />
                   </TabsContent>
