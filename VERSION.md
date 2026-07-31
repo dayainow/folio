@@ -58,7 +58,7 @@
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| P32 | 내보내기/다운로드 | MD · CSV · JSON · ZIP (jszip) |
+| P32 | 내보내기/다운로드 | MD · CSV · JSON · ZIP (jszip) (`86750d4`) |
 
 ## Phase 10 계획
 
