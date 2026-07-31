@@ -59,7 +59,7 @@
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| P33 | MCP 연동 | stdio/HTTP · tools/resources/prompts · git webhook · CLI |
+| P33 | MCP 연동 | stdio/HTTP · tools/resources/prompts · git webhook · CLI (`813c3ea`) |
 
 ## Phase 10 계획
 
@@ -100,7 +100,7 @@
 
 ## 변경 이력
 
-### 1.1.0-wip — 2026-07-31 (P33 MCP 연동)
+### 1.1.0-wip — 2026-07-31 (P33 MCP 연동) — `813c3ea`
 
 - `src/mcp/`: Folio MCP 서버 (stdio + HTTP) · journal/doc/board tools · resources · prompts
 - `.vscode/mcp.json` · `docs/MCP.md` · `scripts/mcp-client.mjs`
