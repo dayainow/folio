@@ -1,0 +1,13 @@
+{
+  "servers": {
+    "folio": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["tsx", "src/mcp/stdio.ts"],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "FOLIO_MCP_ROOT": "${workspaceFolder}"
+      }
+    }
+  }
+}

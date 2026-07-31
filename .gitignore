@@ -27,6 +27,9 @@
 # Beacon local state (CLI 원본 — Folio는 읽기만)
 .beacon/
 
+# Folio MCP 서버 로컬 데이터 (P33)
+.folio-mcp/
+
 # Local runbook backups
 /backups/
 

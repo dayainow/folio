@@ -8,8 +8,8 @@
 |------|-----|
 | 버전 | **1.1.0-wip** |
 | Phase | Phase 10 |
-| 진행 중 | P32 내보내기/다운로드 |
-| 다음 | P33 MCP 연동 |
+| 진행 중 | P33 MCP 연동 |
+| 다음 | Phase 10 마무리 · 1.1.0 정식 |
 
 ## 완료 항목
 
@@ -53,20 +53,21 @@
 | P27 | 실제 배포 | `d11e16f` |
 | — | Phase 9 완료 · 1.0.0 릴리즈 | `e2d278f` |
 | P31 | 문서 링크 그래프 | `45e3e40` |
+| P32 | 내보내기/다운로드 | `86750d4` |
 
 ## 진행 중
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| P32 | 내보내기/다운로드 | MD · CSV · JSON · ZIP (jszip) (`86750d4`) |
+| P33 | MCP 연동 | stdio/HTTP · tools/resources/prompts · git webhook · CLI |
 
 ## Phase 10 계획
 
 | ID | 요약 | 노트 |
 |----|------|------|
 | P31 | 문서 링크 그래프 | ✅ `[[wiki]]` · force-graph |
-| P32 | 내보내기/다운로드 | 진행 중 · MD/CSV/JSON/ZIP |
-| P33 | MCP 연동 | IDE·Git 양방향 기록 |
+| P32 | 내보내기/다운로드 | ✅ MD/CSV/JSON/ZIP |
+| P33 | MCP 연동 | 진행 중 · IDE/Git/CLI |
 
 ## Phase 7 계획
 
@@ -98,6 +99,12 @@
 | P22 | 운영 런북 | ✅ |
 
 ## 변경 이력
+
+### 1.1.0-wip — 2026-07-31 (P33 MCP 연동)
+
+- `src/mcp/`: Folio MCP 서버 (stdio + HTTP) · journal/doc/board tools · resources · prompts
+- `.vscode/mcp.json` · `docs/MCP.md` · `scripts/mcp-client.mjs`
+- `POST /api/mcp/git-webhook` → Timeline · 일지 · Board 연동
 
 ### 1.1.0-wip — 2026-07-31 (P32 내보내기/다운로드) — `86750d4`
 

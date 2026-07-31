@@ -217,6 +217,7 @@ docker run --rm -p 3000:3000 --env-file .env.local folio:1.0.0
 | [ARCHITECTURE](./docs/ARCHITECTURE.md) | 폴더 · 데이터 흐름 · 저장 모드 |
 | [BEACON](./docs/BEACON.md) | Beacon 연동 · 경로 · 제약 |
 | [DEPLOY](./docs/DEPLOY.md) | Vercel · Docker · 로컬 |
+| [MCP](./docs/MCP.md) | MCP 서버 · IDE/Git/CLI |
 | [runbooks](./docs/runbooks/) | Incident · Backup · Deploy · Upgrade |
 | [A11Y](./docs/A11Y.md) | 접근성 · 단축키 |
 | [API](./docs/API.md) | `src/lib` 시그니처 |
@@ -266,11 +267,11 @@ npm run qa:smoke && npm run lint && npm run typecheck
 ## 작업 관리
 
 - 현재: **Phase 10** · **1.1.0-wip**
-- 완료: Phase 1~9 (**1.0.0**) · P31 링크 그래프
-- 진행 중: **P32** 내보내기/다운로드
-- 다음: P33 MCP
+- 완료: Phase 1~9 (**1.0.0**) · P31 · P32
+- 진행 중: **P33** MCP 연동
+- 다음: Phase 10 마무리 · 1.1.0 정식
 
-상세: [VERSION.md](./VERSION.md) · [docs/DEPLOY.md](./docs/DEPLOY.md) · [docs/runbooks/](./docs/runbooks/)
+상세: [VERSION.md](./VERSION.md) · [docs/MCP.md](./docs/MCP.md) · [docs/DEPLOY.md](./docs/DEPLOY.md)
 
 ## Phase 요약
 
@@ -285,15 +286,15 @@ npm run qa:smoke && npm run lint && npm run typecheck
 | 7 | Beacon 양방향 · 자동화/알림 | ✅ **0.8.0** |
 | 8 | 모바일 · Slack · 위젯 · PWA/오프라인 | ✅ **0.9.0** |
 | 9 | 실제 배포 · 운영 | ✅ **1.0.0** |
-| 10 | 링크 그래프 · 내보내기 · MCP | 진행 중 (P31) |
+| 10 | 링크 그래프 · 내보내기 · MCP | 진행 중 (P33) |
 
 ## Phase 10 계획
 
 | 영역 | 내용 |
 |------|------|
 | P31 문서 링크 그래프 | ✅ `[[문서명]]` · force-graph · 자동완성 · 역링크 |
-| P32 내보내기/다운로드 | 일지 MD · 문서 MD/ZIP · Board CSV/JSON · 전체 ZIP |
-| P33 MCP 연동 | Folio API · IDE/Git 기록 · webhook/CLI |
+| P32 내보내기/다운로드 | ✅ MD · CSV · JSON · ZIP |
+| P33 MCP 연동 | IDE/Git/CLI · tools/resources/prompts · webhook |
 
 ## 내보내기 / 다운로드
 
@@ -305,6 +306,30 @@ npm run qa:smoke && npm run lint && npm run typecheck
 | 헤더 | **전체 내보내기** → `journals/` · `docs/` · `boards/` · `metadata.json` |
 
 사이드바 날짜 범위·카테고리 필터가 있으면 해당 범위만 내보냅니다.
+
+## MCP / CLI
+
+상세: **[docs/MCP.md](./docs/MCP.md)** · IDE: [`.vscode/mcp.json`](./.vscode/mcp.json)
+
+```bash
+# stdio MCP 서버 (Cursor/VS Code)
+npm run mcp:server
+
+# CLI 클라이언트
+npm run mcp:client -- tools
+npm run mcp:client -- call journal_read '{}'
+npm run mcp:client -- call board_list '{"status":"in_progress"}'
+npm run mcp:client -- resources
+
+# Git webhook (dev 서버 필요)
+npm run mcp:client -- webhook '{"message":"feat: demo from cli"}'
+```
+
+| 경로 | 용도 |
+|------|------|
+| `npm run mcp:server` | stdio MCP |
+| `POST /api/mcp` | HTTP Streamable MCP |
+| `POST /api/mcp/git-webhook` | Git 커밋 → Timeline/일지/보드 |
 
 ## Docs wiki-link 사용법
 
