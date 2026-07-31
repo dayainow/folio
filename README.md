@@ -179,10 +179,11 @@ npm run runbook:backup
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 11** (v1.2.0-wip)
-- 진행 중: —
-- 완료: Phase 1~10 · P35 가이드/매뉴얼 (`/guide`)
+- 현재 Phase: **Phase 11** (v**1.2.0-wip** 체크포인트 고정)
+- 진행 중: — (다음 세션에서 기능 작업 시작)
+- 완료: Phase 1~10 (1.1.0) · P35 가이드/매뉴얼 (`/guide`)
 - 다음: AI 요약 · 고급 분석 · Slack 고급 · 1.2.0 정식
+- 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md))
 
 ---
 
