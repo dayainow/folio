@@ -59,7 +59,7 @@
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| P33 | MCP 연동 | stdio/HTTP · tools/resources/prompts · git webhook · CLI (`813c3ea`) |
+| P33 | MCP 연동 | link 스크립트 · 자동기록 규칙 · MCP-GUIDE · UI 가져오기 (`813c3ea`+) |
 
 ## Phase 10 계획
 
@@ -99,6 +99,12 @@
 | P22 | 운영 런북 | ✅ |
 
 ## 변경 이력
+
+### 1.1.0-wip — 2026-07-31 (P33 MCP UX · 외부 프로젝트 연결)
+
+- `npm run mcp:link` · `templates/external-project/` · 작업기록 Cursor 규칙
+- `docs/MCP-GUIDE.md` 간단 매뉴얼 · 헤더 **MCP 가져오기** (UI 동기화)
+- `GET /api/mcp/store` · `src/lib/mcp-sync.ts`
 
 ### 1.1.0-wip — 2026-07-31 (P33 MCP 연동) — `813c3ea`
 

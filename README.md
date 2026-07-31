@@ -70,7 +70,8 @@ Folio는 로컬 우선으로 시작해 팀 공유까지 확장할 수 있습니�
 - 보고·공유·백업을 원터치로
 
 **🤖 MCP 연동**
-- IDE·Git·CLI에서 Folio 기록을 직접 읽고 쓰기
+- 다른 프로젝트 Cursor에 Folio MCP를 붙여 작업 기록을 자동 적재
+- Git webhook · CLI · 헤더 **MCP 가져오기**로 화면에 반영
 
 ---
 
@@ -85,6 +86,19 @@ npm run dev
 
 브라우저에서 `http://localhost:3000` 열기.
 
+### 다른 프로젝트에 Folio MCP 붙이기
+
+```bash
+# Folio 저장소에서 실행
+npm run mcp:link -- /path/to/your-project --name my-app
+```
+
+1. 대상 프로젝트를 Cursor로 연다 → MCP `folio` 연결 확인  
+2. 평소처럼 Agent로 작업 (규칙이 작업 후 일지/보드에 남김)  
+3. Folio 앱에서 헤더 **「MCP 가져오기」** → 일지/일정에 반영  
+
+자세한 매뉴얼: **[docs/MCP-GUIDE.md](docs/MCP-GUIDE.md)**
+
 ---
 
 ## 사용 가이드
@@ -92,6 +106,8 @@ npm run dev
 | 주제 | 문서 |
 |------|------|
 | 설치·시작 | [docs/GETTING-STARTED.md](docs/GETTING-STARTED.md) |
+| **MCP 사용법** | [docs/MCP-GUIDE.md](docs/MCP-GUIDE.md) |
+| MCP 레퍼런스 | [docs/MCP.md](docs/MCP.md) |
 | 아키텍처 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | 배포 | [docs/DEPLOY.md](docs/DEPLOY.md) |
 | Beacon 연동 | [docs/BEACON.md](docs/BEACON.md) |

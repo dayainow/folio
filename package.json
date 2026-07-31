@@ -17,7 +17,8 @@
     "runbook:restore": "node scripts/runbook-restore.mjs",
     "runbook:deploy": "node scripts/runbook-deploy.mjs",
     "mcp:server": "tsx src/mcp/stdio.ts",
-    "mcp:client": "node scripts/mcp-client.mjs"
+    "mcp:client": "node scripts/mcp-client.mjs",
+    "mcp:link": "node scripts/link-folio-mcp.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

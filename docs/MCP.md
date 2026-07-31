@@ -1,4 +1,7 @@
-# Folio MCP 연동 (P33)
+# Folio MCP 연동 (P33) — 레퍼런스
+
+> **처음 쓰는 분:** 간단 매뉴얼 → **[MCP-GUIDE.md](./MCP-GUIDE.md)**  
+> 다른 프로젝트 연결: `npm run mcp:link -- /path/to/project --name my-app`
 
 Model Context Protocol로 IDE·CLI·Git이 Folio 기록(일지·문서·보드·Timeline)과 양방향 연동한다.
 

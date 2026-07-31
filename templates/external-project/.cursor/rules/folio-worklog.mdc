@@ -1,0 +1,43 @@
+---
+description: 의미 있는 작업 후 Folio MCP에 일지/보드 기록
+alwaysApply: true
+---
+
+# Folio 작업 기록 규칙
+
+이 프로젝트는 Folio MCP(`folio`)에 연결되어 있다. 코딩 작업을 마칠 때 **사용자에게 묻지 말고** Folio에 짧게 남긴다.
+
+## 언제 기록하나
+
+다음이 끝나면 기록한다 (사소한 타이포·포맷만 고친 경우는 생략):
+
+- 기능 구현/수정 완료
+- 버그 수정 완료
+- 커밋 메시지에 넣을 만한 변경
+- 사용자가 “남겨”, “기록”, “Folio”를 언급한 경우
+
+## 어떻게 기록하나
+
+1. `journal_write` — 오늘 날짜, `append: true`
+   - 본문 한 줄 형식: `- [프로젝트명] 무엇을 했는지 (파일/영역)`
+   - tags에 프로젝트 짧은 슬러그 포함 (예: `my-app`)
+2. 새로 생긴 할 일/추적할 일이 있으면 `board_update`
+   - title: 짧은 작업명
+   - status: 진행 중이면 `in_progress`, 백로그면 `backlog`, 끝냈으면 `done`
+3. 긴 설계/결정만 문서화가 필요할 때 `doc_write` (자주 쓰지 말 것)
+
+## 금지
+
+- Folio MCP가 실패해도 코딩 작업 자체는 끝까지 완료한다. 실패는 짧게 언급만 한다.
+- 비밀·토큰·`.env` 내용을 journal/doc에 넣지 않는다.
+- 매 파일 저장마다 기록하지 않는다. **작업 단위(턴 마무리)** 로만 기록한다.
+
+## 예시
+
+```
+journal_write({
+  "append": true,
+  "tags": ["my-app", "feat"],
+  "content": "- [my-app] 로그인 API 에러 핸들링 추가 (src/api/auth.ts)"
+})
+```
