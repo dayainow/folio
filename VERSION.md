@@ -100,7 +100,7 @@
 
 ## 변경 이력
 
-### 1.1.0-wip — 2026-07-31 (P33 MCP UX · 외부 프로젝트 연결)
+### 1.1.0-wip — 2026-07-31 (P33 MCP UX · 외부 프로젝트 연결) — `9dd8874`
 
 - `npm run mcp:link` · `templates/external-project/` · 작업기록 Cursor 규칙
 - `docs/MCP-GUIDE.md` 간단 매뉴얼 · 헤더 **MCP 가져오기** (UI 동기화)
