@@ -6,10 +6,10 @@
 
 | 항목 | 값 |
 |------|-----|
-| 버전 | **0.9.0** |
-| Phase | Phase 8 완료 |
-| 진행 중 | — |
-| 다음 | Phase 9 (실제 배포) |
+| 버전 | **1.0.0-wip** |
+| Phase | Phase 9 |
+| 진행 중 | P27 실제 배포 |
+| 다음 | Phase 9 후속 · 1.0.0 정식 |
 
 ## 완료 항목
 
@@ -55,7 +55,7 @@
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| — | — | Phase 8 완료 · Phase 9 대기 |
+| P27 | 실제 배포 | Vercel · Docker 최적화 · 도메인/SSL · 롤백 |
 
 ## Phase 7 계획
 
@@ -75,9 +75,10 @@
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| — | 실제 배포 | Production Vercel · 도메인 · 모니터링 |
+| P27 | 실제 배포 | 진행 중 · Vercel/Docker · 도메인 · 롤백 |
 | — | 운영 고도화 | 알림 채널 · 백업 검증 |
 | — | 피드백 반영 | UX · 성능 · 접근성 |
+| — | 1.0.0 정식 | Production 안정화 후 |
 
 ## Phase 6 계획 (배포·운영)
 
@@ -88,6 +89,14 @@
 | P22 | 운영 런북 | ✅ |
 
 ## 변경 이력
+
+### 1.0.0-wip — 2026-07-31 (P27 실제 배포)
+
+- `vercel.json`: rewrites(`/health`,`/runtime`) · API no-store · static immutable · 보안 헤더
+- `.env.production.example`: Production 환경변수 템플릿
+- `docs/DEPLOY.md`: Vercel 단계별 · 커스텀 도메인 · SSL 자동 갱신
+- Dockerfile: runner apk/wget 제거 · node fetch HEALTHCHECK · dockerignore 강화
+- `docs/runbooks/DEPLOY.md`: Vercel Dashboard/CLI · git revert · Docker 롤백 상세
 
 ### 0.9.0 — 2026-07-30 (Phase 8 완료)
 

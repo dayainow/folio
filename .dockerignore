@@ -12,22 +12,26 @@ out
 build
 coverage
 *.tsbuildinfo
+backups
 
-# Env & secrets
+# Env & secrets (빌드 ARG로 주입)
 .env
 .env.*
 !.env.example
-docs/env.example
+!.env.production.example
 
-# Docs / misc (not needed in image context beyond COPY . .)
+# Docs / agents (이미지에 불필요)
 README.md
 VERSION.md
 AGENTS.md
 CLAUDE.md
+PROCESS.md
 **/*.md
-!docs/env.example
+docs
+examples
+agent-transcripts
 
-# Tests / logs
+# Tests / logs / misc
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -35,8 +39,16 @@ yarn-error.log*
 *.pem
 .DS_Store
 .vercel
+*.canvas.tsx
 
-# Docker
+# Docker meta (컨텍스트 자체)
 Dockerfile*
 docker-compose*.yml
 .dockerignore
+
+# Optional heavy local assets
+public/sw.js
+public/sw.js.map
+public/workbox-*.js
+public/worker-*.js
+public/swe-worker-*.js
