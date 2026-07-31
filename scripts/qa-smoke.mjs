@@ -96,4 +96,13 @@ assert(wiki.length === 2, 'wiki link count')
 assert(wiki[0].target === 'API 명세' && wiki[0].alias === 'API', 'wiki alias')
 assert(wiki[1].target === '프로젝트 규칙', 'wiki plain')
 
-console.log('qa:smoke OK — debounce/flush, board move, tag counts, wiki links')
+// --- export CSV escape (P32) ---
+function csvEscape(value) {
+  if (/[",\n\r]/.test(value)) return `"${value.replace(/"/g, '""')}"`
+  return value
+}
+assert(csvEscape('a,b') === '"a,b"', 'csv comma')
+assert(csvEscape('say "hi"') === '"say ""hi"""', 'csv quote')
+assert(csvEscape('plain') === 'plain', 'csv plain')
+
+console.log('qa:smoke OK — debounce/flush, board move, tag counts, wiki links, export')

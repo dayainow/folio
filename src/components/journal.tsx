@@ -9,11 +9,18 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Save, Check, Loader2, ChevronLeft, ChevronRight, Upload } from 'lucide-react';
-import { saveJournal, saveJournalWithFallback, loadJournalsWithFallback, getAllTags } from '@/lib/journal';
+import { saveJournal, saveJournalWithFallback, loadJournalsWithFallback, getAllTags, type JournalEntry } from '@/lib/journal';
 import { loadTasksWithFallback } from '@/lib/board';
 import { readObsidianMarkdownFiles } from '@/lib/obsidian';
 import { TagCloud, buildTagCounts } from '@/components/tag-cloud';
 import { setToastRetryHandler, showAppToast } from '@/lib/health-monitor';
+import { ExportMenu } from '@/components/export-menu';
+import {
+  downloadText,
+  filterJournalsByRange,
+  journalsFilename,
+  journalsToMarkdown,
+} from '@/lib/export';
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -459,6 +466,64 @@ export const JournalPanel = memo(function JournalPanel({
               accept=".md,text/markdown"
               className="hidden"
               onChange={importObsidian}
+            />
+            <ExportMenu
+              label="내보내기"
+              items={[
+                {
+                  id: 'md-range',
+                  label: 'Markdown (기간)',
+                  description: 'journals-YYYY-MM-DD-to-YYYY-MM-DD.md',
+                  run: async (setProgress) => {
+                    setProgress(0.2, '일지 수집…')
+                    const asEntries: Record<string, JournalEntry> = {}
+                    for (const [d, day] of Object.entries(days)) {
+                      asEntries[d] = {
+                        date: d,
+                        content: day.content,
+                        tags: day.tags,
+                        updatedAt: new Date().toISOString(),
+                      }
+                    }
+                    // 사이드바 기간 필터 우선, 없으면 전체 범위
+                    const dates = Object.keys(asEntries).sort()
+                    const from = rangeStart || dates[0] || date
+                    const to = rangeEnd || dates[dates.length - 1] || date
+                    const entries = filterJournalsByRange(asEntries, from, to)
+                    setProgress(0.7, `${entries.length}건 변환…`)
+                    const md = journalsToMarkdown(entries)
+                    downloadText(md, journalsFilename(from, to), 'text/markdown;charset=utf-8')
+                    setProgress(1, '완료')
+                  },
+                },
+                {
+                  id: 'md-today',
+                  label: '오늘 Markdown',
+                  description: `${date}.md`,
+                  run: async (setProgress) => {
+                    setProgress(0.5, '변환…')
+                    const entry: JournalEntry = {
+                      date,
+                      content: draft,
+                      tags: parseTags(tagsInput),
+                      updatedAt: new Date().toISOString(),
+                    }
+                    downloadText(
+                      journalsToMarkdown([entry]),
+                      `journal-${date}.md`,
+                      'text/markdown;charset=utf-8',
+                    )
+                    setProgress(1, '완료')
+                  },
+                },
+              ]}
+              extra={
+                <p className="text-[10px] text-gray-400">
+                  기간: {rangeStart || '처음'} ~ {rangeEnd || '마지막'}
+                  <br />
+                  (사이드바 날짜 범위와 동일)
+                </p>
+              }
             />
             <Button
               type="button"

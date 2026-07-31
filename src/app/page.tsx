@@ -13,6 +13,7 @@ import { HealthStatus } from '@/components/health-status';
 import { BeaconChangeBadge } from '@/components/beacon-change-badge';
 import { OfflineStatusBadge } from '@/components/offline-status';
 import { MobileNav } from '@/components/mobile-nav';
+import { FullExportButton } from '@/components/full-export-button';
 import { getActiveTeamId } from '@/lib/team';
 import { parseFolioDeepLink } from '@/lib/folio-links';
 import { Activity } from 'lucide-react';
@@ -254,6 +255,7 @@ export default function Home() {
         </div>
         <div className="flex items-center gap-3">
           <span className="text-xs text-muted-foreground hidden sm:inline">프로젝트의 기록</span>
+          <FullExportButton />
           <HealthStatus />
           <OfflineStatusBadge />
           <BeaconChangeBadge />

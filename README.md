@@ -266,9 +266,9 @@ npm run qa:smoke && npm run lint && npm run typecheck
 ## 작업 관리
 
 - 현재: **Phase 10** · **1.1.0-wip**
-- 완료: Phase 1~9 (**1.0.0**)
-- 진행 중: **P31** 문서 링크 그래프
-- 다음: P32 내보내기 · P33 MCP
+- 완료: Phase 1~9 (**1.0.0**) · P31 링크 그래프
+- 진행 중: **P32** 내보내기/다운로드
+- 다음: P33 MCP
 
 상세: [VERSION.md](./VERSION.md) · [docs/DEPLOY.md](./docs/DEPLOY.md) · [docs/runbooks/](./docs/runbooks/)
 
@@ -291,9 +291,20 @@ npm run qa:smoke && npm run lint && npm run typecheck
 
 | 영역 | 내용 |
 |------|------|
-| P31 문서 링크 그래프 | `[[문서명]]` 파싱 · force-graph · 자동완성 · 역링크 |
-| P32 내보내기/다운로드 | 일지/문서 PDF·MD · Board CSV/JSON · ZIP |
+| P31 문서 링크 그래프 | ✅ `[[문서명]]` · force-graph · 자동완성 · 역링크 |
+| P32 내보내기/다운로드 | 일지 MD · 문서 MD/ZIP · Board CSV/JSON · 전체 ZIP |
 | P33 MCP 연동 | Folio API · IDE/Git 기록 · webhook/CLI |
+
+## 내보내기 / 다운로드
+
+| 위치 | 옵션 |
+|------|------|
+| 일지 탭 | Markdown (기간) · 오늘 Markdown |
+| 문서 탭 | 선택 문서 MD · 필터/카테고리 ZIP · 전체 ZIP |
+| 일정 탭 | CSV · JSON |
+| 헤더 | **전체 내보내기** → `journals/` · `docs/` · `boards/` · `metadata.json` |
+
+사이드바 날짜 범위·카테고리 필터가 있으면 해당 범위만 내보냅니다.
 
 ## Docs wiki-link 사용법
 

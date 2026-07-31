@@ -38,6 +38,8 @@ import { loadJournalsWithFallback } from '@/lib/journal';
 import { loadFavorites, saveFavorites, toggleFavorite } from '@/lib/favorites';
 import { TagCloud, buildTagCounts } from '@/components/tag-cloud';
 import { recordBoardStatusChange } from '@/lib/analytics';
+import { ExportMenu } from '@/components/export-menu';
+import { downloadText, tasksToCsv, tasksToJson } from '@/lib/export';
 
 const STATUS_ORDER: Task['status'][] = ['backlog', 'in_progress', 'review', 'done'];
 
@@ -644,6 +646,35 @@ export function BoardDndPanel({
             aria-label="태스크 검색"
           />
         </div>
+        <ExportMenu
+          label="내보내기"
+          items={[
+            {
+              id: 'csv',
+              label: 'CSV',
+              description: 'Excel에서 열기 · boards-YYYY-MM-DD.csv',
+              run: async (setProgress) => {
+                setProgress(0.4, 'CSV 생성…')
+                const csv = tasksToCsv(tasks)
+                const day = new Date().toISOString().slice(0, 10)
+                downloadText(csv, `boards-${day}.csv`, 'text/csv;charset=utf-8')
+                setProgress(1, '완료')
+              },
+            },
+            {
+              id: 'json',
+              label: 'JSON',
+              description: '백업/마이그레이션 · boards-YYYY-MM-DD.json',
+              run: async (setProgress) => {
+                setProgress(0.4, 'JSON 생성…')
+                const json = tasksToJson(tasks)
+                const day = new Date().toISOString().slice(0, 10)
+                downloadText(json, `boards-${day}.json`, 'application/json;charset=utf-8')
+                setProgress(1, '완료')
+              },
+            },
+          ]}
+        />
         <Button
           onClick={() => void syncFromJira()}
           size="sm"

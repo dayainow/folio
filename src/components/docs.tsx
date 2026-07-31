@@ -30,6 +30,15 @@ import { getBeaconAutoArtifact } from '@/lib/beacon-automation';
 import { recordFolioTimelineEvent } from '@/lib/beacon-timeline-consent';
 import { findBacklinks, wikiLinksToMarkdown } from '@/lib/link-parser';
 import { WikiLinkTextarea } from '@/components/wiki-link-textarea';
+import { ExportMenu } from '@/components/export-menu';
+import {
+  docFilename,
+  docToMarkdown,
+  downloadBlob,
+  downloadText,
+  safeFilename,
+  zipDocs,
+} from '@/lib/export';
 
 const LinkGraphPanel = dynamic(
   () => import('@/components/link-graph').then((m) => ({ default: m.LinkGraphPanel })),
@@ -478,6 +487,53 @@ export const DocsPanel = memo(function DocsPanel({
             <Upload className="h-4 w-4" />
             {importing ? '가져오는 중…' : 'Obsidian 가져오기'}
           </Button>
+          <ExportMenu
+            label="내보내기"
+            align="left"
+            items={[
+              {
+                id: 'md-one',
+                label: '선택 문서 Markdown',
+                description: selectedId ? '현재 문서 .md' : '문서를 먼저 선택하세요',
+                disabled: !selectedId,
+                run: async (setProgress) => {
+                  const doc = docs.find((d) => d.id === selectedId)
+                  if (!doc) throw new Error('선택된 문서가 없습니다.')
+                  setProgress(0.5, '변환…')
+                  const payload = editing
+                    ? { ...doc, title: title.trim() || doc.title, content, category }
+                    : doc
+                  downloadText(
+                    docToMarkdown(payload),
+                    docFilename(payload),
+                    'text/markdown;charset=utf-8',
+                  )
+                  setProgress(1, '완료')
+                },
+              },
+              {
+                id: 'zip-filtered',
+                label: filterCat ? `ZIP · ${filterCat}` : 'ZIP · 필터/검색 결과',
+                description: `${filtered.length}개 문서`,
+                disabled: filtered.length === 0,
+                run: async (setProgress) => {
+                  const blob = await zipDocs(filtered, setProgress)
+                  const suffix = filterCat ? safeFilename(filterCat, 'category') : 'filtered'
+                  downloadBlob(blob, `docs-${suffix}-${new Date().toISOString().slice(0, 10)}.zip`)
+                },
+              },
+              {
+                id: 'zip-all',
+                label: 'ZIP · 전체 문서',
+                description: `${docs.length}개`,
+                disabled: docs.length === 0,
+                run: async (setProgress) => {
+                  const blob = await zipDocs(docs, setProgress)
+                  downloadBlob(blob, `docs-all-${new Date().toISOString().slice(0, 10)}.zip`)
+                },
+              },
+            ]}
+          />
           {importMsg && <p className="text-[11px] text-gray-500 px-0.5">{importMsg}</p>}
           <div className="relative">
             <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-gray-400" />
@@ -593,6 +649,27 @@ export const DocsPanel = memo(function DocsPanel({
                 ) : (
                   <>
                     <Badge variant="outline">{docs.find(d => d.id === selectedId)?.category}</Badge>
+                    <ExportMenu
+                      label="MD"
+                      items={[
+                        {
+                          id: 'md-current',
+                          label: '이 문서 Markdown',
+                          description: '개별 .md 다운로드',
+                          run: async (setProgress) => {
+                            const doc = docs.find((d) => d.id === selectedId)
+                            if (!doc) throw new Error('문서 없음')
+                            setProgress(0.5, '변환…')
+                            downloadText(
+                              docToMarkdown(doc),
+                              docFilename(doc),
+                              'text/markdown;charset=utf-8',
+                            )
+                            setProgress(1, '완료')
+                          },
+                        },
+                      ]}
+                    />
                     <Button
                       type="button"
                       size="sm"
