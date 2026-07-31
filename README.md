@@ -86,18 +86,55 @@ npm run dev
 
 브라우저에서 `http://localhost:3000` 열기.
 
-### 다른 프로젝트에 Folio MCP 붙이기
+---
+
+## MCP 가이드 — 다른 프로젝트 작업을 Folio에 쌓기
+
+전체 매뉴얼: **[docs/MCP-GUIDE.md](docs/MCP-GUIDE.md)** · 상세 스펙: [docs/MCP.md](docs/MCP.md)
+
+```text
+다른 프로젝트 ←(MCP)→ Folio(.folio-mcp) ←(MCP 가져오기)→ Folio 화면
+```
+
+### 1) 다른 프로젝트에 연결 (1회)
 
 ```bash
 # Folio 저장소에서 실행
+cd /path/to/folio
 npm run mcp:link -- /path/to/your-project --name my-app
 ```
 
-1. 대상 프로젝트를 Cursor로 연다 → MCP `folio` 연결 확인  
-2. 평소처럼 Agent로 작업 (규칙이 작업 후 일지/보드에 남김)  
-3. Folio 앱에서 헤더 **「MCP 가져오기」** → 일지/일정에 반영  
+설치되는 것: `.cursor/mcp.json` · `.vscode/mcp.json` · 자동기록 규칙(`.cursor/rules/folio-worklog.mdc`) · `FOLIO-MCP.md`
 
-자세한 매뉴얼: **[docs/MCP-GUIDE.md](docs/MCP-GUIDE.md)**
+### 2) Cursor에서 작업
+
+1. **대상 프로젝트**를 Cursor로 연다  
+2. Settings → MCP 에서 `folio` 연결 확인  
+3. Agent로 평소처럼 작업 → 규칙이 작업 후 일지/보드에 자동 기록  
+4. 안 남기면: 「Folio에 남겨줘」라고 요청
+
+### 3) Folio 화면에 반영
+
+```bash
+cd /path/to/folio
+npm run dev
+```
+
+헤더 **「MCP 가져오기」** 클릭 → 새로고침 → 일지/문서/일정 탭 확인
+
+### 4) (선택) Git 푸시·CLI
+
+```bash
+# 커밋 메시지 테스트 기록
+npm run mcp:client -- webhook '{"message":"feat: demo","author":"you"}'
+
+# 도구/일지 확인
+npm run mcp:client -- tools
+npm run mcp:client -- call journal_read '{}'
+```
+
+GitHub Webhook: `POST /api/mcp/git-webhook` + `FOLIO_MCP_WEBHOOK_SECRET`  
+(설정 방법·FAQ는 [MCP-GUIDE.md](docs/MCP-GUIDE.md) 참고)
 
 ---
 
@@ -106,7 +143,7 @@ npm run mcp:link -- /path/to/your-project --name my-app
 | 주제 | 문서 |
 |------|------|
 | 설치·시작 | [docs/GETTING-STARTED.md](docs/GETTING-STARTED.md) |
-| **MCP 사용법** | [docs/MCP-GUIDE.md](docs/MCP-GUIDE.md) |
+| **MCP 가이드** | [docs/MCP-GUIDE.md](docs/MCP-GUIDE.md) |
 | MCP 레퍼런스 | [docs/MCP.md](docs/MCP.md) |
 | 아키텍처 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | 배포 | [docs/DEPLOY.md](docs/DEPLOY.md) |
