@@ -21,7 +21,7 @@ export type WidgetSidebarProps = {
   className?: string
 }
 
-/** @deprecated 이름 호환 — WidgetSidebar 사용 */
+/** @deprecated 이름 호환 — WidgetSidebar 사용. v2.0에서 제거 예정 */
 export const WidgetDashboard = WidgetSidebar
 
 export function WidgetSidebar({

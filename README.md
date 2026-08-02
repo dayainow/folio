@@ -2,7 +2,7 @@
 
 ![Dashboard](screenshots/dashboard.png)
 
-**프로젝트의 기록, 한 곳에서.** · **v2.0.0-wip**
+**프로젝트의 기록, 한 곳에서.** · **v2.0.0**
 
 Folio는 개발자의 일지·문서·일정·프로세스를 하나로 묶는 워크스페이스입니다.
 Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정을 tracking하는 흐름을,
@@ -68,7 +68,7 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 
 ---
 
-## Phase 1~18
+## Phase 1~18 완료
 
 | Phase | 버전 | 요약 | 상태 |
 |-------|------|------|------|
@@ -89,10 +89,10 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **15** | **1.6.0** | 협업 고도화 (커서 · Undo/diff · 역할 · 공유 · 알림) | ✅ |
 | **16** | **1.7.0** | 모바일 고도화 (키보드 · FAB · 동기화 상태 · 풀스크린) | ✅ |
 | **17** | **1.8.0** | 실시간 협업 고도화 (Presence 상태 · guest/ACL · 알림 센터) | ✅ |
-| **18** | **2.0.0-wip** | v2.0 기반 정비 (테스트 · 아키텍처 · 코드베이스 정리) | 🔄 |
+| **18** | **2.0.0** | v2.0 기반 정비 (Vitest · CSP · CI · 마이그레이션 문서) | ✅ |
 
-Phase 18 상세: **P46** Vitest · CI test · ARCHITECTURE v2 · 데드코드/`any` 정리  
-이력: [VERSION.md](VERSION.md)
+Phase 18 상세: Vitest 61 · ARCHITECTURE/MIGRATION/TESTING · CSP · lint/test/release 워크플로  
+이력: [VERSION.md](VERSION.md) · 마이그레이션: [docs/MIGRATION.md](docs/MIGRATION.md)
 
 ---
 
@@ -116,18 +116,33 @@ npm run lint && npm run typecheck && npm run test && npm run qa:smoke
 
 ---
 
-## v2.0 로드맵
+## v2.0 로드맵 · 마이그레이션
 
-Phase 18부터 **v2.0** 기반선을 잡습니다. 1.x 기능은 유지하고 DX·품질·확장을 우선합니다.
+### 로드맵
 
 | 테마 | 내용 | 상태 |
 |------|------|------|
-| **기반 정비 (P46)** | Vitest · CI 단위 테스트 · ARCHITECTURE · 타입/`any` · 데드코드 | 🔄 |
-| **저장·관측** | WithFallback 계약 문서화 · 저장 실패 관측 강화 | 예정 |
-| **협업** | Presence/Yjs 서버 동기화 옵션 · 알림 센터 고도화 | 예정 |
-| **DX** | 기여/테스트 컨벤션 · 성능 예산 | 일부 ✅ |
+| **기반 정비** | Vitest · CI · ARCHITECTURE · CSP · sanitize | ✅ 2.0.0 |
+| **저장·관측** | WithFallback 관측성 강화 | 예정 |
+| **협업** | Presence/Yjs 서버 동기화 옵션 | 예정 |
+| **DX** | 성능 예산 · 기여/테스트 가이드 | ✅ |
 
-상세: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [VERSION.md](VERSION.md)
+상세: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/PERFORMANCE.md](docs/PERFORMANCE.md) · [VERSION.md](VERSION.md)
+
+### 1.x → 2.0 마이그레이션
+
+1. `npm run runbook:backup` (또는 전체 ZIP 내보내기)
+2. `git pull` · `npm ci` · `docs/env.example` 대조
+3. `npm run lint && npm run typecheck && npm run test && npm run qa:smoke`
+
+**호환성 주의**
+
+- localStorage / 저장 모드 / Supabase 스키마: **하위 호환**
+- CSP 추가: 외부 스크립트 CDN 사용 시 `next.config.ts` CSP 확장 필요
+- `npm run test` = Vitest (더 이상 typecheck 별칭 아님)
+- deprecated: `WidgetDashboard` → `WidgetSidebar`
+
+전체: **[docs/MIGRATION.md](docs/MIGRATION.md)**
 
 ---
 
@@ -390,14 +405,14 @@ npm run runbook:backup
 - **v1.6** ✅ — 협업 고도화 (커서 · Undo/diff · 역할 · 공유 · 알림)
 - **v1.7** ✅ — 모바일 고도화 (키보드 · FAB · 동기화 상태 · 풀스크린)
 - **v1.8** ✅ — 실시간 협업 고도화 (Presence 상태 · guest/ACL · 알림 센터)
-- **v2.0** 🔄 — 기반 정비 · 테스트 · 아키텍처 (진행 중 · **2.0.0-wip**)
+- **v2.0** ✅ — 기반 정비 · 테스트 · CSP · CI · 마이그레이션 문서
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 18 진행 중** (v**2.0.0-wip**)
-- 진행 중: **P46** v2.0 기반 정비
-- 완료: Phase 1~17 (1.8.0) · P45 실시간 협업 고도화
-- 다음: Phase 18 완료 · 2.0.0 정식
+- 현재 Phase: **Phase 18 완료** (v**2.0.0** 정식)
+- 진행 중: —
+- 완료: Phase 1~18 (2.0.0) · P46 v2.0 기반 정비
+- 다음: v2.x (저장 관측 · 협업 서버 옵션)
 - 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md))
 
 ---
@@ -411,4 +426,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · v2.0.0-wip
+**Folio** — 프로젝트의 기록, 한 곳에서. · v2.0.0

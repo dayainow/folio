@@ -252,6 +252,7 @@ export const JournalAnalyticsPanel = memo(function JournalAnalyticsPanel() {
               range === '1w' || range === '1m' ? '일별 작성 추이' : '주간/월간 작성 추이'
             }
           />
+          <CombinedProductivitySection />
         </>
       )}
     </div>

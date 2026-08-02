@@ -1,6 +1,25 @@
 # 업그레이드 런북 (Upgrade)
 
-버전 업그레이드 · 마이그레이션 · 다운타임 최소화. (P22 · 0.7.0)
+버전 업그레이드 · 마이그레이션 · 다운타임 최소화. (P22 · **v2.0 갱신**)
+
+---
+
+## 0. v2.0 (1.x → 2.0)
+
+상세: **[docs/MIGRATION.md](../MIGRATION.md)**
+
+| 구분 | 예 | 의미 |
+|------|----|------|
+| 정식 | `2.0.0` | Phase 18 완료 릴리즈 |
+| WIP | `2.0.0-wip` | Phase 진행 중 |
+| Patch | `2.0.1` | 버그픽스 · 문서 |
+
+체크리스트:
+
+- [ ] `npm run runbook:backup`
+- [ ] `docs/env.example` 대조 · CSP 영향 확인
+- [ ] `npm run lint && npm run typecheck && npm run test && npm run qa:smoke`
+- [ ] Preview/스테이징 스모크 후 Production
 
 ---
 
@@ -8,7 +27,7 @@
 
 | 구분 | 예 | 의미 |
 |------|----|------|
-| 정식 | `0.7.0` | Phase 완료 릴리즈 |
+| 정식 | `0.7.0` / `2.0.0` | Phase 완료 릴리즈 |
 | WIP | `0.7.0-wip` | Phase 진행 중 |
 | Patch | `0.7.1` | 버그픽스 · 문서 |
 

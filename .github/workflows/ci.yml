@@ -1,4 +1,4 @@
-# P46 — Lint / Typecheck / Unit test / QA smoke / Build
+# v2.0 — Lint / Typecheck / Unit test / QA / Bundle / Build
 name: CI
 
 on:
@@ -14,26 +14,23 @@ concurrency:
 
 env:
   NEXT_TELEMETRY_DISABLED: "1"
-  FOLIO_VERSION: "2.0.0-wip"
+  FOLIO_VERSION: "2.0.0"
 
 jobs:
   quality:
-    name: Lint · Typecheck · QA · Test · Build
+    name: Quality gate
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: npm
 
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
 
       - name: Lint
         run: npm run lint
@@ -55,12 +52,15 @@ jobs:
           NEXT_PUBLIC_FOLIO_URL: http://localhost:3000
           FOLIO_VERSION: ${{ env.FOLIO_VERSION }}
 
+      - name: Bundle size
+        run: npm run bundle:size
+
       - name: Summary
         if: always()
         run: |
           {
-            echo "## CI (P46)"
+            echo "## CI (v2.0)"
             echo "- ref: \`${{ github.sha }}\`"
-            echo "- lint / typecheck / test / qa:smoke / build"
+            echo "- required: lint · typecheck · test · qa:smoke · build · bundle-size"
             echo "- FOLIO_VERSION=\`${{ env.FOLIO_VERSION }}\`"
           } >> "$GITHUB_STEP_SUMMARY"

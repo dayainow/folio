@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { listEnvChecks, validateSupabasePublicEnv } from '@/lib/env-config'
 
 /** 프로세스 시작 시각 (Docker/standalone 수명 · 서버리스는 인스턴스 수명) */
 const startedAt = Date.now()
@@ -6,7 +7,7 @@ const startedAt = Date.now()
 const VERSION =
   process.env.npm_package_version ??
   process.env.FOLIO_VERSION ??
-  '1.7.0'
+  '2.0.0'
 
 /**
  * GET /api/health
@@ -14,6 +15,8 @@ const VERSION =
  */
 export async function GET() {
   const uptimeSec = Math.max(0, Math.floor((Date.now() - startedAt) / 1000))
+  const supabase = validateSupabasePublicEnv()
+  const envConfigured = listEnvChecks().filter((c) => c.present).length
 
   return NextResponse.json(
     {
@@ -21,6 +24,11 @@ export async function GET() {
       version: VERSION,
       uptime: uptimeSec,
       timestamp: new Date().toISOString(),
+      env: {
+        supabaseReady: supabase.ok,
+        configuredCount: envConfigured,
+        ...(supabase.ok ? {} : { supabaseHint: supabase.message }),
+      },
     },
     {
       status: 200,

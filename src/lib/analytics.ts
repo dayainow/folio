@@ -354,6 +354,22 @@ export interface CombinedProductivityMetrics {
   };
 }
 
+/** 일일 생산성 스코어 (순수) — 일지*15 + 문서*15 + 완료 태스크 가중합 */
+export function computeProductivityScore(input: {
+  journalCount: number
+  docCount: number
+  weightedTaskScore: number
+}): number {
+  return input.journalCount * 15 + input.docCount * 15 + input.weightedTaskScore
+}
+
+/** 우선순위 → 완료 가중치 */
+export function taskPriorityWeight(priority: Task['priority']): number {
+  if (priority === 'high') return 50
+  if (priority === 'medium') return 30
+  return 15
+}
+
 export async function getCombinedProductivityMetrics(
   range: AnalyticsRange = '1m'
 ): Promise<CombinedProductivityMetrics> {
@@ -415,7 +431,7 @@ export async function getCombinedProductivityMetrics(
       weightedTaskScore: 0,
     };
 
-    const weight = t.priority === 'high' ? 50 : t.priority === 'medium' ? 30 : 15;
+    const weight = taskPriorityWeight(t.priority);
     if (t.priority === 'high') priorityBreakdown.high++;
     else if (t.priority === 'medium') priorityBreakdown.medium++;
     else priorityBreakdown.low++;
@@ -431,9 +447,7 @@ export async function getCombinedProductivityMetrics(
 
   const rawTrend = sortedDates.map((date) => {
     const data = dateMap.get(date)!;
-    // 공식: 일지*15 + 문서*15 + 완료 태스크 가중합
-    const productivityScore =
-      data.journalCount * 15 + data.docCount * 15 + data.weightedTaskScore;
+    const productivityScore = computeProductivityScore(data);
     return {
       date,
       journalCount: data.journalCount,

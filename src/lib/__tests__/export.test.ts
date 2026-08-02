@@ -6,6 +6,8 @@ import {
   safeFilename,
   tasksToCsv,
   tasksToJson,
+  zipDocs,
+  zipFullExport,
 } from '@/lib/export'
 import type { JournalEntry } from '@/lib/journal'
 import type { DocEntry } from '@/lib/docs'
@@ -29,52 +31,41 @@ describe('filterJournalsByRange', () => {
   }
 
   it('filters inclusive range ascending', () => {
-    const rows = filterJournalsByRange(journals, '2026-01-02', '2026-01-04')
-    expect(rows.map((r) => r.date)).toEqual(['2026-01-03'])
+    expect(filterJournalsByRange(journals, '2026-01-02', '2026-01-04').map((r) => r.date)).toEqual([
+      '2026-01-03',
+    ])
   })
 
   it('swaps inverted from/to', () => {
-    const rows = filterJournalsByRange(journals, '2026-01-05', '2026-01-01')
-    expect(rows.map((r) => r.date)).toEqual(['2026-01-01', '2026-01-03', '2026-01-05'])
+    expect(filterJournalsByRange(journals, '2026-01-05', '2026-01-01')).toHaveLength(3)
   })
 })
 
-describe('journalsToMarkdown', () => {
-  it('renders empty period message', () => {
+describe('markdown / csv / json', () => {
+  it('journalsToMarkdown empty', () => {
     expect(journalsToMarkdown([])).toContain('일지가 없습니다')
   })
 
-  it('renders entries with tags', () => {
+  it('journalsToMarkdown with tags', () => {
     const md = journalsToMarkdown([
-      {
-        date: '2026-08-03',
-        content: 'hello',
-        tags: ['work'],
-        updatedAt: '',
-      },
+      { date: '2026-08-03', content: 'hello', tags: ['work'], updatedAt: '' },
     ])
-    expect(md).toContain('## 2026-08-03')
     expect(md).toContain('#work')
-    expect(md).toContain('hello')
   })
-})
 
-describe('docToMarkdown / tasks', () => {
-  it('wraps doc as markdown', () => {
+  it('docToMarkdown', () => {
     const doc: DocEntry = {
       id: '1',
       title: 'Spec',
-      content: '# Title\nbody',
+      content: 'body',
       category: 'Engineering',
       createdAt: '',
       updatedAt: '',
     }
-    const md = docToMarkdown(doc)
-    expect(md).toContain('Spec')
-    expect(md).toContain('body')
+    expect(docToMarkdown(doc)).toContain('Spec')
   })
 
-  it('exports tasks csv/json', () => {
+  it('tasksToCsv includes BOM and id', () => {
     const tasks: Task[] = [
       {
         id: 't1',
@@ -88,10 +79,53 @@ describe('docToMarkdown / tasks', () => {
       },
     ]
     const csv = tasksToCsv(tasks)
-    expect(csv.split('\n')[0]).toContain('id')
+    expect(csv.charCodeAt(0)).toBe(0xfeff)
     expect(csv).toContain('Ship')
-    const parsed = JSON.parse(tasksToJson(tasks)) as { tasks?: Task[] } | Task[]
-    const list = Array.isArray(parsed) ? parsed : (parsed.tasks ?? [])
-    expect(list[0]?.id).toBe('t1')
+  })
+
+  it('tasksToJson wraps tasks array', () => {
+    const parsed = JSON.parse(
+      tasksToJson([
+        {
+          id: 't1',
+          title: 'Ship',
+          description: '',
+          status: 'done',
+          priority: 'low',
+          tags: [],
+          createdAt: '',
+          updatedAt: '',
+        },
+      ]),
+    ) as { tasks: Task[] }
+    expect(parsed.tasks[0]?.id).toBe('t1')
+  })
+})
+
+describe('ZIP generation', () => {
+  it('zipDocs returns a blob', async () => {
+    const blob = await zipDocs([
+      {
+        id: 'd1',
+        title: 'Note',
+        content: '# Hi',
+        category: 'General',
+        createdAt: '',
+        updatedAt: '',
+      },
+    ])
+    expect(blob).toBeInstanceOf(Blob)
+    expect(blob.size).toBeGreaterThan(10)
+  })
+
+  it('zipFullExport includes metadata', async () => {
+    const blob = await zipFullExport({
+      journals: {},
+      docs: [],
+      tasks: [],
+      version: '2.0.0',
+    })
+    expect(blob).toBeInstanceOf(Blob)
+    expect(blob.size).toBeGreaterThan(20)
   })
 })

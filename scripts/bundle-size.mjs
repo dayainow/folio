@@ -82,3 +82,16 @@ if (existsSync(nextStatic)) {
 }
 
 console.log('\n권장: ANALYZE=true npm run analyze')
+
+// v2.0 성능 예산 (경고만 — CI에서 로그로 확인)
+const BUDGET_STATIC_MB = 8
+if (existsSync(nextStatic)) {
+  const bytes = dirSize(nextStatic)
+  const mb = bytes / (1024 * 1024)
+  console.log(`\n예산: .next/static ≤ ${BUDGET_STATIC_MB} MB → 현재 ${mb.toFixed(2)} MB`)
+  if (mb > BUDGET_STATIC_MB) {
+    console.warn(`⚠ 번들 예산을 초과했습니다 (${mb.toFixed(2)} > ${BUDGET_STATIC_MB}). docs/PERFORMANCE.md 참고`)
+  } else {
+    console.log('✓ 번들 예산 이내')
+  }
+}

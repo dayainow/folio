@@ -2,6 +2,7 @@
  * localStorage JSON 캐시. 쓰기는 기본 300ms debounce, flushLocalJson 으로 즉시 영속화.
  */
 import { debounce } from '@/lib/debounce'
+import { logError } from '@/lib/errors'
 
 const DEFAULT_DELAY = 300
 const memory = new Map<string, string>()
@@ -14,8 +15,8 @@ function getWriter(key: string, delayMs: number) {
       if (typeof window === 'undefined') return
       try {
         localStorage.setItem(key, raw)
-      } catch {
-        /* quota 등 무시 */
+      } catch (err) {
+        logError('local-cache.setItem', err, { key })
       }
     }, delayMs)
     writers.set(key, writer)

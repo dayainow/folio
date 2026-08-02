@@ -1,6 +1,15 @@
 # 백업 · 복구 런북 (Backup / Restore)
 
-Supabase · Beacon · localStorage 데이터 백업과 복구. (P22 · 0.7.0)
+Supabase · Beacon · localStorage 데이터 백업과 복구. (P22 · **v2.0 갱신**)
+
+### RPO / RTO (목표)
+
+| 지표 | 목표 |
+|------|------|
+| RPO | 수동 백업 직전 / Supabase PITR 정책에 따름 |
+| RTO | Vercel Promote 또는 Docker 재기동 ≤ 15분 |
+
+오프사이트: `backups/` 디렉터리를 별도 스토리지에 복사 권장. 분기 1회 복구 drill.
 
 ---
 

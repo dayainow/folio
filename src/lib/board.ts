@@ -123,11 +123,6 @@ export async function saveTasksSupabase(tasks: Task[]) {
   invalidateQueryCache(SUPABASE_CACHE_KEY);
 }
 
-/** Supabase `boards` — 단일 태스크 upsert */
-export async function saveTaskSupabase(task: Task) {
-  return saveTasksSupabase([task]);
-}
-
 /** Supabase `boards` — 본인 레코드만 삭제 */
 export async function deleteTaskSupabase(id: string) {
   const { supabase, userId } = await requireAuthUser();
