@@ -23,9 +23,20 @@ import {
 import { PresenceBar } from '@/components/presence-bar';
 import { CollabTextarea } from '@/components/collab-textarea';
 import { DocCommentsPanel } from '@/components/doc-comments';
+import dynamic from 'next/dynamic';
 import { useCollabUser } from '@/hooks/use-collab-user';
+import { useSwipe } from '@/hooks/use-swipe';
 import { publishActivity } from '@/lib/activity-stream';
 import { getOrCreateGuestId } from '@/lib/presence';
+
+const VoiceInputButton = dynamic(
+  () => import('@/components/voice-input-button').then((m) => ({ default: m.VoiceInputButton })),
+  { ssr: false, loading: () => null },
+);
+const ImageAttachButton = dynamic(
+  () => import('@/components/image-attach-button').then((m) => ({ default: m.ImageAttachButton })),
+  { ssr: false, loading: () => null },
+);
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -101,6 +112,7 @@ export const JournalPanel = memo(function JournalPanel({
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [saveError, setSaveError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dateSwipeRef = useRef<HTMLDivElement>(null);
   const saveFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoNotifyAt = useRef(0);
   const autoNotifyKey = useRef('');
@@ -424,6 +436,13 @@ export const JournalPanel = memo(function JournalPanel({
     selectDate(d.toISOString().slice(0, 10));
   };
 
+  useSwipe(dateSwipeRef, {
+    onSwipe: (dir) => {
+      if (dir === 'left') nextDay();
+      else if (dir === 'right') prevDay();
+    },
+  });
+
   const importObsidian = async (e: ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files?.length) return;
@@ -468,9 +487,9 @@ export const JournalPanel = memo(function JournalPanel({
     }
   };
 
-  // writing-first: 입력칸은 중간 높이로 두어 한눈에 들어오게 (상단 여백·태그까지 한 화면)
+  // P42: 모바일에서는 에디터가 뷰포트 대부분을 차지
   const editorClass = writingFirst
-    ? 'h-[min(18rem,38vh)] max-h-[18rem] min-h-[12rem] field-sizing-fixed resize-none border-0 focus-visible:ring-0 text-[15px] leading-relaxed p-0 font-mono lg:h-[min(20rem,40vh)] lg:max-h-[20rem]'
+    ? 'h-[calc(100dvh-13.5rem)] max-h-none min-h-[min(70dvh,36rem)] field-sizing-fixed resize-none border-0 focus-visible:ring-0 text-base leading-relaxed p-0 font-mono md:h-[min(18rem,38vh)] md:max-h-[18rem] md:min-h-[12rem] md:text-[15px] lg:h-[min(20rem,40vh)] lg:max-h-[20rem]'
     : 'min-h-[400px] resize-none border-0 focus-visible:ring-0 text-[15px] leading-relaxed p-0 font-mono';
 
   return (
@@ -495,7 +514,11 @@ export const JournalPanel = memo(function JournalPanel({
               : 'flex items-center justify-between p-4 border-b border-gray-50 dark:border-gray-800'
           }
         >
-          <div className={`flex items-center ${writingFirst ? 'gap-1.5' : 'gap-3'}`}>
+          <div
+            ref={dateSwipeRef}
+            className={`flex items-center ${writingFirst ? 'gap-1.5' : 'gap-3'} touch-pan-y`}
+            title="좌우로 쓸어 날짜 이동"
+          >
             <Button
               variant="ghost"
               size="icon"
@@ -678,6 +701,16 @@ export const JournalPanel = memo(function JournalPanel({
         <div className={writingFirst ? 'shrink-0 px-3 pt-2 sm:px-4' : 'p-4'}>
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
             <PresenceBar roomId={`journal:${date}`} tab="journal" user={collabUser} />
+            <div className="flex flex-wrap items-center gap-1">
+              <VoiceInputButton
+                onTranscript={(text) =>
+                  setDraft((prev) => (prev.trim() ? `${prev.replace(/\s*$/, '')}\n${text}` : text))
+                }
+              />
+              <ImageAttachButton
+                onInsert={(md) => setDraft((prev) => `${prev}${md}`)}
+              />
+            </div>
           </div>
           <label htmlFor="journal-draft" className="sr-only">
             일지 본문

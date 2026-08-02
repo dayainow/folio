@@ -1,10 +1,16 @@
 /**
- * Folio custom service worker additions (push · notification click)
+ * Folio custom service worker (push · notification · Background Sync)
  * @ducanh2912/next-pwa customWorkerSrc
  */
 /// <reference lib="webworker" />
 
-declare const self: ServiceWorkerGlobalScope
+declare const self: ServiceWorkerGlobalScope & {
+  registration: ServiceWorkerRegistration & {
+    sync?: { register: (tag: string) => Promise<void> }
+  }
+}
+
+const SYNC_TAG = 'folio-sync-queue'
 
 self.addEventListener('push', (event) => {
   let title = 'Folio'
@@ -57,6 +63,28 @@ self.addEventListener('notificationclick', (event) => {
         }
       }
       await self.clients.openWindow(target)
+    })(),
+  )
+})
+
+/** P42 — Background Sync: 클라이언트가 큐를 flush 하도록 메시지 */
+self.addEventListener('sync', (event) => {
+  const syncEvent = event as Event & { tag: string; waitUntil: (p: Promise<unknown>) => void }
+  if (syncEvent.tag !== SYNC_TAG) return
+  syncEvent.waitUntil(
+    (async () => {
+      const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+      for (const client of clients) {
+        client.postMessage({ type: 'folio-background-sync', tag: SYNC_TAG })
+      }
+      if (clients.length === 0) {
+        await self.registration.showNotification('Folio 동기화', {
+          body: '네트워크가 복구되었습니다. Folio를 열어 오프라인 변경을 동기화하세요.',
+          icon: '/icons/icon-192.png',
+          data: { url: '/' },
+          tag: 'folio-sync',
+        })
+      }
     })(),
   )
 })

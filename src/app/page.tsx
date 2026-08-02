@@ -17,6 +17,7 @@ import { FullExportButton } from '@/components/full-export-button';
 import { McpSyncButton } from '@/components/mcp-sync-button';
 import { getActiveTeamId } from '@/lib/team';
 import { parseFolioDeepLink } from '@/lib/folio-links';
+import { useSwipe } from '@/hooks/use-swipe';
 import { Activity, BookOpen, PanelRight, Users, X } from 'lucide-react';
 
 const PanelFallback = ({ label }: { label: string }) => (
@@ -90,6 +91,8 @@ const PwaInstallPrompt = dynamic(
 
 type TabValue = 'journal' | 'docs' | 'board' | 'process';
 
+const TAB_ORDER: TabValue[] = ['journal', 'docs', 'board', 'process'];
+
 export default function Home() {
   const [email, setEmail] = useState<string | null>(null);
   const [authReady, setAuthReady] = useState(false);
@@ -108,6 +111,30 @@ export default function Home() {
   );
   const mainRef = useRef<HTMLElement>(null);
   const panelFocusRef = useRef<HTMLDivElement>(null);
+  const swipeRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onOnline = () => {
+      void import('@/lib/offline-sync').then(({ syncWhenOnline }) => syncWhenOnline());
+    };
+    window.addEventListener('online', onOnline);
+    if (navigator.onLine) {
+      window.setTimeout(onOnline, 1500);
+    }
+    return () => window.removeEventListener('online', onOnline);
+  }, []);
+
+  // P42 — Background Sync → 클라이언트 flush
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+    const onMsg = (event: MessageEvent) => {
+      if (event.data?.type === 'folio-background-sync') {
+        void import('@/lib/offline-sync').then(({ syncWhenOnline }) => syncWhenOnline());
+      }
+    };
+    navigator.serviceWorker.addEventListener('message', onMsg);
+    return () => navigator.serviceWorker.removeEventListener('message', onMsg);
+  }, []);
 
   const handleActiveTeamChange = useCallback((teamId: string | null) => {
     setActiveTeamIdState(teamId);
@@ -132,6 +159,15 @@ export default function Home() {
       first?.focus();
     }, 0);
   }, []);
+
+  useSwipe(swipeRef, {
+    onSwipe: (dir) => {
+      const idx = TAB_ORDER.indexOf(tab);
+      if (idx < 0) return;
+      if (dir === 'left' && idx < TAB_ORDER.length - 1) handleTabChange(TAB_ORDER[idx + 1]!);
+      if (dir === 'right' && idx > 0) handleTabChange(TAB_ORDER[idx - 1]!);
+    },
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -195,17 +231,6 @@ export default function Home() {
       window.history.replaceState({}, '', url.pathname);
     }, 0);
     return () => window.clearTimeout(handle);
-  }, []);
-
-  useEffect(() => {
-    const onOnline = () => {
-      void import('@/lib/offline-sync').then(({ syncWhenOnline }) => syncWhenOnline());
-    };
-    window.addEventListener('online', onOnline);
-    if (navigator.onLine) {
-      window.setTimeout(onOnline, 1500);
-    }
-    return () => window.removeEventListener('online', onOnline);
   }, []);
 
   const handleSignOut = async () => {
@@ -432,6 +457,7 @@ export default function Home() {
           <PwaInstallPrompt />
 
           <div ref={panelFocusRef}>
+            <div ref={swipeRef} className="touch-pan-y">
             <Tabs value={tab} onValueChange={handleTabChange} className="w-full">
               <TabsContent value="journal" className="mt-0">
                 <Tabs defaultValue="journal-write" className="w-full">
@@ -500,6 +526,7 @@ export default function Home() {
                 <BeaconPanel />
               </TabsContent>
             </Tabs>
+            </div>
           </div>
         </main>
 
@@ -539,7 +566,14 @@ export default function Home() {
         </div>
       )}
 
-      <MobileNav value={tab} onChange={(v) => handleTabChange(v)} />
+      <MobileNav
+        value={tab}
+        onChange={(v) => handleTabChange(v)}
+        onWrite={() => {
+          handleTabChange('journal');
+          setFocusJournalDate(new Date().toISOString().slice(0, 10));
+        }}
+      />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Download, Bell, BellOff, X } from 'lucide-react'
+import { Download, Bell, BellOff, X, Share } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   getPushConsent,
@@ -19,12 +19,44 @@ type BeforeInstallPromptEvent = Event & {
 }
 
 const INSTALL_DISMISS_KEY = 'folio_pwa_install_dismissed'
+const INSTALL_DISMISS_AT_KEY = 'folio_pwa_install_dismissed_at'
+/** 닫은 뒤 7일 지나면 다시 안내 */
+const DISMISS_TTL_MS = 7 * 24 * 60 * 60 * 1000
 
-/** PWA 설치 안내 + 푸시 알림 동의 — hydrate 전에는 렌더하지 않아 CLS 방지 */
+function isIosSafari(): boolean {
+  if (typeof navigator === 'undefined') return false
+  const ua = navigator.userAgent
+  const iOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  const webkit = /WebKit/.test(ua)
+  const criOS = /CriOS|FxiOS|EdgiOS/.test(ua)
+  return iOS && webkit && !criOS
+}
+
+function isStandalone(): boolean {
+  if (typeof window === 'undefined') return false
+  return (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (navigator as Navigator & { standalone?: boolean }).standalone === true
+  )
+}
+
+function isDismissFresh(): boolean {
+  try {
+    if (localStorage.getItem(INSTALL_DISMISS_KEY) !== '1') return false
+    const at = Number(localStorage.getItem(INSTALL_DISMISS_AT_KEY) || 0)
+    if (!at) return true
+    return Date.now() - at < DISMISS_TTL_MS
+  } catch {
+    return false
+  }
+}
+
+/** PWA 설치 안내 + 푸시 — P42: iOS 안내 · 지연 표시 · 모바일 sticky */
 export function PwaInstallPrompt() {
   const deferred = useRef<BeforeInstallPromptEvent | null>(null)
   const [ready, setReady] = useState(false)
   const [canInstall, setCanInstall] = useState(false)
+  const [showIosHint, setShowIosHint] = useState(false)
   const [dismissed, setDismissed] = useState(true)
   const [consent, setConsent] = useState<PushConsent>('unknown')
   const [pushBusy, setPushBusy] = useState(false)
@@ -32,10 +64,13 @@ export function PwaInstallPrompt() {
 
   useEffect(() => {
     const handle = window.setTimeout(() => {
-      setDismissed(localStorage.getItem(INSTALL_DISMISS_KEY) === '1')
+      const dismissedFresh = isDismissFresh()
+      setDismissed(dismissedFresh)
       setConsent(getPushConsent())
+      const ios = isIosSafari() && !isStandalone()
+      setShowIosHint(ios && !dismissedFresh)
       setReady(true)
-    }, 0)
+    }, 1200)
 
     const onBip = (e: Event) => {
       e.preventDefault()
@@ -52,25 +87,49 @@ export function PwaInstallPrompt() {
     }
   }, [])
 
-  // 아직 결정하지 않은 경우(default)에만 푸시 안내 — unknown/granted/denied는 배너로 밀지 않음
-  const showInstall = ready && canInstall && !dismissed
+  const showInstall = ready && ((canInstall && !dismissed) || showIosHint)
   const showPush = ready && consent === 'default'
 
   if (!showInstall && !showPush) return null
+
+  const dismissInstall = () => {
+    try {
+      localStorage.setItem(INSTALL_DISMISS_KEY, '1')
+      localStorage.setItem(INSTALL_DISMISS_AT_KEY, String(Date.now()))
+    } catch {
+      /* ignore */
+    }
+    setDismissed(true)
+    setShowIosHint(false)
+    setPushConsent(getPushConsent())
+  }
 
   return (
     <div
       role="region"
       aria-label="앱 설치 및 알림"
-      className="mb-4 rounded-2xl border border-gray-100 dark:border-gray-800 bg-card px-4 py-3 shadow-sm"
+      className={cn(
+        'mb-4 rounded-2xl border border-gray-100 bg-card px-4 py-3 shadow-sm dark:border-gray-800',
+        'md:static',
+        'max-md:sticky max-md:top-12 max-md:z-40 max-md:mb-3',
+      )}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-1">
-          {showInstall && (
+          {showInstall && canInstall && (
             <>
               <p className="text-sm font-medium tracking-tight">홈 화면에 추가</p>
               <p className="text-[11px] text-muted-foreground">
-                Folio를 앱처럼 설치하면 오프라인에서도 일지·문서를 열 수 있습니다.
+                Folio를 앱처럼 설치하면 오프라인에서도 일지·문서를 작성·동기화할 수 있습니다.
+              </p>
+            </>
+          )}
+          {showInstall && showIosHint && !canInstall && (
+            <>
+              <p className="text-sm font-medium tracking-tight">iPhone에 설치</p>
+              <p className="text-[11px] leading-relaxed text-muted-foreground">
+                Safari 하단 <Share className="mx-0.5 inline h-3 w-3" aria-hidden /> 공유 →{' '}
+                <strong>홈 화면에 추가</strong>를 선택하세요.
               </p>
             </>
           )}
@@ -80,14 +139,14 @@ export function PwaInstallPrompt() {
                 푸시 알림
               </p>
               <p className="text-[11px] text-muted-foreground">
-                저장 완료 · 팀 초대 · Gate 변경을 브라우저 알림으로 받습니다. (동의 필요)
+                저장 완료 · 동기화 복구 · Gate 변경을 알림으로 받습니다.
               </p>
             </>
           )}
           {pushMsg && <p className="text-[11px] text-muted-foreground">{pushMsg}</p>}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {showInstall && (
+          {showInstall && canInstall && (
             <Button
               type="button"
               size="sm"
@@ -153,11 +212,7 @@ export function PwaInstallPrompt() {
               variant="ghost"
               className="h-11 w-11 min-h-[44px] min-w-[44px]"
               aria-label="설치 안내 닫기"
-              onClick={() => {
-                localStorage.setItem(INSTALL_DISMISS_KEY, '1')
-                setDismissed(true)
-                setPushConsent(getPushConsent())
-              }}
+              onClick={dismissInstall}
             >
               <X className="h-4 w-4" />
             </Button>

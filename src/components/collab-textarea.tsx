@@ -119,6 +119,10 @@ export function CollabTextarea({
         className={cn(className)}
         disabled={disabled}
         aria-describedby={ariaDescribedBy}
+        enterKeyHint="enter"
+        autoCapitalize="sentences"
+        autoCorrect="on"
+        spellCheck
       />
       {syncLabel ? (
         <span className="pointer-events-none absolute bottom-2 right-2 rounded bg-background/80 px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-muted-foreground">

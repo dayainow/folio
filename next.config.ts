@@ -24,18 +24,30 @@ const withPWA = withPWAInit({
     disableDevLogs: true,
     runtimeCaching: [
       {
+        // P42 — 정적 자산/스크립트/폰트: 장기 CacheFirst
         urlPattern: ({ request }: { request: Request }) =>
           request.destination === 'style' ||
           request.destination === 'script' ||
           request.destination === 'worker' ||
-          request.destination === 'font' ||
-          request.destination === 'image',
+          request.destination === 'font',
         handler: 'CacheFirst',
         options: {
           cacheName: 'folio-static-assets',
           expiration: {
-            maxEntries: 128,
+            maxEntries: 160,
             maxAgeSeconds: 30 * 24 * 60 * 60,
+          },
+        },
+      },
+      {
+        // P42 — 이미지: StaleWhileRevalidate (lazy + 빠른 재방문)
+        urlPattern: ({ request }: { request: Request }) => request.destination === 'image',
+        handler: 'StaleWhileRevalidate',
+        options: {
+          cacheName: 'folio-images',
+          expiration: {
+            maxEntries: 96,
+            maxAgeSeconds: 14 * 24 * 60 * 60,
           },
         },
       },
@@ -44,10 +56,10 @@ const withPWA = withPWAInit({
         handler: 'NetworkFirst',
         options: {
           cacheName: 'folio-api',
-          networkTimeoutSeconds: 8,
+          networkTimeoutSeconds: 6,
           expiration: {
             maxEntries: 64,
-            maxAgeSeconds: 24 * 60 * 60,
+            maxAgeSeconds: 12 * 60 * 60,
           },
         },
       },
@@ -56,9 +68,9 @@ const withPWA = withPWAInit({
         handler: 'NetworkFirst',
         options: {
           cacheName: 'folio-pages',
-          networkTimeoutSeconds: 5,
+          networkTimeoutSeconds: 4,
           expiration: {
-            maxEntries: 32,
+            maxEntries: 40,
             maxAgeSeconds: 7 * 24 * 60 * 60,
           },
         },
@@ -85,8 +97,10 @@ const nextConfig: NextConfig = {
       'lucide-react',
       'recharts',
       '@dnd-kit/core',
+      '@dnd-kit/sortable',
       '@supabase/supabase-js',
       '@supabase/ssr',
+      'yjs',
     ],
   },
   webpack: (config, { isServer, webpack }) => {

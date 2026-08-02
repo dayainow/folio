@@ -103,6 +103,10 @@ function MarkdownPreview({
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
+          img: ({ src, alt }) => (
+            // eslint-disable-next-line @next/next/no-img-element -- 마크다운 data URL / 외부 이미지
+            <img src={src} alt={alt ?? ''} loading="lazy" decoding="async" />
+          ),
           a: ({ href, children }) => {
             if (href?.startsWith('#doc:') && onOpenDoc) {
               const id = href.slice('#doc:'.length);

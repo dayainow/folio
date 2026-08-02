@@ -80,6 +80,25 @@ export async function enqueueSync(
   }
   await db.put('syncQueue', row)
   window.dispatchEvent(new CustomEvent('folio-sync-queue', { detail: { count: await countSyncQueue() } }))
+
+  // P42 — Background Sync 등록 (지원 브라우저)
+  try {
+    const nav = navigator as Navigator & {
+      serviceWorker?: ServiceWorkerContainer
+    }
+    const reg = await nav.serviceWorker?.ready
+    const syncManager = (
+      reg as ServiceWorkerRegistration & {
+        sync?: { register: (tag: string) => Promise<void> }
+      }
+    )?.sync
+    if (syncManager) {
+      await syncManager.register('folio-sync-queue')
+    }
+  } catch {
+    /* SyncManager 미지원 · 권한 등 */
+  }
+
   return row
 }
 

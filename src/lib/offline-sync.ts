@@ -33,6 +33,7 @@ export function subscribeOnlineStatus(
 
   const onOnline = () => {
     void emit()
+    showAppToast('온라인으로 복구됨 · 동기화 중…')
     void syncWhenOnline()
   }
   const onOffline = () => void emit()
@@ -126,6 +127,14 @@ export async function syncWhenOnline(): Promise<void> {
     const { flushed, failed } = await flushSyncQueue(handleSyncItem)
     if (flushed > 0) {
       showAppToast(`오프라인 변경 ${flushed}건 동기화됨`)
+      void import('@/lib/push-notifications').then(({ showFolioPush }) =>
+        showFolioPush({
+          title: '동기화 완료',
+          body: `오프라인 변경 ${flushed}건이 반영되었습니다.`,
+          url: '/',
+          tag: 'folio-sync-done',
+        }),
+      )
     }
     if (failed > 0) {
       showAppToast(`동기화 실패 ${failed}건 · 다음에 재시도`)
