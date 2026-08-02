@@ -22,6 +22,8 @@ export type PresenceUser = {
   tab?: string
   roomId: string
   cursor?: PresenceCursor | null
+  /** P43 — 타이핑 중 */
+  typing?: boolean
   updatedAt: string
 }
 
@@ -73,7 +75,7 @@ export function joinPresenceRoom(options: {
   self: Omit<PresenceUser, 'roomId' | 'updatedAt' | 'color'> & { color?: string }
   onPeers: (peers: PresenceUser[]) => void
 }): {
-  updateMeta: (patch: Partial<Pick<PresenceUser, 'cursor' | 'tab' | 'name'>>) => void
+  updateMeta: (patch: Partial<Pick<PresenceUser, 'cursor' | 'tab' | 'name' | 'typing'>>) => void
   leave: PresenceUnsubscribe
   transport: 'supabase' | 'broadcast'
 } {

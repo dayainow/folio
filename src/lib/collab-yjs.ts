@@ -1,23 +1,29 @@
 /**
- * P41 — Yjs CRDT 실시간 동시 편집
- * Supabase Realtime broadcast 또는 BroadcastChannel로 업데이트 동기화.
+ * P41/P43 — Yjs CRDT 실시간 동시 편집
+ * · 구간 치환 setText (충돌 완화)
+ * · UndoManager 되돌리기
+ * · Supabase Realtime / BroadcastChannel 동기화
  */
 'use client'
 
 import * as Y from 'yjs'
 import { Awareness, encodeAwarenessUpdate, applyAwarenessUpdate, removeAwarenessStates } from 'y-protocols/awareness'
 import { createBrowserSupabaseClient } from '@/lib/supabase'
+import { findReplaceRange } from '@/lib/collab-history'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 
 export type CollabSession = {
   doc: Y.Doc
   awareness: Awareness
   ytext: Y.Text
-  /** 원격/로컬 변경 구독 — 반환값으로 해제 */
+  undoManager: Y.UndoManager
   observeText: (cb: (text: string, origin: 'local' | 'remote') => void) => () => void
-  /** React controlled value → Y.Text (전체 치환, MVP) */
   setText: (next: string) => void
   getText: () => string
+  undo: () => void
+  redo: () => void
+  canUndo: () => boolean
+  canRedo: () => boolean
   destroy: () => void
   transport: 'supabase' | 'broadcast' | 'local'
 }
@@ -54,6 +60,10 @@ export function createCollabSession(options: {
   const doc = new Y.Doc()
   const awareness = new Awareness(doc)
   const ytext = doc.getText('content')
+  const undoManager = new Y.UndoManager(ytext, {
+    trackedOrigins: new Set(['local-set', null]),
+    captureTimeout: 400,
+  })
 
   awareness.setLocalStateField('user', { userId, name: userName, color })
 
@@ -130,7 +140,6 @@ export function createCollabSession(options: {
         .subscribe((status) => {
           if (status === 'SUBSCRIBED') {
             transport = 'supabase'
-            // 상태 스냅샷을 한 번 전파
             broadcastUpdate(Y.encodeStateAsUpdate(doc))
             broadcastAwareness([doc.clientID])
           }
@@ -160,15 +169,29 @@ export function createCollabSession(options: {
     doc,
     awareness,
     ytext,
+    undoManager,
     transport,
     getText: () => ytext.toString(),
     setText(next: string) {
       const cur = ytext.toString()
-      if (cur === next) return
+      const range = findReplaceRange(cur, next)
+      if (!range) return
       doc.transact(() => {
-        ytext.delete(0, ytext.length)
-        if (next) ytext.insert(0, next)
+        if (range.deleteLen > 0) ytext.delete(range.start, range.deleteLen)
+        if (range.insert) ytext.insert(range.start, range.insert)
       }, 'local-set')
+    },
+    undo() {
+      undoManager.undo()
+    },
+    redo() {
+      undoManager.redo()
+    },
+    canUndo() {
+      return undoManager.canUndo()
+    },
+    canRedo() {
+      return undoManager.canRedo()
     },
     observeText(cb) {
       const handler = (_: Y.YTextEvent, tr: Y.Transaction) => {
@@ -180,6 +203,7 @@ export function createCollabSession(options: {
     },
     destroy() {
       doc.off('update', onDocUpdate)
+      undoManager.destroy()
       removeAwarenessStates(awareness, [doc.clientID], 'local')
       awareness.destroy()
       void channel?.unsubscribe()

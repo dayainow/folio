@@ -104,6 +104,19 @@ export function addComment(input: {
     meta: { commentId: comment.id, mentions: comment.mentions },
   })
 
+  if (comment.mentions.length > 0) {
+    void import('@/lib/collab-notify').then(({ notifyMentions }) =>
+      notifyMentions({
+        mentions: comment.mentions,
+        authorId: input.authorId,
+        authorName: input.authorName,
+        targetKind: input.target.kind,
+        targetId: input.target.id,
+        excerpt: comment.body,
+      }),
+    )
+  }
+
   return comment
 }
 

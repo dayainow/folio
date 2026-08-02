@@ -33,13 +33,16 @@ interface TeamSidebarProps {
 }
 
 function roleBadge(role: TeamRole) {
+  const normalized = role === 'member' ? 'editor' : role;
   const tone =
-    role === 'owner'
+    normalized === 'owner'
       ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
-      : role === 'admin'
+      : normalized === 'admin'
         ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
-        : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300';
-  return <Badge className={`text-[10px] ${tone}`}>{role}</Badge>;
+        : normalized === 'viewer'
+          ? 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300'
+          : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300';
+  return <Badge className={`text-[10px] ${tone}`}>{normalized}</Badge>;
 }
 
 export function TeamSidebar({
@@ -265,6 +268,10 @@ export function TeamSidebar({
                           className="rounded-lg bg-gray-50 dark:bg-gray-900 px-2.5 py-2 text-[11px]"
                         >
                           <div className="font-medium text-gray-700 dark:text-gray-200">{inv.email}</div>
+                          <div className="text-gray-400 mt-0.5 flex flex-wrap gap-1.5">
+                            <span className="uppercase">{inv.role}</span>
+                            <span>· 만료 {new Date(inv.expiresAt).toLocaleDateString('ko-KR')}</span>
+                          </div>
                           <div className="text-gray-400 mt-0.5 truncate font-mono">{inv.token}</div>
                         </div>
                       ))}

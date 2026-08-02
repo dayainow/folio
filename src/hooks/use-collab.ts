@@ -45,9 +45,9 @@ export function usePresence(roomId: string | null, tab?: string) {
   const [peers, setPeers] = useState<PresenceUser[]>([])
   const [self, setSelf] = useState<CollabIdentity | null>(null)
   const [transport, setTransport] = useState<'supabase' | 'broadcast' | null>(null)
-  const updateRef = useRef<((patch: Partial<Pick<PresenceUser, 'cursor' | 'tab' | 'name'>>) => void) | null>(
-    null,
-  )
+  const updateRef = useRef<
+    ((patch: Partial<Pick<PresenceUser, 'cursor' | 'tab' | 'name' | 'typing'>>) => void) | null
+  >(null)
 
   useEffect(() => {
     if (!roomId) {

@@ -136,6 +136,19 @@ export default function Home() {
     return () => navigator.serviceWorker.removeEventListener('message', onMsg);
   }, []);
 
+  // P43 — 팀 협업 알림 (멘션 · 초대 · Gate)
+  useEffect(() => {
+    let unsub: (() => void) | undefined;
+    void import('@/lib/collab-notify').then(({ subscribeTeamNotify }) => {
+      unsub = subscribeTeamNotify({
+        userId: email ?? undefined,
+        email,
+        name: email?.split('@')[0] ?? null,
+      });
+    });
+    return () => unsub?.();
+  }, [email]);
+
   const handleActiveTeamChange = useCallback((teamId: string | null) => {
     setActiveTeamIdState(teamId);
   }, []);

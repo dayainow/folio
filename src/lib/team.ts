@@ -5,9 +5,35 @@
  */
 import { requireAuthUser } from '@/lib/supabase';
 
-export type TeamRole = 'owner' | 'admin' | 'member';
-export type SharePermission = 'view' | 'edit';
-export type InviteStatus = 'pending' | 'accepted' | 'revoked' | 'expired';
+export type TeamRole = 'owner' | 'admin' | 'editor' | 'viewer' | 'member'
+export type SharePermission = 'view' | 'edit'
+export type InviteStatus = 'pending' | 'accepted' | 'revoked' | 'expired'
+
+/** UI용 역할 — legacy `member`는 editor로 취급 */
+export type TeamRoleUi = 'owner' | 'admin' | 'editor' | 'viewer'
+
+export function normalizeTeamRole(role: TeamRole | string): TeamRoleUi {
+  if (role === 'owner' || role === 'admin' || role === 'editor' || role === 'viewer') return role
+  if (role === 'member') return 'editor'
+  return 'viewer'
+}
+
+export function canEditWithRole(role: TeamRole | string): boolean {
+  const r = normalizeTeamRole(role)
+  return r === 'owner' || r === 'admin' || r === 'editor'
+}
+
+export function canAdminWithRole(role: TeamRole | string): boolean {
+  const r = normalizeTeamRole(role)
+  return r === 'owner' || r === 'admin'
+}
+
+export const TEAM_ROLE_LABELS: Record<TeamRoleUi, string> = {
+  owner: 'Owner',
+  admin: 'Admin',
+  editor: 'Editor',
+  viewer: 'Viewer',
+}
 
 export interface Team {
   id: string;
@@ -65,6 +91,7 @@ export function setActiveTeamId(teamId: string | null) {
   try {
     if (!teamId) localStorage.removeItem(ACTIVE_TEAM_KEY);
     else localStorage.setItem(ACTIVE_TEAM_KEY, teamId);
+    window.dispatchEvent(new CustomEvent('folio-active-team'));
   } catch {
     /* ignore */
   }
@@ -150,46 +177,94 @@ export async function createTeam(name: string): Promise<Team> {
   return rowToTeam(data as TeamRow);
 }
 
-/** 이메일 초대 (admin/owner) */
+/** 이메일 초대 (admin/owner) — expiresInDays 기본 7일 */
 export async function inviteMember(
   teamId: string,
   email: string,
-  role: Exclude<TeamRole, 'owner'> = 'member',
+  role: Exclude<TeamRole, 'owner'> = 'editor',
+  expiresInDays = 7,
 ): Promise<Invitation> {
-  const normalized = email.trim().toLowerCase();
-  if (!normalized.includes('@')) throw new Error('유효한 이메일을 입력하세요.');
+  const normalized = email.trim().toLowerCase()
+  if (!normalized.includes('@')) throw new Error('유효한 이메일을 입력하세요.')
 
-  const { supabase, userId } = await requireAuthUser();
+  const days = Math.min(90, Math.max(1, Math.floor(expiresInDays)))
+  const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
+  // DB 레거시: member 허용 · editor/viewer는 P43 마이그레이션 후
+  const dbRole = role === 'member' ? 'member' : role
+
+  const { supabase, userId } = await requireAuthUser()
   const { data, error } = await supabase
     .from('invitations')
     .insert({
       team_id: teamId,
       email: normalized,
-      role,
+      role: dbRole,
       invited_by: userId,
       status: 'pending',
+      expires_at: expiresAt,
     })
     .select('id, team_id, email, role, token, status, expires_at, created_at')
-    .single();
+    .single()
 
-  if (error) throw error;
-  return rowToInvite(data as InviteRow);
+  if (error) throw error
+  return rowToInvite(data as InviteRow)
+}
+
+/** 초대 링크 (토큰 기반) */
+export function buildInviteLink(token: string): string {
+  if (typeof window === 'undefined') return `/?invite=${encodeURIComponent(token)}`
+  const url = new URL(window.location.origin)
+  url.searchParams.set('invite', token)
+  return url.toString()
+}
+
+/** 초대 만료 여부 */
+export function isInviteExpired(invite: Pick<Invitation, 'expiresAt' | 'status'>): boolean {
+  if (invite.status === 'expired') return true
+  const t = Date.parse(invite.expiresAt)
+  if (Number.isNaN(t)) return false
+  return t <= Date.now()
+}
+
+/** 멤버 역할 변경 (owner/admin) */
+export async function updateMemberRole(
+  teamId: string,
+  userId: string,
+  role: Exclude<TeamRole, 'owner'>,
+): Promise<void> {
+  const { supabase } = await requireAuthUser()
+  const { error } = await supabase
+    .from('team_members')
+    .update({ role })
+    .eq('team_id', teamId)
+    .eq('user_id', userId)
+  if (error) throw error
 }
 
 /** 초대 토큰 수락 (RPC) */
 export async function acceptInvite(token: string): Promise<string> {
-  const trimmed = token.trim();
-  if (!trimmed) throw new Error('초대 토큰을 입력하세요.');
+  let trimmed = token.trim()
+  // 전체 초대 링크에서 토큰 추출
+  try {
+    if (trimmed.includes('invite=')) {
+      const u = new URL(trimmed, typeof window !== 'undefined' ? window.location.origin : 'http://localhost')
+      trimmed = u.searchParams.get('invite')?.trim() || trimmed
+    }
+  } catch {
+    const m = /invite=([^&\s]+)/.exec(trimmed)
+    if (m?.[1]) trimmed = decodeURIComponent(m[1])
+  }
+  if (!trimmed) throw new Error('초대 토큰을 입력하세요.')
 
-  const { supabase } = await requireAuthUser();
+  const { supabase } = await requireAuthUser()
   const { data, error } = await supabase.rpc('accept_team_invite', {
     invite_token: trimmed,
-  });
+  })
 
-  if (error) throw error;
-  const teamId = data as string;
-  setActiveTeamId(teamId);
-  return teamId;
+  if (error) throw error
+  const teamId = data as string
+  setActiveTeamId(teamId)
+  return teamId
 }
 
 /** 내가 속한 팀 목록 */

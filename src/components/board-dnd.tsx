@@ -39,7 +39,9 @@ import { loadFavorites, saveFavorites, toggleFavorite } from '@/lib/favorites';
 import { TagCloud, buildTagCounts } from '@/components/tag-cloud';
 import { recordBoardStatusChange } from '@/lib/analytics';
 import { ExportMenu } from '@/components/export-menu';
+import { ShareResourceButton } from '@/components/share-resource';
 import { downloadText, tasksToCsv, tasksToJson } from '@/lib/export';
+import { getActiveTeamId } from '@/lib/team';
 
 const STATUS_ORDER: Task['status'][] = ['backlog', 'in_progress', 'review', 'done'];
 
@@ -827,6 +829,11 @@ export function BoardDndPanel({
               },
             },
           ]}
+        />
+        <ShareResourceButton
+          kind="board"
+          resourceId={getActiveTeamId() || 'personal-board'}
+          resourceLabel="일정 보드"
         />
         <Button
           onClick={() => void syncFromJira()}

@@ -423,6 +423,12 @@ export function BeaconPanel() {
             tag: 'gate-change',
           }),
         );
+        void import('@/lib/collab-notify').then(({ notifyGateTeamChange }) =>
+          notifyGateTeamChange({
+            gateLabel: `자동 PASS: ${passed}`,
+            status: 'pass',
+          }),
+        );
         // P39 — Gate 변경 → Discord/Slack + 프로세스 갱신 힌트
         void fetch('/api/workflow/events', {
           method: 'POST',
@@ -672,6 +678,12 @@ export function BeaconPanel() {
           body: `자동 PASS: ${gated.autoPassed.map((id) => id.toUpperCase()).join(', ')}`,
           url: '/?tab=process',
           tag: 'gate-change',
+        }),
+      );
+      void import('@/lib/collab-notify').then(({ notifyGateTeamChange }) =>
+        notifyGateTeamChange({
+          gateLabel: `자동 PASS: ${gated.autoPassed.map((id) => id.toUpperCase()).join(', ')}`,
+          status: 'pass',
         }),
       );
     }

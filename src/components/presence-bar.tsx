@@ -18,6 +18,7 @@ export type PresenceBarProps = {
 
 export function PresenceBar({ roomId, tab, className, user }: PresenceBarProps) {
   const [peers, setPeers] = useState<PresenceUser[]>([])
+  const [typingPeers, setTypingPeers] = useState<PresenceUser[]>([])
   const [transport, setTransport] = useState('—')
 
   const self = useMemo(() => {
@@ -41,13 +42,21 @@ export function PresenceBar({ roomId, tab, className, user }: PresenceBarProps) 
         if (alive) setPeers(next)
       },
     })
-    // transport는 구독 콜백 경로와 분리해 microtask로 반영
+    // P43 — 에디터 선택 룸에서 타이핑 상태 수집
+    const sel = joinPresenceRoom({
+      roomId: `sel:${roomId}`,
+      self,
+      onPeers: (next) => {
+        if (alive) setTypingPeers(next.filter((p) => p.typing))
+      },
+    })
     queueMicrotask(() => {
       if (alive) setTransport(session.transport)
     })
     return () => {
       alive = false
       session.leave()
+      sel.leave()
     }
   }, [roomId, self])
 
@@ -86,6 +95,16 @@ export function PresenceBar({ roomId, tab, className, user }: PresenceBarProps) 
         )}
       </div>
       {peers.length === 0 && <span className="text-[10px] opacity-70">혼자 편집 중</span>}
+      {typingPeers.length > 0 && (
+        <span className="flex items-center gap-1 text-[10px] text-foreground" aria-live="polite">
+          <span className="inline-flex gap-0.5" aria-hidden>
+            <span className="h-1 w-1 animate-bounce rounded-full bg-current [animation-delay:0ms]" />
+            <span className="h-1 w-1 animate-bounce rounded-full bg-current [animation-delay:120ms]" />
+            <span className="h-1 w-1 animate-bounce rounded-full bg-current [animation-delay:240ms]" />
+          </span>
+          {typingPeers.map((p) => p.name).join(', ')} 입력 중
+        </span>
+      )}
     </div>
   )
 }

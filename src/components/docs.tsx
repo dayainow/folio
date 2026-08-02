@@ -31,6 +31,7 @@ import { recordFolioTimelineEvent } from '@/lib/beacon-timeline-consent';
 import { findBacklinks, wikiLinksToMarkdown } from '@/lib/link-parser';
 import { WikiLinkTextarea } from '@/components/wiki-link-textarea';
 import { ExportMenu } from '@/components/export-menu';
+import { ShareResourceButton } from '@/components/share-resource';
 import { PresenceBar } from '@/components/presence-bar';
 import { CollabTextarea } from '@/components/collab-textarea';
 import { DocCommentsPanel } from '@/components/doc-comments';
@@ -688,6 +689,13 @@ export const DocsPanel = memo(function DocsPanel({
                 ) : (
                   <>
                     <Badge variant="outline">{docs.find(d => d.id === selectedId)?.category}</Badge>
+                    <ShareResourceButton
+                      kind="doc"
+                      resourceId={selectedId}
+                      resourceLabel={docs.find((d) => d.id === selectedId)?.title ?? '문서'}
+                      actorName={collabUser?.name}
+                      actorId={collabUser?.id}
+                    />
                     <ExportMenu
                       label="MD"
                       items={[
