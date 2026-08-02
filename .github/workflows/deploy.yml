@@ -1,6 +1,14 @@
-# Production deploy after merge to main (optional Vercel CLI).
-# Primary path: link the GitHub repo in Vercel Dashboard — Preview on PR, Production on main.
-# This workflow deploys only when VERCEL_TOKEN / VERCEL_ORG_ID / VERCEL_PROJECT_ID are set.
+# P40 — main 푸시 → Vercel Production (시크릿 있을 때)
+# Primary path: Vercel Git 연동 (PR→Preview, main→Production).
+# 이 워크플로우는 VERCEL_* 시크릿이 있을 때 CLI로 Production을 배포하고
+# 배포 후 /api/health · /api/runtime 을 검증합니다. 실패 시 rollback.yml 호출.
+#
+# Required secrets (optional — 없으면 skip):
+#   VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID
+# Optional:
+#   FOLIO_PRODUCTION_URL — 헬스체크 대상 (예: https://your-domain.com)
+# Env injection: vercel pull 이 Dashboard에 등록된 Production env를 사용.
+#   템플릿: .env.production.example (Dashboard에 수동 등록)
 
 name: Deploy
 
@@ -13,12 +21,40 @@ concurrency:
   group: deploy-production
   cancel-in-progress: false
 
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+  FOLIO_VERSION: "1.3.0-wip"
+
 jobs:
-  vercel-production:
-    name: Vercel Production
+  gate:
+    name: Preflight (lint · typecheck · qa · build)
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run qa:smoke
+      - run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-anon-key-placeholder
+          NEXT_PUBLIC_FOLIO_URL: http://localhost:3000
+          FOLIO_VERSION: ${{ env.FOLIO_VERSION }}
 
+  vercel-production:
+    name: Vercel Production
+    needs: gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    outputs:
+      deployed: ${{ steps.deploy.outputs.done }}
+      url: ${{ steps.deploy.outputs.url }}
     steps:
       - name: Check Vercel secrets
         id: creds
@@ -31,7 +67,7 @@ jobs:
             echo "ready=true" >> "$GITHUB_OUTPUT"
           else
             echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "Skipping Vercel CLI deploy (secrets not set). Use Vercel Git integration for main→Production."
+            echo "Skipping Vercel CLI deploy (secrets not set). Use Vercel Git integration."
           fi
 
       - name: Checkout
@@ -49,23 +85,62 @@ jobs:
         if: steps.creds.outputs.ready == 'true'
         run: npm install -g vercel@latest
 
-      - name: Pull Vercel env
+      - name: Pull Vercel Production env
         if: steps.creds.outputs.ready == 'true'
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
-      - name: Build
+      - name: Inject deploy metadata env
+        if: steps.creds.outputs.ready == 'true'
+        run: |
+          # Dashboard env가 소스 오브 트루스 (.env.production.example 참조).
+          # Actions에서는 빌드 메타만 보강한다.
+          mkdir -p .vercel
+          {
+            echo "FOLIO_VERSION=${{ env.FOLIO_VERSION }}"
+            echo "FOLIO_GIT_SHA=${{ github.sha }}"
+            echo "FOLIO_DEPLOY_SOURCE=github-actions"
+          } >> .vercel/.env.production.local || true
+          echo "Injected FOLIO_VERSION / FOLIO_GIT_SHA for this deploy"
+
+      - name: Build (prebuilt)
         if: steps.creds.outputs.ready == 'true'
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          FOLIO_VERSION: ${{ env.FOLIO_VERSION }}
 
-      - name: Deploy
+      - name: Deploy Production
+        id: deploy
         if: steps.creds.outputs.ready == 'true'
-        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+        run: |
+          URL=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "done=true" >> "$GITHUB_OUTPUT"
+          echo "Deployed: $URL"
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Post-deploy health check
+        id: health
+        if: steps.deploy.outputs.done == 'true'
+        env:
+          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
+          FOLIO_PRODUCTION_URL: ${{ secrets.FOLIO_PRODUCTION_URL }}
+        run: node scripts/post-deploy-health.mjs
+
+  rollback-on-failure:
+    name: Auto rollback (health failed after deploy)
+    needs: [gate, vercel-production]
+    if: >
+      always() &&
+      needs.vercel-production.result == 'failure' &&
+      needs.vercel-production.outputs.deployed == 'true'
+    uses: ./.github/workflows/rollback.yml
+    with:
+      reason: "deploy.yml health failure after production deploy ${{ github.sha }}"
+    secrets: inherit

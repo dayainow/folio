@@ -8,7 +8,7 @@
 |------|-----|
 | 버전 | **1.3.0-wip** |
 | Phase | Phase 12 |
-| 진행 중 | P39 Discord/GitHub 연동 고도화 |
+| 진행 중 | P40 자동 배포 파이프라인 고도화 |
 | 다음 | Phase 12 마무리 · 1.3.0 정식 |
 | 이어가기 | `origin/main` @ 1.3.0-wip |
 
@@ -63,19 +63,21 @@
 | P37 | 고급 분석 (생산성 스코어 & 종합 트렌드 차트) | `5a6e118` / 고도화 `86f05a8` |
 | P38 | Slack 연동 고도화 (Block Kit 리포트 전송) | `5a6e118` / 고도화 `86f05a8` |
 | — | Phase 11 완료 · 1.2.0 정식 릴리즈 | `86f05a8` |
-| P39 | Discord Embeds · GitHub PR/Board · workflow events | (본 커밋) |
+| P39 | Discord Embeds · GitHub PR/Board · workflow events | `905b74f` |
+| P40 | 자동 배포 파이프라인 (Vercel/Docker/GHCR/Actions) | (본 커밋) |
 
 ## 진행 중
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| P39 | Discord/GitHub 연동 고도화 | Embeds · Issue 메타 · PR→Done · Actions webhook |
+| P40 | 자동 배포 파이프라인 고도화 | CI · Deploy · Docker/GHCR · Rollback · Monitor |
 
 ## Phase 12 계획
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| P39 | Discord/GitHub 연동 고도화 | 🔄 Embeds · PR sync · workflow-events |
+| P39 | Discord/GitHub 연동 고도화 | ✅ Embeds · PR sync · workflow-events · `905b74f` |
+| P40 | 자동 배포 파이프라인 고도화 | 🔄 Vercel · Docker · GHCR · 롤백 |
 | — | 1.3.0 정식 | Phase 12 완료 시 |
 
 ## Phase 11 계획 (완료)
@@ -128,6 +130,13 @@
 | P22 | 운영 런북 | ✅ |
 
 ## 변경 이력
+
+### 1.3.0-wip — 2026-08-02 (P40 자동 배포 파이프라인)
+
+- GitHub Actions: `ci` · `deploy`(게이트+헬스) · `docker`(GHCR) · `rollback` · `monitor`
+- `vercel.json`: Preview 기본 배포 · Production 보호는 Dashboard(`main`) · health/runtime 헤더
+- Dockerfile: BuildKit npm/`.next` 캐시 · standalone runner · screenshots 컨텍스트 제외
+- `docs/runbooks/DEPLOY.md`: Vercel/Docker/GHCR 롤백 · Actions 자동 롤백 상세화
 
 ### 1.3.0-wip — 2026-08-02 (P39 Discord/GitHub 연동 고도화)
 

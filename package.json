@@ -13,6 +13,7 @@
     "perf:measure": "node scripts/perf-measure.mjs",
     "bundle:size": "node scripts/bundle-size.mjs",
     "qa:smoke": "node scripts/qa-smoke.mjs",
+    "deploy:health": "node scripts/post-deploy-health.mjs",
     "runbook:backup": "node scripts/runbook-backup.mjs",
     "runbook:restore": "node scripts/runbook-restore.mjs",
     "runbook:deploy": "node scripts/runbook-deploy.mjs",

@@ -218,16 +218,20 @@ docker images folio:local --format '{{.Size}}'
 
 ---
 
-## CI/CD (GitHub Actions)
+## CI/CD (GitHub Actions) — P40
 
-### Quality — `.github/workflows/ci.yml`
-
-`main` push / PR: lint · typecheck · qa:smoke · test · build
-
-### Deploy — `.github/workflows/deploy.yml`
+| 워크플로우 | 역할 |
+|-----------|------|
+| `ci.yml` | lint · typecheck · qa:smoke · test · build |
+| `deploy.yml` | main 게이트 → Vercel Production → health → 실패 시 자동 롤백 |
+| `docker.yml` | multi-stage 빌드 · **GHCR** 푸시 (BuildKit/GHA cache) |
+| `rollback.yml` | `vercel rollback` (수동 · deploy 실패 시) |
+| `monitor.yml` | 30분마다 `/api/health` · `/api/runtime` |
 
 Secrets `VERCEL_TOKEN` · `VERCEL_ORG_ID` · `VERCEL_PROJECT_ID` 가 있으면 CLI Production 배포.  
-없으면 **Vercel Git 연동**이 기본 경로.
+없으면 **Vercel Git 연동**이 기본 경로 (PR→Preview, `main`→Production).
+
+환경변수 템플릿: [.env.production.example](../.env.production.example) (Dashboard에 **참조 등록**).
 
 ---
 
@@ -241,19 +245,23 @@ Secrets `VERCEL_TOKEN` · `VERCEL_ORG_ID` · `VERCEL_PROJECT_ID` 가 있으면 C
 |------|-----------|
 | Vercel CLI | `npx vercel rollback` |
 | Vercel Dashboard | Deployments → 이전 배포 → **Promote to Production** |
+| Actions | `Rollback` workflow / deploy 실패 시 자동 |
 | Git | `git revert <sha> && git push origin main` |
+| GHCR | 이전 `sha-*` 태그로 pull · compose 기동 |
 
 ---
 
-## 체크리스트 (P27)
+## 체크리스트 (P27 · P40)
 
 - [ ] `.env.production.example` 기준으로 Vercel Production env 등록
+- [ ] Production Branch = `main` · (선택) Deployment Protection
 - [ ] Supabase 스키마 · Auth Redirect URL
 - [ ] Preview 스모크 → `main` 머지
 - [ ] `GET /api/health` · `/api/runtime` OK
+- [ ] (선택) `FOLIO_PRODUCTION_URL` 시크릿 → Monitor/Deploy health
 - [ ] (선택) 커스텀 도메인 Valid + SSL
-- [ ] (선택) Docker 이미지 build · healthy
-- [ ] 롤백 경로 숙지 (`vercel rollback` / Promote)
+- [ ] (선택) Docker/GHCR 이미지 build · healthy
+- [ ] 롤백 경로 숙지 (`vercel rollback` / Actions Rollback / Promote)
 
 ---
 

@@ -1,0 +1,105 @@
+# P40 — Vercel Production 자동/수동 롤백
+# 호출: workflow_dispatch · deploy.yml 실패 시 · 수동
+#
+# Required secrets: VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID
+# Optional: FOLIO_PRODUCTION_URL (헬스체크)
+
+name: Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: Rollback reason
+        required: false
+        default: manual
+      deployment_url:
+        description: Optional specific Vercel deployment URL/ID (empty = previous Production)
+        required: false
+        default: ""
+  workflow_call:
+    inputs:
+      reason:
+        description: Rollback reason
+        type: string
+        required: false
+        default: auto
+      deployment_url:
+        description: Optional deployment URL/ID
+        type: string
+        required: false
+        default: ""
+
+jobs:
+  vercel-rollback:
+    name: Vercel rollback
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check secrets
+        id: creds
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          if [ -n "$VERCEL_TOKEN" ] && [ -n "$VERCEL_ORG_ID" ] && [ -n "$VERCEL_PROJECT_ID" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::error::VERCEL_* secrets missing — cannot auto-rollback. Use Dashboard Promote to Production."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: Link project env
+        run: |
+          mkdir -p .vercel
+          cat > .vercel/project.json <<EOF
+          {"orgId":"${{ secrets.VERCEL_ORG_ID }}","projectId":"${{ secrets.VERCEL_PROJECT_ID }}"}
+          EOF
+
+      - name: Rollback Production
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          TARGET: ${{ inputs.deployment_url }}
+          REASON: ${{ inputs.reason }}
+        run: |
+          echo "Rollback reason: ${REASON:-manual}"
+          if [ -n "$TARGET" ]; then
+            vercel rollback "$TARGET" --yes --token="$VERCEL_TOKEN"
+          else
+            vercel rollback --yes --token="$VERCEL_TOKEN"
+          fi
+
+      - name: Health check after rollback
+        env:
+          FOLIO_PRODUCTION_URL: ${{ secrets.FOLIO_PRODUCTION_URL }}
+          DEPLOY_URL: ${{ secrets.FOLIO_PRODUCTION_URL }}
+        run: |
+          if [ -z "$FOLIO_PRODUCTION_URL" ]; then
+            echo "FOLIO_PRODUCTION_URL not set — skip health check"
+            exit 0
+          fi
+          node scripts/post-deploy-health.mjs
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "## Rollback (P40)"
+            echo "- reason: \`${{ inputs.reason }}\`"
+            echo "- target: \`${{ inputs.deployment_url || 'previous Production' }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,35 @@
+# P40 — Production 헬스 모니터링 (/api/health · /api/runtime)
+# Secret: FOLIO_PRODUCTION_URL (예: https://your-domain.com)
+
+name: Monitor
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+jobs:
+  health:
+    name: Health · Runtime
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Probe endpoints
+        env:
+          FOLIO_PRODUCTION_URL: ${{ secrets.FOLIO_PRODUCTION_URL }}
+          HEALTH_RETRIES: "3"
+          HEALTH_INTERVAL_MS: "3000"
+        run: |
+          if [ -z "$FOLIO_PRODUCTION_URL" ]; then
+            echo "FOLIO_PRODUCTION_URL not set — skip"
+            exit 0
+          fi
+          node scripts/post-deploy-health.mjs

@@ -1,15 +1,16 @@
 # Folio — multi-stage production image (Next.js standalone)
 # syntax=docker/dockerfile:1
-# P27: runner에서 apk/wget 제거 · node fetch HEALTHCHECK · 컨텍스트 축소
+# P40: BuildKit npm 캐시 · 컨텍스트 축소 · runner 최소 레이어 · HEALTHCHECK(node fetch)
 
 ARG NODE_VERSION=22-alpine
 
-# --- dependencies --------------------------------------------------------
+# --- dependencies (package*.json 먼저 → 레이어 캐시) --------------------
 FROM node:${NODE_VERSION} AS deps
 WORKDIR /app
 RUN apk add --no-cache libc6-compat
 COPY package.json package-lock.json ./
-RUN npm ci --ignore-scripts && npm cache clean --force
+RUN --mount=type=cache,target=/root/.npm \
+  npm ci --ignore-scripts && npm cache clean --force
 
 # --- build ---------------------------------------------------------------
 FROM node:${NODE_VERSION} AS builder
@@ -21,7 +22,7 @@ ARG NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key
 ARG NEXT_PUBLIC_FOLIO_URL=
 ARG NEXT_PUBLIC_VAPID_PUBLIC_KEY=
-ARG FOLIO_VERSION=1.1.0-wip
+ARG FOLIO_VERSION=1.3.0-wip
 
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -31,13 +32,16 @@ ENV FOLIO_VERSION=$FOLIO_VERSION
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
-RUN npm run build
+RUN --mount=type=cache,target=/app/.next/cache \
+  npm run build \
+  && rm -rf node_modules \
+  && rm -rf /tmp/*
 
-# --- runner (standalone only) --------------------------------------------
+# --- runner (standalone only · apk 없음) ---------------------------------
 FROM node:${NODE_VERSION} AS runner
 WORKDIR /app
 
-ARG FOLIO_VERSION=1.1.0-wip
+ARG FOLIO_VERSION=1.3.0-wip
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -45,7 +49,6 @@ ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 ENV FOLIO_VERSION=$FOLIO_VERSION
 
-# libc6-compat / wget 미설치 → 런타임 레이어 최소화 (HEALTHCHECK는 node fetch)
 RUN addgroup --system --gid 1001 nodejs \
   && adduser --system --uid 1001 nextjs
 

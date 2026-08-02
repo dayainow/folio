@@ -49,9 +49,10 @@ Dockerfile*
 docker-compose*.yml
 .dockerignore
 
-# Optional heavy local assets
+# Optional heavy local assets / README screenshots (이미지 사이즈 축소)
 public/sw.js
 public/sw.js.map
 public/workbox-*.js
 public/worker-*.js
 public/swe-worker-*.js
+screenshots/

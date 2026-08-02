@@ -1,3 +1,4 @@
+# P40 — Lint / Typecheck / QA smoke / Build
 name: CI
 
 on:
@@ -5,16 +6,21 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+  FOLIO_VERSION: "1.3.0-wip"
+
 jobs:
   quality:
     name: Lint · Typecheck · QA · Build
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
@@ -44,7 +50,17 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          NEXT_TELEMETRY_DISABLED: "1"
           NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-anon-key-placeholder
-          FOLIO_VERSION: "0.6.0"
+          NEXT_PUBLIC_FOLIO_URL: http://localhost:3000
+          FOLIO_VERSION: ${{ env.FOLIO_VERSION }}
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "## CI (P40)"
+            echo "- ref: \`${{ github.sha }}\`"
+            echo "- lint / typecheck / qa:smoke / test / build"
+            echo "- FOLIO_VERSION=\`${{ env.FOLIO_VERSION }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
