@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * P41 — 협업 패널 (Presence · 주석 · 활동 스트림)
+ * P41/P45 — 협업 패널 (Presence · 상태 · 주석 · 활동 · 알림)
  */
 import { useEffect, useState } from 'react'
 import { Users, X } from 'lucide-react'

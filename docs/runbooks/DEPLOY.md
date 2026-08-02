@@ -53,7 +53,7 @@ feature/* ──PR──▶ Preview
 |------|--------|----------------|
 | `NEXT_PUBLIC_*` | Production + Preview | build-arg + runtime |
 | `JIRA_*` / 웹훅 / `GITHUB_*` | Production (필요 시 Preview) | `.env.local` / `env_file` |
-| `FOLIO_VERSION` | `1.8.0-wip` | Dockerfile ARG / compose |
+| `FOLIO_VERSION` | `1.8.0` | Dockerfile ARG / compose |
 | `BEACON_PROJECT_ROOT` | 보통 미사용 | 자가호스팅 시 설정 |
 
 ### GitHub Actions Secrets (P40)
