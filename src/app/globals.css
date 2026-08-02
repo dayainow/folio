@@ -4,6 +4,19 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* P44 — 모바일 풀스크린 */
+html.folio-mobile-fs {
+  overscroll-behavior: none;
+}
+html.folio-mobile-fs body {
+  overflow: hidden;
+}
+@media (max-width: 767px) {
+  html.folio-mobile-fs .folio-fs-root header {
+    display: none;
+  }
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

@@ -1,5 +1,5 @@
 /**
- * P42 — 터치 스와이프 제스처 (탭 전환 · 날짜 이동)
+ * P42/P44 — 터치 스와이프 (수평 탭/날짜 · 수직 사이드바)
  */
 'use client'
 
@@ -8,21 +8,28 @@ import { useEffect, useRef, type RefObject } from 'react'
 export type SwipeDirection = 'left' | 'right' | 'up' | 'down'
 
 export type UseSwipeOptions = {
-  /** px — 이 거리 이상이면 스와이프로 인정 */
   threshold?: number
-  /** 세로 스크롤과 구분하기 위한 최대 수직 비율 */
-  maxVerticalRatio?: number
+  /** 수평 스와이프 시 허용 수직 비율 */
+  maxCrossRatio?: number
   onSwipe?: (dir: SwipeDirection) => void
   enabled?: boolean
+  /** P44 — 감지 축 */
+  axis?: 'horizontal' | 'vertical' | 'both'
 }
 
 /**
- * 요소에 수평 스와이프 리스너를 붙인다.
- * 세로 스크롤 중에는 발동하지 않도록 dy/dx 비율을 본다.
+ * 요소에 스와이프 리스너를 붙인다.
+ * 스크롤과 구분하기 위해 주축 대비 교차축 비율을 본다.
  */
 export function useSwipe(
   ref: RefObject<HTMLElement | null>,
-  { threshold = 56, maxVerticalRatio = 0.65, onSwipe, enabled = true }: UseSwipeOptions,
+  {
+    threshold = 56,
+    maxCrossRatio = 0.65,
+    onSwipe,
+    enabled = true,
+    axis = 'horizontal',
+  }: UseSwipeOptions,
 ) {
   const onSwipeRef = useRef(onSwipe)
 
@@ -55,9 +62,19 @@ export function useSwipe(
       const dy = t.clientY - startY
       const absX = Math.abs(dx)
       const absY = Math.abs(dy)
-      if (absX < threshold) return
-      if (absY > absX * maxVerticalRatio) return
-      onSwipeRef.current?.(dx < 0 ? 'left' : 'right')
+
+      const preferHorizontal = absX >= absY
+      if (preferHorizontal) {
+        if (axis === 'vertical') return
+        if (absX < threshold) return
+        if (absY > absX * maxCrossRatio) return
+        onSwipeRef.current?.(dx < 0 ? 'left' : 'right')
+        return
+      }
+      if (axis === 'horizontal') return
+      if (absY < threshold) return
+      if (absX > absY * maxCrossRatio) return
+      onSwipeRef.current?.(dy < 0 ? 'up' : 'down')
     }
 
     const onCancel = () => {
@@ -72,5 +89,5 @@ export function useSwipe(
       el.removeEventListener('touchend', onEnd)
       el.removeEventListener('touchcancel', onCancel)
     }
-  }, [ref, threshold, maxVerticalRatio, enabled])
+  }, [ref, threshold, maxCrossRatio, enabled, axis])
 }

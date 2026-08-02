@@ -18,7 +18,13 @@ import { McpSyncButton } from '@/components/mcp-sync-button';
 import { getActiveTeamId } from '@/lib/team';
 import { parseFolioDeepLink } from '@/lib/folio-links';
 import { useSwipe } from '@/hooks/use-swipe';
-import { Activity, BookOpen, PanelRight, Users, X } from 'lucide-react';
+import {
+  dispatchMobileAction,
+  getMobileFullscreen,
+  setMobileFullscreen,
+  subscribeMobileFullscreen,
+} from '@/lib/mobile-actions';
+import { Activity, BookOpen, Maximize2, Minimize2, PanelRight, Users, X } from 'lucide-react';
 
 const PanelFallback = ({ label }: { label: string }) => (
   <div className="min-h-[12rem] py-8 text-center text-sm text-muted-foreground" role="status" aria-live="polite">
@@ -109,9 +115,15 @@ export default function Home() {
   const [journalPreview, setJournalPreview] = useState<{ date: string; content: string } | null>(
     null,
   );
+  const [mobileFs, setMobileFs] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return getMobileFullscreen();
+  });
   const mainRef = useRef<HTMLElement>(null);
   const panelFocusRef = useRef<HTMLDivElement>(null);
   const swipeRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => subscribeMobileFullscreen(setMobileFs), []);
 
   useEffect(() => {
     const onOnline = () => {
@@ -174,11 +186,19 @@ export default function Home() {
   }, []);
 
   useSwipe(swipeRef, {
+    axis: 'both',
+    threshold: 64,
     onSwipe: (dir) => {
-      const idx = TAB_ORDER.indexOf(tab);
-      if (idx < 0) return;
-      if (dir === 'left' && idx < TAB_ORDER.length - 1) handleTabChange(TAB_ORDER[idx + 1]!);
-      if (dir === 'right' && idx > 0) handleTabChange(TAB_ORDER[idx - 1]!);
+      if (dir === 'left' || dir === 'right') {
+        const idx = TAB_ORDER.indexOf(tab);
+        if (idx < 0) return;
+        if (dir === 'left' && idx < TAB_ORDER.length - 1) handleTabChange(TAB_ORDER[idx + 1]!);
+        if (dir === 'right' && idx > 0) handleTabChange(TAB_ORDER[idx - 1]!);
+        return;
+      }
+      // P44 — 상하 스와이프: 사이드바 토글
+      if (dir === 'up') setMobileSidebarOpen(true);
+      if (dir === 'down') setMobileSidebarOpen(false);
     },
   });
 
@@ -335,14 +355,17 @@ export default function Home() {
   );
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className={cn('flex min-h-screen flex-col bg-background', mobileFs && 'folio-fs-root')}>
       <a href="#main-content" className="skip-link">
         본문으로 건너뛰기
       </a>
 
       {/* 최소 헤더: 로고 + 탭 + 검색 */}
       <header
-        className="sticky top-0 z-50 border-b border-gray-100 bg-background/90 px-3 backdrop-blur dark:border-gray-800 sm:px-4"
+        className={cn(
+          'sticky top-0 z-50 border-b border-gray-100 bg-background/90 px-3 backdrop-blur dark:border-gray-800 sm:px-4',
+          mobileFs && 'hidden md:block',
+        )}
         role="banner"
       >
         <div className="mx-auto flex h-12 max-w-[1600px] items-center gap-2 sm:gap-3">
@@ -417,7 +440,18 @@ export default function Home() {
               type="button"
               variant="ghost"
               size="icon"
-              className="h-9 w-9 lg:hidden"
+              className="h-12 w-12 min-h-[48px] min-w-[48px] md:h-9 md:w-9 md:min-h-0 md:min-w-0 lg:hidden"
+              aria-label={mobileFs ? '풀스크린 종료' : '풀스크린'}
+              aria-pressed={mobileFs}
+              onClick={() => setMobileFullscreen(!mobileFs)}
+            >
+              {mobileFs ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-12 w-12 min-h-[48px] min-w-[48px] md:h-9 md:w-9 md:min-h-0 md:min-w-0 lg:hidden"
               aria-label="요약 패널 열기"
               aria-expanded={mobileSidebarOpen}
               onClick={() => setMobileSidebarOpen(true)}
@@ -465,7 +499,10 @@ export default function Home() {
           id="main-content"
           ref={mainRef}
           tabIndex={-1}
-          className="min-w-0 flex-1 outline-none px-3 pt-5 pb-24 sm:px-4 sm:pt-7 lg:pb-6"
+          className={cn(
+            'min-w-0 flex-1 outline-none px-3 pt-5 pb-28 sm:px-4 sm:pt-7 lg:pb-6',
+            mobileFs && 'pt-2 pb-[env(safe-area-inset-bottom)] md:pt-7 md:pb-6',
+          )}
         >
           <PwaInstallPrompt />
 
@@ -582,11 +619,34 @@ export default function Home() {
       <MobileNav
         value={tab}
         onChange={(v) => handleTabChange(v)}
+        hidden={mobileFs}
         onWrite={() => {
           handleTabChange('journal');
           setFocusJournalDate(new Date().toISOString().slice(0, 10));
         }}
+        onSave={() => dispatchMobileAction({ type: 'save' })}
+        onNew={() => {
+          if (tab === 'docs') {
+            dispatchMobileAction({ type: 'new-doc' });
+            return;
+          }
+          handleTabChange('journal');
+          dispatchMobileAction({ type: 'new-journal' });
+        }}
       />
+      {mobileFs && (
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] right-3 z-[60] h-12 min-h-[48px] gap-1.5 rounded-full px-4 shadow-lg md:hidden"
+          onClick={() => setMobileFullscreen(false)}
+          aria-label="풀스크린 종료"
+        >
+          <Minimize2 className="h-4 w-4" />
+          종료
+        </Button>
+      )}
     </div>
   );
 }

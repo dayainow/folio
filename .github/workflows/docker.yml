@@ -22,7 +22,7 @@ concurrency:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  FOLIO_VERSION: "1.6.0"
+  FOLIO_VERSION: "1.7.0-wip"
 
 jobs:
   build:

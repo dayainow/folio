@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useMemo, useRef, memo, type ReactNode, type ChangeEvent, type KeyboardEvent } from 'react';
+import { useState, useCallback, useEffect, useEffectEvent, useMemo, useRef, memo, type ReactNode, type ChangeEvent, type KeyboardEvent } from 'react';
 import dynamic from 'next/dynamic';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -38,6 +38,7 @@ import { DocCommentsPanel } from '@/components/doc-comments';
 import { useCollabUser } from '@/hooks/use-collab-user';
 import { publishActivity } from '@/lib/activity-stream';
 import { getOrCreateGuestId } from '@/lib/presence';
+import { subscribeMobileAction } from '@/lib/mobile-actions';
 import {
   docFilename,
   docToMarkdown,
@@ -324,6 +325,18 @@ export const DocsPanel = memo(function DocsPanel({
       setSaveError('문서 저장에 실패했습니다. 다시 시도해 주세요.');
     }
   };
+
+  // P44 — FAB 새 문서 / 저장
+  const onMobileAction = useEffectEvent((action: { type: string }) => {
+    if (action.type === 'new-doc') {
+      void startNew();
+      return;
+    }
+    if (action.type === 'save') {
+      void doSave();
+    }
+  });
+  useEffect(() => subscribeMobileAction(onMobileAction), []);
 
   const exportToBeacon = async (strategy?: 'merge' | 'reapply') => {
     if (!selectedId) return;

@@ -101,7 +101,12 @@ const nextConfig: NextConfig = {
       '@supabase/supabase-js',
       '@supabase/ssr',
       'yjs',
+      'idb',
     ],
+  },
+  images: {
+    // P44 — 원격/로컬 이미지 lazy 기본
+    dangerouslyAllowSVG: false,
   },
   webpack: (config, { isServer, webpack }) => {
     if (!isServer) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useMemo, useRef, memo, type KeyboardEvent, type ChangeEvent } from 'react';
+import { useState, useCallback, useEffect, useEffectEvent, useMemo, useRef, memo, type CSSProperties, type KeyboardEvent, type ChangeEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -26,8 +26,11 @@ import { DocCommentsPanel } from '@/components/doc-comments';
 import dynamic from 'next/dynamic';
 import { useCollabUser } from '@/hooks/use-collab-user';
 import { useSwipe } from '@/hooks/use-swipe';
+import { editorHeightFromViewport, useVisualViewport } from '@/hooks/use-visual-viewport';
+import { subscribeMobileAction } from '@/lib/mobile-actions';
 import { publishActivity } from '@/lib/activity-stream';
 import { getOrCreateGuestId } from '@/lib/presence';
+import { cn } from '@/lib/utils';
 
 const VoiceInputButton = dynamic(
   () => import('@/components/voice-input-button').then((m) => ({ default: m.VoiceInputButton })),
@@ -120,6 +123,8 @@ export const JournalPanel = memo(function JournalPanel({
   const hasNotifyChannelRef = useRef(hasNotifyChannel);
   notifyOnSaveRef.current = notifyOnSave;
   hasNotifyChannelRef.current = hasNotifyChannel;
+  const vv = useVisualViewport();
+  const mobileEditorPx = editorHeightFromViewport(vv, 200);
 
   const selectDate = useCallback((nextDate: string, map?: Record<string, Day>) => {
     // 날짜 이탈 전 현재 초안을 days·local에 반영 (자동저장 대기 없이 유지)
@@ -336,6 +341,18 @@ export const JournalPanel = memo(function JournalPanel({
     return () => setToastRetryHandler(null);
   }, [save, notifyOnSave]);
 
+  // P44 — FAB 빠른 저장 / 새 일지(오늘)
+  const onMobileAction = useEffectEvent((action: { type: string }) => {
+    if (action.type === 'save') {
+      void save({ notify: notifyOnSaveRef.current });
+      return;
+    }
+    if (action.type === 'new-journal') {
+      selectDate(todayStr());
+    }
+  });
+  useEffect(() => subscribeMobileAction(onMobileAction), []);
+
   useEffect(() => {
     if (!ready) return;
     const t = setInterval(() => {
@@ -487,10 +504,14 @@ export const JournalPanel = memo(function JournalPanel({
     }
   };
 
-  // P42: 모바일에서는 에디터가 뷰포트 대부분을 차지
+  // P42/P44: 모바일 에디터 — visualViewport 키보드 대응
   const editorClass = writingFirst
-    ? 'h-[calc(100dvh-13.5rem)] max-h-none min-h-[min(70dvh,36rem)] field-sizing-fixed resize-none border-0 focus-visible:ring-0 text-base leading-relaxed p-0 font-mono md:h-[min(18rem,38vh)] md:max-h-[18rem] md:min-h-[12rem] md:text-[15px] lg:h-[min(20rem,40vh)] lg:max-h-[20rem]'
+    ? 'h-[var(--folio-editor-h,70dvh)] max-h-none min-h-[12rem] field-sizing-fixed resize-none border-0 focus-visible:ring-0 text-base leading-relaxed p-0 font-mono md:h-[min(18rem,38vh)] md:max-h-[18rem] md:min-h-[12rem] md:text-[15px] lg:h-[min(20rem,40vh)] lg:max-h-[20rem]'
     : 'min-h-[400px] resize-none border-0 focus-visible:ring-0 text-[15px] leading-relaxed p-0 font-mono';
+
+  const editorStyle = writingFirst
+    ? ({ ['--folio-editor-h' as string]: `${mobileEditorPx}px` } as CSSProperties)
+    : undefined;
 
   return (
     <div
@@ -523,7 +544,7 @@ export const JournalPanel = memo(function JournalPanel({
               variant="ghost"
               size="icon"
               onClick={prevDay}
-              className={writingFirst ? 'h-7 w-7' : 'h-8 w-8'}
+              className={writingFirst ? 'h-12 w-12 min-h-[48px] min-w-[48px] md:h-7 md:w-7 md:min-h-0 md:min-w-0' : 'h-12 w-12 min-h-[48px] min-w-[48px] md:h-8 md:w-8 md:min-h-0 md:min-w-0'}
               aria-label="이전 날짜"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -541,7 +562,7 @@ export const JournalPanel = memo(function JournalPanel({
               variant="ghost"
               size="icon"
               onClick={nextDay}
-              className={writingFirst ? 'h-7 w-7' : 'h-8 w-8'}
+              className={writingFirst ? 'h-12 w-12 min-h-[48px] min-w-[48px] md:h-7 md:w-7 md:min-h-0 md:min-w-0' : 'h-12 w-12 min-h-[48px] min-w-[48px] md:h-8 md:w-8 md:min-h-0 md:min-w-0'}
               aria-label="다음 날짜"
             >
               <ChevronRight className="h-4 w-4" />
@@ -715,16 +736,18 @@ export const JournalPanel = memo(function JournalPanel({
           <label htmlFor="journal-draft" className="sr-only">
             일지 본문
           </label>
-          <CollabTextarea
-            id="journal-draft"
-            roomId={`journal:${date}`}
-            value={draft}
-            onChange={setDraft}
-            user={collabUser}
-            placeholder="오늘 한 일, 회의 내용, 이슈, 배운 것... 자유롭게 적으세요.\nMarkdown 지원: # 제목, - 리스트, **굵게**"
-            className={editorClass}
-            aria-describedby="journal-draft-hint"
-          />
+          <div style={editorStyle} className={cn(writingFirst && 'md:[--folio-editor-h:min(18rem,38vh)]')}>
+            <CollabTextarea
+              id="journal-draft"
+              roomId={`journal:${date}`}
+              value={draft}
+              onChange={setDraft}
+              user={collabUser}
+              placeholder="오늘 한 일, 회의 내용, 이슈, 배운 것... 자유롭게 적으세요.\nMarkdown 지원: # 제목, - 리스트, **굵게**"
+              className={editorClass}
+              aria-describedby="journal-draft-hint"
+            />
+          </div>
           <p id="journal-draft-hint" className="sr-only">
             마크다운을 사용할 수 있습니다. 저장 버튼 또는 자동 저장으로 기록됩니다. 실시간 협업(Yjs)이 활성화되어 있습니다.
           </p>
