@@ -198,14 +198,15 @@ npm run runbook:backup
 - **v1.0** ✅ — 일지·문서·일정·검색·팀·배포
 - **v1.1** ✅ — 링크 그래프·내보내기·MCP·Writing-first
 - **v1.2** ✅ — 가이드/매뉴얼 · AI 요약·고급 분석·Slack 고급
+- **v1.3** (진행) — Discord Embeds · GitHub PR/Board · workflow events
 - **v2.0** — 모바일 네이티브·실시간 협업
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 11 완료** (v**1.2.0** 정식)
-- 진행 중: —
+- 현재 Phase: **Phase 12** (v**1.3.0-wip**)
+- 진행 중: **P39** Discord/GitHub 연동 고도화
 - 완료: Phase 1~11 (1.2.0) · P36 AI 요약 · P37 고급 분석 · P38 Slack 고급 연동
-- 다음: v2.0 모바일 네이티브 / 실시간 협업
+- 다음: Phase 12 마무리 · 1.3.0 정식
 - 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md))
 
 ---
@@ -219,4 +220,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · v1.2.0
+**Folio** — 프로젝트의 기록, 한 곳에서. · v1.3.0-wip

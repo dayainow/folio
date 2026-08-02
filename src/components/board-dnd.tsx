@@ -152,17 +152,48 @@ function TaskCardBody({
         </div>
       )}
       {task.githubUrl && (
-        <div className="mt-1.5" onPointerDown={e => e.stopPropagation()}>
+        <div className="mt-1.5 space-y-1" onPointerDown={e => e.stopPropagation()}>
           <a
             href={task.githubUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-[11px] text-gray-700 dark:text-gray-300 hover:underline"
+            className="inline-flex flex-wrap items-center gap-1 text-[11px] text-gray-700 dark:text-gray-300 hover:underline"
           >
             <GitBranch className="h-3 w-3" />
             #{task.githubIssueNumber ?? 'issue'}
+            {task.githubState && (
+              <span
+                className={`rounded px-1 py-0.5 text-[10px] ${
+                  task.githubState === 'open'
+                    ? 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300'
+                    : 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300'
+                }`}
+              >
+                {task.githubState}
+              </span>
+            )}
             <ExternalLink className="h-3 w-3" />
           </a>
+          {(task.githubAssignees?.length || task.githubLabels?.length) ? (
+            <div className="flex flex-wrap gap-1">
+              {task.githubAssignees?.slice(0, 3).map((a) => (
+                <span
+                  key={a}
+                  className="rounded bg-gray-100 px-1 py-0.5 text-[10px] text-gray-600 dark:bg-gray-800 dark:text-gray-300"
+                >
+                  @{a}
+                </span>
+              ))}
+              {task.githubLabels?.slice(0, 3).map((l) => (
+                <span
+                  key={l}
+                  className="rounded bg-blue-50 px-1 py-0.5 text-[10px] text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                >
+                  {l}
+                </span>
+              ))}
+            </div>
+          ) : null}
         </div>
       )}
       {showActions && onEdit && onDelete && (
@@ -318,6 +349,7 @@ export function BoardDndPanel({
   const [jiraSyncing, setJiraSyncing] = useState(false);
   const [jiraMessage, setJiraMessage] = useState<string | null>(null);
   const [githubEnabled, setGithubEnabled] = useState(false);
+  const [githubSyncing, setGithubSyncing] = useState(false);
   const [notifyOnDone, setNotifyOnDone] = useState(true);
   const [hasNotifyChannel, setHasNotifyChannel] = useState(false);
   const [githubBusyId, setGithubBusyId] = useState<string | null>(null);
@@ -345,6 +377,49 @@ export function BoardDndPanel({
       setJournalTagSources(Object.values(journals).map(j => ({ tags: j.tags })));
       setGithubEnabled(status.github);
       setHasNotifyChannel(status.slack || status.discord);
+
+      // P39 — 연결된 Issue 상태/담당자/라벨 실시간 반영
+      if (status.github) {
+        const nums = next
+          .map((t) => t.githubIssueNumber)
+          .filter((n): n is number => typeof n === 'number');
+        if (nums.length > 0) {
+          try {
+            const res = await fetch(`/api/github/sync?numbers=${nums.join(',')}`, {
+              cache: 'no-store',
+            });
+            if (res.ok && !cancelled) {
+              const data = (await res.json()) as {
+                patches?: Array<{
+                  githubIssueNumber: number;
+                  githubUrl: string;
+                  githubState: string;
+                  githubAssignees: string[];
+                  githubLabels: string[];
+                  suggestStatus?: 'done';
+                }>;
+              };
+              const byNum = new Map((data.patches ?? []).map((p) => [p.githubIssueNumber, p]));
+              setTasks((prev) =>
+                prev.map((t) => {
+                  const p = t.githubIssueNumber != null ? byNum.get(t.githubIssueNumber) : undefined;
+                  if (!p) return t;
+                  return {
+                    ...t,
+                    githubUrl: p.githubUrl || t.githubUrl,
+                    githubState: p.githubState,
+                    githubAssignees: p.githubAssignees,
+                    githubLabels: p.githubLabels,
+                    status: p.suggestStatus === 'done' && t.status !== 'done' ? 'done' : t.status,
+                  };
+                }),
+              );
+            }
+          } catch {
+            /* sync 실패는 UI 차단하지 않음 */
+          }
+        }
+      }
     })();
     return () => {
       cancelled = true;
@@ -456,10 +531,70 @@ export function BoardDndPanel({
       const next = [...nonJira, ...mergedJira];
       await persist(next);
       setJiraMessage(`Jira에서 ${jiraTasks.length}건 동기화했습니다.`);
+      // P39 — Jira → Board 동기화 워크플로우 이벤트
+      void fetch('/api/workflow/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          kind: 'jira_sync',
+          title: 'Jira → Board 동기화',
+          message: `${jiraTasks.length}건 동기화`,
+          jiraKey: jiraTasks[0]?.jiraKey,
+          actionUrl: '/?tab=board',
+        }),
+      }).catch(() => undefined);
     } catch (err) {
       setJiraMessage(err instanceof Error ? err.message : 'Jira 동기화 실패');
     } finally {
       setJiraSyncing(false);
+    }
+  };
+
+  const syncFromGitHub = async () => {
+    if (!githubEnabled) return;
+    setGithubSyncing(true);
+    setJiraMessage(null);
+    try {
+      const nums = tasks
+        .map((t) => t.githubIssueNumber)
+        .filter((n): n is number => typeof n === 'number');
+      const qs = nums.length ? `?numbers=${nums.join(',')}` : '';
+      const res = await fetch(`/api/github/sync${qs}`, { cache: 'no-store' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'GitHub 동기화 실패');
+      const patches = (data.patches ?? []) as Array<{
+        githubIssueNumber: number;
+        githubUrl: string;
+        githubState: string;
+        githubAssignees: string[];
+        githubLabels: string[];
+        suggestStatus?: 'done';
+      }>;
+      const byNum = new Map(patches.map((p) => [p.githubIssueNumber, p]));
+      let moved = 0;
+      const next = tasks.map((t) => {
+        const p = t.githubIssueNumber != null ? byNum.get(t.githubIssueNumber) : undefined;
+        if (!p) return t;
+        const toDone = p.suggestStatus === 'done' && t.status !== 'done';
+        if (toDone) moved += 1;
+        return {
+          ...t,
+          githubUrl: p.githubUrl || t.githubUrl,
+          githubState: p.githubState,
+          githubAssignees: p.githubAssignees,
+          githubLabels: p.githubLabels,
+          status: toDone ? ('done' as const) : t.status,
+          updatedAt: new Date().toISOString(),
+        };
+      });
+      await persist(next);
+      setJiraMessage(
+        `GitHub Issue ${patches.length}건 반영${moved ? ` · ${moved}건 Done` : ''}`,
+      );
+    } catch (err) {
+      setJiraMessage(err instanceof Error ? err.message : 'GitHub 동기화 실패');
+    } finally {
+      setGithubSyncing(false);
     }
   };
 
@@ -512,6 +647,9 @@ export function BoardDndPanel({
                 ...t,
                 githubIssueNumber: issue.number,
                 githubUrl: issue.htmlUrl,
+                githubState: 'open',
+                githubAssignees: [],
+                githubLabels: [],
                 updatedAt: new Date().toISOString(),
               }
             : t,
@@ -687,6 +825,20 @@ export function BoardDndPanel({
           <RefreshCw className={`h-3 w-3 ${jiraSyncing ? 'animate-spin' : ''}`} />
           {jiraSyncing ? '동기화 중…' : 'Jira 동기화'}
         </Button>
+        {githubEnabled && (
+          <Button
+            onClick={() => void syncFromGitHub()}
+            size="sm"
+            variant="outline"
+            disabled={githubSyncing}
+            className="gap-1"
+            aria-busy={githubSyncing}
+            aria-label={githubSyncing ? 'GitHub 동기화 중' : 'GitHub 동기화'}
+          >
+            <GitBranch className={`h-3 w-3 ${githubSyncing ? 'animate-pulse' : ''}`} />
+            {githubSyncing ? 'GH 동기화…' : 'GitHub 동기화'}
+          </Button>
+        )}
         {githubEnabled && (
           <span className="text-[11px] text-gray-400 inline-flex items-center gap-1">
             <GitBranch className="h-3.5 w-3.5" />

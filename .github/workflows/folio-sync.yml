@@ -1,0 +1,62 @@
+# P39 — GitHub Actions → Folio 워크플로우 연동
+# PR 머지 / workflow 완료 시 Folio webhook으로 알림·Board 동기화를 트리거합니다.
+#
+# Secrets:
+#   FOLIO_WEBHOOK_URL  — 예: https://your-host/api/github/webhook
+#   FOLIO_WEBHOOK_SECRET — FOLIO_MCP_WEBHOOK_SECRET 또는 GITHUB_WEBHOOK_SECRET 과 동일
+
+name: Folio sync
+
+on:
+  pull_request:
+    types: [closed]
+  workflow_run:
+    workflows: ['CI', 'Deploy']
+    types: [completed]
+  workflow_dispatch:
+
+jobs:
+  notify-folio:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true) ||
+      github.event_name == 'workflow_run'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post event to Folio webhook
+        env:
+          FOLIO_WEBHOOK_URL: ${{ secrets.FOLIO_WEBHOOK_URL }}
+          FOLIO_WEBHOOK_SECRET: ${{ secrets.FOLIO_WEBHOOK_SECRET }}
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_PAYLOAD: ${{ toJson(github.event) }}
+        run: |
+          if [ -z "$FOLIO_WEBHOOK_URL" ]; then
+            echo "FOLIO_WEBHOOK_URL not set — skip"
+            exit 0
+          fi
+
+          BODY="$EVENT_PAYLOAD"
+          # workflow_dispatch 는 최소 ping 페이로드
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            BODY='{"zen":"Folio sync manual","hook_id":0}'
+          fi
+
+          # GitHub event 헤더 매핑
+          GH_EVENT="$EVENT_NAME"
+          if [ "$EVENT_NAME" = "pull_request" ]; then GH_EVENT="pull_request"; fi
+          if [ "$EVENT_NAME" = "workflow_run" ]; then GH_EVENT="workflow_run"; fi
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then GH_EVENT="ping"; fi
+
+          SIG=""
+          if [ -n "$FOLIO_WEBHOOK_SECRET" ]; then
+            SIG="sha256=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$FOLIO_WEBHOOK_SECRET" | awk '{print $2}')"
+          fi
+
+          curl -sS -X POST "$FOLIO_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -H "X-GitHub-Event: $GH_EVENT" \
+            ${SIG:+-H "X-Hub-Signature-256: $SIG"} \
+            -d "$BODY" \
+            | tee /tmp/folio-webhook-res.json
+
+          echo "Folio webhook ok"

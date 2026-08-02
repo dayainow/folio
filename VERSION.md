@@ -6,11 +6,11 @@
 
 | 항목 | 값 |
 |------|-----|
-| 버전 | **1.2.0** (정식 릴리즈) |
-| Phase | Phase 11 완료 |
-| 진행 중 | — |
-| 다음 | v2.0 모바일 네이티브 / 실시간 협업 |
-| 이어가기 | `origin/main` @ v1.2.0 정식 |
+| 버전 | **1.3.0-wip** |
+| Phase | Phase 12 |
+| 진행 중 | P39 Discord/GitHub 연동 고도화 |
+| 다음 | Phase 12 마무리 · 1.3.0 정식 |
+| 이어가기 | `origin/main` @ 1.3.0-wip |
 
 ## 완료 항목
 
@@ -63,12 +63,20 @@
 | P37 | 고급 분석 (생산성 스코어 & 종합 트렌드 차트) | `5a6e118` / 고도화 `86f05a8` |
 | P38 | Slack 연동 고도화 (Block Kit 리포트 전송) | `5a6e118` / 고도화 `86f05a8` |
 | — | Phase 11 완료 · 1.2.0 정식 릴리즈 | `86f05a8` |
+| P39 | Discord Embeds · GitHub PR/Board · workflow events | (본 커밋) |
 
 ## 진행 중
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| — | — | Phase 11 완료 (v1.2.0 정식 릴리즈) |
+| P39 | Discord/GitHub 연동 고도화 | Embeds · Issue 메타 · PR→Done · Actions webhook |
+
+## Phase 12 계획
+
+| ID | 요약 | 노트 |
+|----|------|------|
+| P39 | Discord/GitHub 연동 고도화 | 🔄 Embeds · PR sync · workflow-events |
+| — | 1.3.0 정식 | Phase 12 완료 시 |
 
 ## Phase 11 계획 (완료)
 
@@ -120,6 +128,14 @@
 | P22 | 운영 런북 | ✅ |
 
 ## 변경 이력
+
+### 1.3.0-wip — 2026-08-02 (P39 Discord/GitHub 연동 고도화)
+
+- Discord Incoming Webhook → **Rich Embeds** (초록/주황/파랑 · footer Folio 링크 · timestamp)
+- GitHub Issues: 상태·담당자·라벨 표시 · Board **GitHub 동기화**
+- PR 머지 webhook → Board 태스크 Done (`/api/github/webhook`)
+- `src/lib/workflow-events.ts` — 저장/Jira/Gate/PR 이벤트 디스패치
+- GitHub Actions `folio-sync.yml` · env 문서 갱신
 
 ### 1.2.0-wip — 2026-07-31 (체크포인트 · P35 가이드/매뉴얼)
 

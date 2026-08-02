@@ -21,6 +21,10 @@ export interface Task {
   jiraUrl?: string;
   githubIssueNumber?: number;
   githubUrl?: string;
+  /** P39 — GitHub Issue 실시간 메타 */
+  githubState?: string;
+  githubAssignees?: string[];
+  githubLabels?: string[];
 }
 
 const STORAGE_KEY = 'workspace_tasks';

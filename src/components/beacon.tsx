@@ -413,17 +413,32 @@ export function BeaconPanel() {
       setConflict(null);
       setLastUpdatedAt(new Date().toISOString());
       if (gated.autoPassed.length > 0) {
-        showAppToast(
-          `Gate 자동 PASS: ${gated.autoPassed.map((id) => id.toUpperCase()).join(', ')}`,
-        );
+        const passed = gated.autoPassed.map((id) => id.toUpperCase()).join(', ');
+        showAppToast(`Gate 자동 PASS: ${passed}`);
         void import('@/lib/push-notifications').then(({ showFolioPush }) =>
           showFolioPush({
             title: 'Gate 상태 변경',
-            body: `자동 PASS: ${gated.autoPassed.map((id) => id.toUpperCase()).join(', ')}`,
+            body: `자동 PASS: ${passed}`,
             url: '/?tab=process',
             tag: 'gate-change',
           }),
         );
+        // P39 — Gate 변경 → Discord/Slack + 프로세스 갱신 힌트
+        void fetch('/api/workflow/events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            kind: 'gate_change',
+            title: 'Gate 상태 변경',
+            message: `자동 PASS: ${passed}`,
+            gate: {
+              name: passed,
+              progressPercent: data.summary?.progressPercent,
+              status: 'pass',
+            },
+            actionUrl: '/?tab=process',
+          }),
+        }).catch(() => undefined);
       }
       if (opts?.clearUpdateBadge !== false) {
         setUpdateAvailable(false);

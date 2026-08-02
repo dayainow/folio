@@ -26,6 +26,8 @@ export async function POST(request: Request) {
       channels?: Array<'slack' | 'discord'>
       actionUrl?: string
       actionLabel?: string
+      /** Discord embed 색상 힌트 */
+      severity?: 'success' | 'warning' | 'info'
     }
 
     const message = body.message?.trim()
@@ -58,10 +60,24 @@ export async function POST(request: Request) {
         if (!isDiscordConfigured()) {
           results.discord = { ok: true, skipped: true }
         } else {
-          const discordText = actionUrl
-            ? `${detail ?? message}\n[확인](${actionUrl})`
-            : (detail ?? message)
-          results.discord = await sendDiscordNotification(discordText)
+          const severity =
+            body.severity ??
+            (message.includes('완료') || message.includes('✅')
+              ? 'success'
+              : message.includes('경고') || message.includes('실패')
+                ? 'warning'
+                : 'info')
+          results.discord = await sendDiscordNotification({
+            embed: {
+              title: message.slice(0, 256),
+              description: detail ?? message,
+              color: severity,
+              url: actionUrl,
+              fields: actionUrl
+                ? [{ name: actionLabel, value: `[열기](${actionUrl})` }]
+                : undefined,
+            },
+          })
         }
       }
     }
