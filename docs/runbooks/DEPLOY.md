@@ -1,6 +1,6 @@
 # 배포 런북 (Deploy)
 
-Vercel · Docker · GHCR · GitHub Actions · 헬스체크 · **롤백**. (P22 · P27 · **P40** · 1.3.0-wip)
+Vercel · Docker · GHCR · GitHub Actions · 헬스체크 · **롤백**. (P22 · P27 · **P40** · 1.3.0)
 
 상세 배경: [docs/DEPLOY.md](../DEPLOY.md) · 환경변수: [.env.production.example](../../.env.production.example) · [docs/env.example](../env.example)
 
@@ -53,7 +53,7 @@ feature/* ──PR──▶ Preview
 |------|--------|----------------|
 | `NEXT_PUBLIC_*` | Production + Preview | build-arg + runtime |
 | `JIRA_*` / 웹훅 / `GITHUB_*` | Production (필요 시 Preview) | `.env.local` / `env_file` |
-| `FOLIO_VERSION` | `1.3.0-wip` | Dockerfile ARG / compose |
+| `FOLIO_VERSION` | `1.3.0` | Dockerfile ARG / compose |
 | `BEACON_PROJECT_ROOT` | 보통 미사용 | 자가호스팅 시 설정 |
 
 ### GitHub Actions Secrets (P40)
@@ -110,7 +110,7 @@ curl -sS http://localhost:3000/api/health
 GHCR (Actions `docker.yml`):
 
 ```bash
-# main 푸시 / v* 태그 → ghcr.io/<owner>/folio:latest|sha-…|1.3.0-wip
+# main 푸시 / v* 태그 → ghcr.io/<owner>/folio:latest|sha-…|1.3.0
 docker pull ghcr.io/<owner>/folio:latest
 docker run --rm -p 3000:3000 --env-file .env.local ghcr.io/<owner>/folio:latest
 ```

@@ -2,7 +2,7 @@
 
 ![Dashboard](screenshots/dashboard.png)
 
-**프로젝트의 기록, 한 곳에서.** · **v1.1.0**
+**프로젝트의 기록, 한 곳에서.** · **v1.3.0**
 
 Folio는 개발자의 일지·문서·일정·프로세스를 하나로 묶는 워크스페이스입니다.
 Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정을 tracking하는 흐름을,
@@ -35,7 +35,8 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **검색** | `Cmd/Ctrl+K` · 일지·문서·일정 통합 · 아이콘 확장 검색 |
 | **저장** | local / cloud(Supabase) / beacon · 오프라인 큐 · PWA |
 | **내보내기** | MD · CSV · JSON · ZIP · 탭별 ExportMenu · 전체 번들 |
-| **연동** | Slack/Discord 알림 · MCP(자동기록·webhook·가져오기) · 팀 초대/공유 |
+| **연동** | Slack Block Kit · Discord Embeds · GitHub Issues/PR · MCP · 팀 초대/공유 |
+| **배포** | Vercel Preview/Production · Docker/GHCR · Actions CI/Deploy/Rollback/Monitor |
 | **레이아웃** | Writing-first · 우측 요약 사이드바(280px) · 모바일 하단 네비/시트 |
 
 스택: **Next.js 16 · React 19 · Tailwind v4 · shadcn/ui**
@@ -65,7 +66,7 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 
 ---
 
-## Phase 1~10 완료
+## Phase 1~12 완료
 
 | Phase | 버전 | 요약 | 상태 |
 |-------|------|------|------|
@@ -78,9 +79,11 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **7** | 0.8.0 | Beacon 양방향 · 자동화/알림 | ✅ |
 | **8** | 0.9.0 | 모바일 · 위젯 · PWA/오프라인 | ✅ |
 | **9** | 1.0.0 | 실제 배포 (Vercel/Docker · 도메인/SSL · 롤백) | ✅ |
-| **10** | **1.1.0** | 링크 그래프 · 내보내기 · MCP · Writing-first 레이아웃 | ✅ |
+| **10** | 1.1.0 | 링크 그래프 · 내보내기 · MCP · Writing-first 레이아웃 | ✅ |
+| **11** | 1.2.0 | 가이드/매뉴얼 · AI 요약 · 고급 분석 · Slack Block Kit | ✅ |
+| **12** | **1.3.0** | Discord Embeds · GitHub PR/Board · 자동 배포 파이프라인 | ✅ |
 
-Phase 10 상세: **P31** 링크 그래프 · **P32** 내보내기 · **P33** MCP · **P34** Writing-first  
+Phase 12 상세: **P39** Discord/GitHub · **P40** CI/Deploy/Docker/GHCR/Rollback  
 이력: [VERSION.md](VERSION.md)
 
 ---
@@ -149,6 +152,57 @@ GitHub Webhook: `POST /api/mcp/git-webhook` + `FOLIO_MCP_WEBHOOK_SECRET`
 
 ---
 
+## 배포 파이프라인
+
+상세: [docs/DEPLOY.md](docs/DEPLOY.md) · 런북: [docs/runbooks/DEPLOY.md](docs/runbooks/DEPLOY.md)  
+환경변수 템플릿: [.env.production.example](.env.production.example)
+
+| 경로 | 동작 |
+|------|------|
+| **Vercel Git** | PR → Preview · `main` → Production |
+| **Actions `ci.yml`** | lint · typecheck · qa:smoke · build |
+| **Actions `deploy.yml`** | 게이트 → Vercel Production → `/api/health` · `/api/runtime` → 실패 시 롤백 |
+| **Actions `docker.yml`** | multi-stage 이미지 → **GHCR** (`ghcr.io/<owner>/folio`) |
+| **Actions `rollback.yml`** | `vercel rollback` (수동 · deploy 헬스 실패 시) |
+| **Actions `monitor.yml`** | 30분마다 Production 헬스 프로브 |
+
+```bash
+# 로컬 Docker
+cp docs/env.example .env.local
+docker compose up --build -d
+curl -sS http://localhost:3000/api/health
+
+# 배포 후 헬스 (Actions와 동일 스크립트)
+FOLIO_PRODUCTION_URL=https://your-domain.com npm run deploy:health
+```
+
+GitHub Secrets (선택): `VERCEL_TOKEN` · `VERCEL_ORG_ID` · `VERCEL_PROJECT_ID` · `FOLIO_PRODUCTION_URL`
+
+---
+
+## Discord / GitHub 연동
+
+환경변수: [docs/env.example](docs/env.example) · Production: [.env.production.example](.env.production.example)
+
+### Discord Embeds
+
+1. Discord 채널 → 연동 → 웹후크 → URL 복사
+2. `DISCORD_WEBHOOK_URL` 설정 (`.env.local` / Vercel)
+3. 저장 완료 · 태스크 Done · Gate 변경 시 **Rich Embed** 전송
+   - 초록(완료) · 주황(경고) · 파랑(정보)
+   - Footer: Folio 링크 + timestamp (`NEXT_PUBLIC_FOLIO_URL`)
+
+### GitHub Issues / PR
+
+1. `GITHUB_TOKEN` · `GITHUB_REPO=owner/repo` 설정
+2. 일정(Board) 탭 → **GitHub 동기화** — Issue 상태·담당자·라벨 반영
+3. Webhook: `POST /api/github/webhook` (Events: `pull_request`, `issues`, `workflow_run`)
+   - 시크릿: `GITHUB_WEBHOOK_SECRET` (또는 `FOLIO_MCP_WEBHOOK_SECRET`)
+4. PR 머지 시 연결된 Board 태스크가 **Done**으로 이동
+5. (선택) Actions `folio-sync.yml` — `FOLIO_WEBHOOK_URL` / `FOLIO_WEBHOOK_SECRET`
+
+---
+
 ## 가이드 (처음 쓰는 분)
 
 앱 헤더 **가이드** → [`/guide`](http://localhost:3000/guide) 또는 아래 문서:
@@ -198,15 +252,15 @@ npm run runbook:backup
 - **v1.0** ✅ — 일지·문서·일정·검색·팀·배포
 - **v1.1** ✅ — 링크 그래프·내보내기·MCP·Writing-first
 - **v1.2** ✅ — 가이드/매뉴얼 · AI 요약·고급 분석·Slack 고급
-- **v1.3** (진행) — Discord/GitHub · 자동 배포 파이프라인 (Vercel/Docker/GHCR)
+- **v1.3** ✅ — Discord Embeds · GitHub PR/Board · 자동 배포 파이프라인
 - **v2.0** — 모바일 네이티브·실시간 협업
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 12** (v**1.3.0-wip**)
-- 진행 중: **P40** 자동 배포 파이프라인 고도화
-- 완료: Phase 1~11 (1.2.0) · P39 Discord/GitHub 연동
-- 다음: Phase 12 마무리 · 1.3.0 정식
+- 현재 Phase: **Phase 12 완료** (v**1.3.0** 정식)
+- 진행 중: —
+- 완료: Phase 1~12 (1.3.0) · P39 Discord/GitHub · P40 배포 파이프라인
+- 다음: v2.0 모바일 네이티브 / 실시간 협업
 - 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md))
 
 ---
@@ -220,4 +274,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · v1.3.0-wip
+**Folio** — 프로젝트의 기록, 한 곳에서. · v1.3.0

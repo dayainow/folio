@@ -173,7 +173,6 @@ export async function onGitHubPrMerged(input: {
     ],
     actionUrl: '/?tab=board',
     notify: true,
-    // board result attached below
   }).then((r) => ({
     ...r,
     board: { moved: movedCount, details: details || undefined },
