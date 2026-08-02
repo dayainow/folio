@@ -2,7 +2,7 @@
 
 ![Dashboard](screenshots/dashboard.png)
 
-**프로젝트의 기록, 한 곳에서.** · **v1.4.0-wip**
+**프로젝트의 기록, 한 곳에서.** · **v1.4.0**
 
 Folio는 개발자의 일지·문서·일정·프로세스를 하나로 묶는 워크스페이스입니다.
 Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정을 tracking하는 흐름을,
@@ -67,7 +67,7 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 
 ---
 
-## Phase 1~12 완료
+## Phase 1~13 완료
 
 | Phase | 버전 | 요약 | 상태 |
 |-------|------|------|------|
@@ -82,9 +82,10 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **9** | 1.0.0 | 실제 배포 (Vercel/Docker · 도메인/SSL · 롤백) | ✅ |
 | **10** | 1.1.0 | 링크 그래프 · 내보내기 · MCP · Writing-first 레이아웃 | ✅ |
 | **11** | 1.2.0 | 가이드/매뉴얼 · AI 요약 · 고급 분석 · Slack Block Kit | ✅ |
-| **12** | **1.3.0** | Discord Embeds · GitHub PR/Board · 자동 배포 파이프라인 | ✅ |
+| **12** | 1.3.0 | Discord Embeds · GitHub PR/Board · 자동 배포 파이프라인 | ✅ |
+| **13** | **1.4.0** | 실시간 협업 (Presence · Yjs · 주석 · 활동 스트림) | ✅ |
 
-Phase 12 상세: **P39** Discord/GitHub · **P40** CI/Deploy/Docker/GHCR/Rollback  
+Phase 13 상세: **P41** Presence · Yjs CRDT 동시편집 · 주석/@멘션 · 활동 스트림  
 이력: [VERSION.md](VERSION.md)
 
 ---
@@ -204,18 +205,35 @@ GitHub Secrets (선택): `VERCEL_TOKEN` · `VERCEL_ORG_ID` · `VERCEL_PROJECT_ID
 
 ---
 
-## 실시간 협업 (P41)
+## 실시간 협업
 
 의존성: `yjs` · `y-protocols` · Supabase Realtime(선택) / BroadcastChannel 폴백
 
+### 사용법
+
 | 기능 | 사용법 |
 |------|--------|
-| **Presence** | 일지·문서 편집 시 접속 아바타 · 헤더 **Users** 협업 패널 |
-| **동시 편집** | Journal/Docs `CollabTextarea` — Yjs CRDT로 충돌 병합 |
-| **주석** | 에디터 하단 주석 · `@이름` 멘션 · 해결/미해결 |
-| **활동 스트림** | 우측 사이드바 · 협업 패널 · 저장/주석/태스크 완료 이벤트 |
+| **Presence** | 일지·문서 편집 시 접속 아바타 · 헤더 **Users** 아이콘 → 협업 패널 |
+| **동시 편집** | Journal/Docs에서 같은 문서를 열면 `CollabTextarea`로 실시간 동기화 |
+| **주석** | 에디터 하단 주석 · `@이름` 멘션 · 해결/미해결 토글 |
+| **활동 스트림** | 우측 사이드바 · 협업 패널 · 저장/주석/태스크 완료 이벤트 필터 |
 
-선택 스키마: [docs/supabase-schema-collab.sql](docs/supabase-schema-collab.sql)
+선택 스키마(클라우드 주석·활동): [docs/supabase-schema-collab.sql](docs/supabase-schema-collab.sql)
+
+### Yjs / CRDT
+
+Folio는 동시 편집 충돌 해결에 **[Yjs](https://yjs.dev/)** CRDT를 사용합니다.
+
+- **CRDT**(Conflict-free Replicated Data Type): 각 클라이언트가 독립적으로 편집해도 병합 결과가 수렴합니다. 잠금(lock)이나 중앙 OT 서버가 필수는 아닙니다.
+- **룸**: `journal:YYYY-MM-DD` · `doc:<id>` — 같은 룸을 연 탭/사용자가 업데이트를 교환합니다.
+- **전송**: Supabase Realtime Broadcast가 있으면 사용하고, 없으면 같은 브라우저의 `BroadcastChannel`로 폴백합니다.
+- **MVP**: 본문은 Y.Text에 미러링됩니다. Presence(접속·커서)는 Realtime Presence / BroadcastChannel으로 별도 공유합니다.
+
+```text
+클라이언트 A ──Yjs update──▶ Realtime / BroadcastChannel ──▶ 클라이언트 B
+       ▲                         CRDT 병합                         │
+       └──────────────────── 동일 문서 상태로 수렴 ◀────────────────┘
+```
 
 ---
 
@@ -269,15 +287,15 @@ npm run runbook:backup
 - **v1.1** ✅ — 링크 그래프·내보내기·MCP·Writing-first
 - **v1.2** ✅ — 가이드/매뉴얼 · AI 요약·고급 분석·Slack 고급
 - **v1.3** ✅ — Discord Embeds · GitHub PR/Board · 자동 배포 파이프라인
-- **v1.4** (진행) — 실시간 협업 (Presence · Yjs · 주석 · 활동 스트림)
+- **v1.4** ✅ — 실시간 협업 (Presence · Yjs · 주석 · 활동 스트림)
 - **v2.0** — 모바일 네이티브 · 협업 고도화
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 13** (v**1.4.0-wip**)
-- 진행 중: **P41** 실시간 협업
-- 완료: Phase 1~12 (1.3.0)
-- 다음: Phase 13 마무리 · 1.4.0 정식
+- 현재 Phase: **Phase 13 완료** (v**1.4.0** 정식)
+- 진행 중: —
+- 완료: Phase 1~13 (1.4.0) · P41 실시간 협업
+- 다음: v2.0 모바일 네이티브 / 협업 고도화
 - 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md))
 
 ---
@@ -291,4 +309,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · v1.4.0-wip
+**Folio** — 프로젝트의 기록, 한 곳에서. · v1.4.0

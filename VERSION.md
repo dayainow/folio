@@ -6,11 +6,11 @@
 
 | 항목 | 값 |
 |------|-----|
-| 버전 | **1.4.0-wip** |
-| Phase | Phase 13 |
-| 진행 중 | P41 실시간 협업 |
-| 다음 | Phase 13 마무리 · 1.4.0 정식 |
-| 이어가기 | `origin/main` @ 1.4.0-wip |
+| 버전 | **1.4.0** (정식 릴리즈) |
+| Phase | Phase 13 완료 |
+| 진행 중 | — |
+| 다음 | v2.0 모바일 네이티브 / 협업 고도화 |
+| 이어가기 | `origin/main` @ v1.4.0 정식 |
 
 ## 완료 항목
 
@@ -66,20 +66,21 @@
 | P39 | Discord Embeds · GitHub PR/Board · workflow events | `905b74f` |
 | P40 | 자동 배포 파이프라인 (Vercel/Docker/GHCR/Actions) | `aa1114c` |
 | — | Phase 12 완료 · 1.3.0 정식 릴리즈 | `e8293e9` |
-| P41 | 실시간 협업 (Presence · Yjs · 주석 · 활동 스트림) | (본 커밋) |
+| P41 | 실시간 협업 (Presence · Yjs · 주석 · 활동 스트림) | `309084f` |
+| — | Phase 13 완료 · 1.4.0 정식 릴리즈 | (본 커밋) |
 
 ## 진행 중
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| P41 | 실시간 협업 | Presence · Yjs CRDT · 주석/@멘션 · 활동 스트림 |
+| — | — | Phase 13 완료 (v1.4.0 정식 릴리즈) |
 
-## Phase 13 계획
+## Phase 13 계획 (완료)
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| P41 | 실시간 협업 | 🔄 Presence · 동시편집 · 주석 · 활동 |
-| — | 1.4.0 정식 | Phase 13 완료 시 |
+| P41 | 실시간 협업 | ✅ Presence · Yjs CRDT · 주석/@멘션 · 활동 스트림 · `309084f` |
+| — | 1.4.0 정식 | ✅ Phase 13 완료 릴리즈 |
 
 ## Phase 12 계획 (완료)
 
@@ -139,6 +140,16 @@
 | P22 | 운영 런북 | ✅ |
 
 ## 변경 이력
+
+### 1.4.0 — 2026-08-02 (Phase 13 완료)
+
+- 정식 릴리즈 **1.4.0** (Phase 13: 실시간 협업)
+- **P41** Presence · Yjs CRDT · 주석 · 활동 스트림 (`309084f`)
+  - Supabase Realtime Presence / BroadcastChannel 폴백 · 커서 공유
+  - Journal/Docs `CollabTextarea` — Yjs로 충돌 없는 동시 편집
+  - 주석 `@멘션` · 해결/미해결 · 활동 피드(사용자·문서·시간 필터)
+  - 헤더 협업 패널 · 사이드바 활동 위젯 · `docs/supabase-schema-collab.sql`
+- README: Phase 1~13 완료 · 실시간 협업 · Yjs/CRDT 설명
 
 ### 1.4.0-wip — 2026-08-02 (P41 실시간 협업)
 
