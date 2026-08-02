@@ -2,7 +2,7 @@
 
 ![Dashboard](screenshots/dashboard.png)
 
-**프로젝트의 기록, 한 곳에서.** · **v1.5.0-wip**
+**프로젝트의 기록, 한 곳에서.** · **v1.5.0**
 
 Folio는 개발자의 일지·문서·일정·프로세스를 하나로 묶는 워크스페이스입니다.
 Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정을 tracking하는 흐름을,
@@ -68,7 +68,7 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 
 ---
 
-## Phase 1~14 (진행)
+## Phase 1~14 완료
 
 | Phase | 버전 | 요약 | 상태 |
 |-------|------|------|------|
@@ -85,7 +85,7 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **11** | 1.2.0 | 가이드/매뉴얼 · AI 요약 · 고급 분석 · Slack Block Kit | ✅ |
 | **12** | 1.3.0 | Discord Embeds · GitHub PR/Board · 자동 배포 파이프라인 | ✅ |
 | **13** | **1.4.0** | 실시간 협업 (Presence · Yjs · 주석 · 활동 스트림) | ✅ |
-| **14** | **1.5.0-wip** | 모바일 네이티브 (제스처 · 음성 · 이미지 · Background Sync) | 🔄 |
+| **14** | **1.5.0** | 모바일 네이티브 (제스처 · 음성 · 이미지 · Background Sync) | ✅ |
 
 Phase 14 상세: **P42** 풀스크린 에디터 · 스와이프 · 글쓰기 FAB · PWA/오프라인 · Web Speech · 이미지 첨부  
 이력: [VERSION.md](VERSION.md)
@@ -109,6 +109,36 @@ npm run dev
 ```bash
 npm run lint && npm run typecheck && npm run qa:smoke
 ```
+
+---
+
+## 모바일 / PWA 사용법
+
+스마트폰·태블릿에서도 Folio를 앱처럼 쓸 수 있습니다.
+
+### 설치 (PWA)
+
+1. **Chrome / Edge (Android·데스크톱)** — 주소창 또는 하단 설치 배너에서 **앱 설치**
+2. **iOS Safari** — 공유 → **홈 화면에 추가** (안내 배너가 7일마다 다시 표시될 수 있음)
+3. 설치 후 홈 화면 아이콘으로 전체 화면 실행
+
+### 모바일 조작
+
+| 동작 | 설명 |
+|------|------|
+| **하단 네비** | 일지 · 문서 · 일정 · 프로세스 탭 |
+| **쓰기 FAB** | 중앙 버튼 → 오늘 일지 바로 열기 |
+| **스와이프** | 본문 영역 좌/우 → 탭 전환 · 일지 날짜 이동 |
+| **음성** | 일지 툴바 **음성** (Web Speech 지원 브라우저) |
+| **사진** | 일지 툴바 이미지 첨부 → 리사이즈 후 Markdown에 삽입 |
+
+### 오프라인
+
+- 네트워크가 끊겨도 작성·편집이 가능합니다 (IndexedDB 큐)
+- 다시 온라인이 되면 **Background Sync**(Chromium) 또는 앱 복귀 시 자동 동기화
+- 동기화 완료/복구 시 토스트 · (가능하면) 알림으로 안내합니다
+
+자세한 문제 해결: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
 
 ---
 
@@ -290,15 +320,15 @@ npm run runbook:backup
 - **v1.2** ✅ — 가이드/매뉴얼 · AI 요약·고급 분석·Slack 고급
 - **v1.3** ✅ — Discord Embeds · GitHub PR/Board · 자동 배포 파이프라인
 - **v1.4** ✅ — 실시간 협업 (Presence · Yjs · 주석 · 활동 스트림)
-- **v1.5** 🔄 — 모바일 네이티브 (제스처 · 음성 · 이미지 · Background Sync)
+- **v1.5** ✅ — 모바일 네이티브 (제스처 · 음성 · 이미지 · Background Sync)
 - **v2.0** — 협업 고도화
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 14 진행 중** (v**1.5.0-wip**)
-- 진행 중: **P42** 모바일 네이티브 경험
-- 완료: Phase 1~13 (1.4.0) · P41 실시간 협업
-- 다음: Phase 14 완료 · 1.5.0 정식
+- 현재 Phase: **Phase 14 완료** (v**1.5.0** 정식)
+- 진행 중: —
+- 완료: Phase 1~14 (1.5.0) · P42 모바일 네이티브
+- 다음: v2.0 협업 고도화
 - 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md))
 
 ---
@@ -312,4 +342,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · v1.5.0-wip
+**Folio** — 프로젝트의 기록, 한 곳에서. · v1.5.0
