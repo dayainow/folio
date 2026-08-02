@@ -137,27 +137,6 @@ export async function deleteTaskSupabase(id: string) {
   invalidateQueryCache(SUPABASE_CACHE_KEY);
 }
 
-export async function saveTaskWithFallback(task: Task) {
-  const all = loadTasks();
-  const idx = all.findIndex(t => t.id === task.id);
-  const next = [...all];
-  if (idx >= 0) next[idx] = task;
-  else next.push(task);
-
-  const result = await saveWithFallback(next, 'board', {
-    localSave: () => saveTasks(next),
-    cloudSave: async () => {
-      await saveTaskSupabase(task);
-    },
-  });
-  if (result.usedFallback) {
-    void import('@/lib/health-monitor').then(({ alertRemoteSaveFailure }) =>
-      alertRemoteSaveFailure('board', result.mode),
-    );
-  }
-  return result;
-}
-
 export async function saveTasksWithFallback(tasks: Task[]) {
   const result = await saveWithFallback(tasks, 'board', {
     localSave: () => saveTasks(tasks),

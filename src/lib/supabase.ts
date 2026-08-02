@@ -100,5 +100,3 @@ export async function signOut() {
   if (error) throw error
 }
 
-/** @deprecated 이름 호환용 — 브라우저 클라이언트를 반환 */
-export const createClient = createBrowserSupabaseClient

@@ -31,9 +31,3 @@ export function invalidateQueryCache(prefix?: string): void {
     if (key.startsWith(prefix)) store.delete(key)
   }
 }
-
-export function peekQueryCache<T>(key: string): T | null {
-  const hit = store.get(key)
-  if (!hit) return null
-  return hit.data as T
-}

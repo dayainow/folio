@@ -36,7 +36,7 @@ export function FullExportButton() {
                 journals,
                 docs,
                 tasks,
-                version: '1.1.0-wip',
+                version: process.env.NEXT_PUBLIC_FOLIO_VERSION ?? process.env.npm_package_version ?? '2.0.0-wip',
               },
               (r, label) => setProgress(0.15 + r * 0.85, label),
             )

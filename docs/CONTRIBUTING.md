@@ -20,24 +20,37 @@ npm run dev
 ```bash
 npm run lint          # eslint --max-warnings 0
 npm run typecheck
-npm run test          # typecheck 포함
+npm run test          # Vitest 단위 테스트
 npm run qa:smoke      # 핵심 로직 스모크
 ```
 
 가능하면 `npm run build`까지 통과시켜 주세요.
+
+`npm run test:watch`로 로컬에서 테스트를 감시 실행할 수 있습니다.
+
+## 테스트 컨벤션
+
+- 러너: **Vitest** (`vitest.config.ts`, happy-dom)
+- 위치: `src/**/*.test.ts` (도메인 유틸 옆 또는 동일 폴더)
+- 우선 대상: 순수 함수 · localStorage 모드 · diff/export 포맷터
+- 네트워크·Supabase·Yjs 세션은 모킹하거나 스모크(`qa:smoke`)에 맡긴다
+- 새 유틸을 추가하면 가능하면 테스트를 함께 넣는다
 
 ## 브랜치 · 커밋
 
 1. `main`에서 feature/fix 브랜치를 만듭니다.
 2. 커밋 메시지는 [Conventional Commits](https://www.conventionalcommits.org/) + **한국어** 요약을 사용합니다.
    - 예: `feat: Docs 역링크 패널 추가`, `fix: Journal 자동저장 레이스 수정`
+   - 타입: `feat` · `fix` · `chore` · `docs` · `test` · `refactor` · `style`
 3. 의미 있는 기능/문서 변경이면 `README.md` 작업 관리와 `VERSION.md`를 함께 갱신합니다.
-4. PR에는 변경 요약 · 테스트 방법을 적어 주세요.
+4. PR에는 변경 요약 · 테스트 방법(`npm run test` 결과)을 적어 주세요.
+5. 사용자가 커밋 메시지를 지정하면 그 메시지를 우선합니다.
 
 ## 코드 가이드
 
 - UI는 기존 Folio 패턴(shadcn/ui · Tailwind · writing-first 레이아웃)을 따릅니다.
-- 저장은 `local` / `cloud` / `beacon` 모드와 폴백을 깨지 않도록 주의합니다.
+- 저장은 `local` / `cloud` / `beacon` 모드와 폴백을 깨지 않도록 주의합니다 (`*WithFallback`은 의도된 설계).
+- TypeScript `any`는 금지에 가깝게 유지합니다. 불가피하면 좁은 인터페이스로 대체합니다.
 - 클라이언트에서 시크릿(API 키·토큰)을 노출하지 않습니다. 서버 라우트/env를 사용합니다.
 - `console.log`·주석 처리된 코드·미사용 import는 PR에 남기지 않습니다.
 - Next.js API·파일 구조는 `node_modules/next/dist/docs/` 및 프로젝트 `AGENTS.md`를 우선합니다.
@@ -47,7 +60,7 @@ npm run qa:smoke      # 핵심 로직 스모크
 | 문서 | 용도 |
 |------|------|
 | [GETTING-STARTED.md](./GETTING-STARTED.md) | 설치·시작 |
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | 구조 |
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | v2.0 구조 |
 | [API.md](./API.md) | API |
 | [DEPLOY.md](./DEPLOY.md) | 배포 |
 | [MCP-GUIDE.md](./MCP-GUIDE.md) | MCP 사용 |

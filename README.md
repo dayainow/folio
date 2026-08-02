@@ -2,7 +2,7 @@
 
 ![Dashboard](screenshots/dashboard.png)
 
-**프로젝트의 기록, 한 곳에서.** · **v1.8.0**
+**프로젝트의 기록, 한 곳에서.** · **v2.0.0-wip**
 
 Folio는 개발자의 일지·문서·일정·프로세스를 하나로 묶는 워크스페이스입니다.
 Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정을 tracking하는 흐름을,
@@ -68,7 +68,7 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 
 ---
 
-## Phase 1~17 완료
+## Phase 1~18
 
 | Phase | 버전 | 요약 | 상태 |
 |-------|------|------|------|
@@ -89,8 +89,9 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **15** | **1.6.0** | 협업 고도화 (커서 · Undo/diff · 역할 · 공유 · 알림) | ✅ |
 | **16** | **1.7.0** | 모바일 고도화 (키보드 · FAB · 동기화 상태 · 풀스크린) | ✅ |
 | **17** | **1.8.0** | 실시간 협업 고도화 (Presence 상태 · guest/ACL · 알림 센터) | ✅ |
+| **18** | **2.0.0-wip** | v2.0 기반 정비 (테스트 · 아키텍처 · 코드베이스 정리) | 🔄 |
 
-Phase 17 상세: **P45** 커서/타이핑/상태 · Yjs 충돌·diff · guest·ACL · 초대 커스텀 · 알림 센터 · `e5862e7`  
+Phase 18 상세: **P46** Vitest · CI test · ARCHITECTURE v2 · 데드코드/`any` 정리  
 이력: [VERSION.md](VERSION.md)
 
 ---
@@ -110,8 +111,23 @@ npm run dev
 품질 검사:
 
 ```bash
-npm run lint && npm run typecheck && npm run qa:smoke
+npm run lint && npm run typecheck && npm run test && npm run qa:smoke
 ```
+
+---
+
+## v2.0 로드맵
+
+Phase 18부터 **v2.0** 기반선을 잡습니다. 1.x 기능은 유지하고 DX·품질·확장을 우선합니다.
+
+| 테마 | 내용 | 상태 |
+|------|------|------|
+| **기반 정비 (P46)** | Vitest · CI 단위 테스트 · ARCHITECTURE · 타입/`any` · 데드코드 | 🔄 |
+| **저장·관측** | WithFallback 계약 문서화 · 저장 실패 관측 강화 | 예정 |
+| **협업** | Presence/Yjs 서버 동기화 옵션 · 알림 센터 고도화 | 예정 |
+| **DX** | 기여/테스트 컨벤션 · 성능 예산 | 일부 ✅ |
+
+상세: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [VERSION.md](VERSION.md)
 
 ---
 
@@ -374,14 +390,14 @@ npm run runbook:backup
 - **v1.6** ✅ — 협업 고도화 (커서 · Undo/diff · 역할 · 공유 · 알림)
 - **v1.7** ✅ — 모바일 고도화 (키보드 · FAB · 동기화 상태 · 풀스크린)
 - **v1.8** ✅ — 실시간 협업 고도화 (Presence 상태 · guest/ACL · 알림 센터)
-- **v2.0** — 이후 로드맵
+- **v2.0** 🔄 — 기반 정비 · 테스트 · 아키텍처 (진행 중 · **2.0.0-wip**)
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 17 완료** (v**1.8.0** 정식)
-- 진행 중: —
+- 현재 Phase: **Phase 18 진행 중** (v**2.0.0-wip**)
+- 진행 중: **P46** v2.0 기반 정비
 - 완료: Phase 1~17 (1.8.0) · P45 실시간 협업 고도화
-- 다음: v2.0 로드맵
+- 다음: Phase 18 완료 · 2.0.0 정식
 - 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md))
 
 ---
@@ -395,4 +411,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · v1.8.0
+**Folio** — 프로젝트의 기록, 한 곳에서. · v2.0.0-wip

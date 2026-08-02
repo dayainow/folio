@@ -1,4 +1,4 @@
-# P40 — Lint / Typecheck / QA smoke / Build
+# P46 — Lint / Typecheck / Unit test / QA smoke / Build
 name: CI
 
 on:
@@ -14,11 +14,11 @@ concurrency:
 
 env:
   NEXT_TELEMETRY_DISABLED: "1"
-  FOLIO_VERSION: "1.8.0"
+  FOLIO_VERSION: "2.0.0-wip"
 
 jobs:
   quality:
-    name: Lint · Typecheck · QA · Build
+    name: Lint · Typecheck · QA · Test · Build
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -41,11 +41,11 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Unit tests
+        run: npm run test
+
       - name: QA smoke
         run: npm run qa:smoke
-
-      - name: Test
-        run: npm run test
 
       - name: Build
         run: npm run build
@@ -59,8 +59,8 @@ jobs:
         if: always()
         run: |
           {
-            echo "## CI (P40)"
+            echo "## CI (P46)"
             echo "- ref: \`${{ github.sha }}\`"
-            echo "- lint / typecheck / qa:smoke / test / build"
+            echo "- lint / typecheck / test / qa:smoke / build"
             echo "- FOLIO_VERSION=\`${{ env.FOLIO_VERSION }}\`"
           } >> "$GITHUB_STEP_SUMMARY"

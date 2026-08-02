@@ -72,10 +72,6 @@ export function pushCollabSnapshot(input: {
   return entry
 }
 
-export function getCollabSnapshot(id: string): CollabHistoryEntry | null {
-  return readAll().find((e) => e.id === id) ?? null
-}
-
 export function subscribeCollabHistory(cb: () => void): () => void {
   if (typeof window === 'undefined') return () => undefined
   const h = () => cb()

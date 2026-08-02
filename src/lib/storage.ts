@@ -4,6 +4,7 @@
  * - cloud: Supabase → 실패 시 local
  * - beacon: `.beacon/cache/folio-*.json` (서버 API) → 실패 시 local
  *
+ * v2.0: `*WithFallback` 이중 경로는 의도된 아키텍처다 (오프라인·원격 장애 UX).
  * 저장은 항상 로컬을 선행한다. Beacon CLI 원본(project.json / beacon.db)은 건드리지 않는다.
  */
 

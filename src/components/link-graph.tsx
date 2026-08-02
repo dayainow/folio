@@ -4,7 +4,11 @@
  * 문서 wiki-link 네트워크 뷰 (P31) — react-force-graph-2d
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import ForceGraph2D, { type NodeObject } from 'react-force-graph-2d'
+import ForceGraph2D, {
+  type ForceGraphMethods,
+  type LinkObject,
+  type NodeObject,
+} from 'react-force-graph-2d'
 import {
   buildDocGraph,
   categoryColor,
@@ -44,9 +48,9 @@ export function LinkGraphPanel({
   compact?: boolean
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
-  // react-force-graph-2d 제네릭 ref 타입이 React 19 useRef와 맞지 않아 any 사용
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const fgRef = useRef<any>(undefined)
+  const fgRef = useRef<ForceGraphMethods<NodeObject<GraphNode>, LinkObject<GraphNode, GraphLink>> | undefined>(
+    undefined,
+  )
   const [size, setSize] = useState({ w: 260, h: compact ? 200 : 280 })
 
   const graph = useMemo(() => buildDocGraph(docs), [docs])

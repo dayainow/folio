@@ -1,8 +1,10 @@
-# Folio 아키텍처 (Architecture)
+# Folio 아키텍처 (Architecture) — v2.0
 
 ## 개요
 
 Folio는 Next.js App Router 클라이언트 중심 앱이다. 데이터는 **저장 모드**에 따라 `localStorage` · Supabase · `.beacon/cache` 중 하나에 기록되며, 원격 실패 시에도 **로컬 선행 저장**으로 UX를 보장한다.
+
+v2.0 기준선(P46)은 **1.x 기능을 유지한 채** 테스트 인프라·타입 정리·문서 정비를 목표로 한다. `*WithFallback` 이중 경로는 “레거시 부채”가 아니라 **의도된 오프라인·장애 대응**이다.
 
 ```
 UI (page / panels)
@@ -13,18 +15,25 @@ storage.saveWithFallback / loadWithFallback
     ├── local  → local-cache (debounce + flush)
     ├── cloud  → Supabase (user_id) + 로컬 미러
     └── beacon → /api/beacon/folio → .beacon/cache/folio-*.json
+
+협업 계층 (P41–P45)
+    ├── presence / collab-yjs (Realtime 또는 BroadcastChannel)
+    ├── comments · activity-stream · notification-center
+    └── team · resource-acl · invite-link
 ```
 
 ## 폴더 구조
 
 ```
 src/
-  app/                 # App Router (page, login, api/*)
-  components/          # 패널 · UI · 검색 · 팀
-  lib/                 # 도메인 · 저장 · 연동
+  app/                 # App Router (page, login, api/*, guide)
+  components/          # 패널 · UI · 검색 · 팀 · 협업
+  hooks/               # Presence · viewport · swipe
+  lib/                 # 도메인 · 저장 · 연동 · 협업
+  mcp/                 # MCP 서버
 docs/                  # 사용자·운영 문서
-examples/              # 사용 시나리오
-scripts/               # 번들/성능 측정
+scripts/               # QA · 번들 · MCP 클라이언트
+vitest.config.ts       # 단위 테스트 (P46)
 .process / PROCESS.md  # Beacon 규약
 ```
 
@@ -34,7 +43,9 @@ scripts/               # 번들/성능 측정
 | `src/components/journal.tsx` 등 | 패널 UI |
 | `src/lib/storage.ts` | 저장 모드 단일 진입점 |
 | `src/lib/local-cache.ts` | localStorage + 300ms debounce |
+| `src/lib/presence.ts` / `collab-yjs.ts` | 실시간 협업 전송 |
 | `src/app/api/beacon/*` | Beacon FS 읽기 · Folio 캐시 |
+| `src/lib/*.test.ts` | Vitest 단위 테스트 |
 
 ## 데이터 흐름
 
@@ -52,10 +63,11 @@ scripts/               # 번들/성능 측정
 - 로그인 시 `migrateLocalDataOnLogin()` (로컬 → cloud)
 - Supabase 행은 `user_id` 로 분리, 팀은 RLS (`docs/supabase-schema-team.sql`)
 
-### 검색 · 분석
+### 검색 · 분석 · 협업
 
 - `searchAll()` — 로컬/모드에 따른 데이터 통합 검색
 - `analytics.ts` — Journal/Board 집계 (recharts UI는 dynamic)
+- Presence / Yjs / 알림 센터 — 브라우저 다중 탭·팀 브로드캐스트
 
 ## 저장 모드
 
@@ -74,7 +86,17 @@ scripts/               # 번들/성능 측정
 - Folio 전용 캐시만 `.beacon/cache/folio-{journals,docs,boards}.json`
 - 상세: [BEACON.md](./BEACON.md), [PROCESS.md](../PROCESS.md)
 
-## 성능 (P15)
+## 테스트 (P46)
+
+```bash
+npm run test          # vitest run
+npm run test:watch    # vitest
+```
+
+핵심 커버: `storage` · `presenceColorFor` · `collab-history`(diff) · `export` 포맷터  
+CI: lint → typecheck → qa:smoke → **test** → build
+
+## 성능
 
 - 패널·차트·팀: `next/dynamic`
 - `optimizePackageImports` (lucide, recharts, dnd-kit, supabase)

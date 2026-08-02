@@ -187,6 +187,3 @@ export function subscribeActivity(cb: (events: ActivityEvent[]) => void): () => 
   }
 }
 
-export function clearActivity() {
-  writeAll([])
-}
