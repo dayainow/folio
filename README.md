@@ -2,7 +2,7 @@
 
 ![Dashboard](screenshots/dashboard.png)
 
-**프로젝트의 기록, 한 곳에서.** · **v1.7.0-wip**
+**프로젝트의 기록, 한 곳에서.** · **v1.7.0**
 
 Folio는 개발자의 일지·문서·일정·프로세스를 하나로 묶는 워크스페이스입니다.
 Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정을 tracking하는 흐름을,
@@ -39,7 +39,7 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **협업** | Presence · 커서/타이핑 · Yjs Undo/이력 · 주석/@멘션 · 역할(owner/admin/editor/viewer) · 공유 |
 | **배포** | Vercel Preview/Production · Docker/GHCR · Actions CI/Deploy/Rollback/Monitor |
 | **레이아웃** | Writing-first · 우측 요약 사이드바(280px) · 모바일 하단 네비/글쓰기 FAB · 스와이프 |
-| **모바일** | PWA 설치 · Background Sync · 음성 입력 · 이미지 첨부 · 오프라인 복구 알림 |
+| **모바일** | PWA · Background Sync · 음성/이미지 · 키보드 보정 · FAB · 풀스크린 · 동기화 상태 |
 
 스택: **Next.js 16 · React 19 · Tailwind v4 · shadcn/ui**
 
@@ -68,7 +68,7 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 
 ---
 
-## Phase 1~16 (진행)
+## Phase 1~16 완료
 
 | Phase | 버전 | 요약 | 상태 |
 |-------|------|------|------|
@@ -87,7 +87,7 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **13** | **1.4.0** | 실시간 협업 (Presence · Yjs · 주석 · 활동 스트림) | ✅ |
 | **14** | **1.5.0** | 모바일 네이티브 (제스처 · 음성 · 이미지 · Background Sync) | ✅ |
 | **15** | **1.6.0** | 협업 고도화 (커서 · Undo/diff · 역할 · 공유 · 알림) | ✅ |
-| **16** | **1.7.0-wip** | 모바일 고도화 (키보드 · FAB · 동기화 상태 · 풀스크린) | 🔄 |
+| **16** | **1.7.0** | 모바일 고도화 (키보드 · FAB · 동기화 상태 · 풀스크린) | ✅ |
 
 Phase 16 상세: **P44** visualViewport · 48px 터치 · 상하 스와이프 · 로컬 우선 병합 · FAB/풀스크린  
 이력: [VERSION.md](VERSION.md)
@@ -133,8 +133,16 @@ npm run lint && npm run typecheck && npm run qa:smoke
 | **스와이프** | 좌/우 → 탭·날짜 · 상/하 → 요약 사이드바 |
 | **음성** | 일지 툴바 **음성** (Web Speech 지원 브라우저) |
 | **사진** | 일지 툴바 이미지 첨부 → 리사이즈 후 Markdown에 삽입 |
-| **FAB** | 저장 · 쓰기 · 새로 만들기 |
-| **풀스크린** | 헤더 풀스크린 버튼 · 가상 키보드 시 에디터 높이 자동 조절 |
+
+### 모바일 고도화 (P44)
+
+| 기능 | 설명 |
+|------|------|
+| **가상 키보드** | 키보드가 올라오면 에디터 높이가 `visualViewport`에 맞춰 자동 조절 |
+| **터치 타깃** | 주요 버튼·네비 최소 **48px** |
+| **FAB 클러스터** | **저장** · **쓰기** · **새로 만들기** (일지/문서 컨텍스트) |
+| **풀스크린** | 헤더의 전체화면 버튼으로 크롬 UI 숨김 · 종료 FAB로 복귀 |
+| **동기화 상태** | 헤더 뱃지: 오프라인 / 업로드 중 / 완료 / 실패 · 로컬 우선 병합 |
 
 ### 오프라인
 
@@ -358,15 +366,15 @@ npm run runbook:backup
 - **v1.4** ✅ — 실시간 협업 (Presence · Yjs · 주석 · 활동 스트림)
 - **v1.5** ✅ — 모바일 네이티브 (제스처 · 음성 · 이미지 · Background Sync)
 - **v1.6** ✅ — 협업 고도화 (커서 · Undo/diff · 역할 · 공유 · 알림)
-- **v1.7** 🔄 — 모바일 고도화 (키보드 · FAB · 동기화 상태 · 풀스크린)
+- **v1.7** ✅ — 모바일 고도화 (키보드 · FAB · 동기화 상태 · 풀스크린)
 - **v2.0** — 이후 로드맵
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 16 진행 중** (v**1.7.0-wip**)
-- 진행 중: **P44** 모바일 고도화
-- 완료: Phase 1~15 (1.6.0) · P43 협업 고도화
-- 다음: Phase 16 완료 · 1.7.0 정식
+- 현재 Phase: **Phase 16 완료** (v**1.7.0** 정식)
+- 진행 중: —
+- 완료: Phase 1~16 (1.7.0) · P44 모바일 고도화
+- 다음: v2.0 로드맵
 - 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md))
 
 ---
@@ -380,4 +388,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · v1.7.0-wip
+**Folio** — 프로젝트의 기록, 한 곳에서. · v1.7.0
