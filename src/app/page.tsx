@@ -17,7 +17,7 @@ import { FullExportButton } from '@/components/full-export-button';
 import { McpSyncButton } from '@/components/mcp-sync-button';
 import { getActiveTeamId } from '@/lib/team';
 import { parseFolioDeepLink } from '@/lib/folio-links';
-import { Activity, BookOpen, PanelRight, X } from 'lucide-react';
+import { Activity, BookOpen, PanelRight, Users, X } from 'lucide-react';
 
 const PanelFallback = ({ label }: { label: string }) => (
   <div className="min-h-[12rem] py-8 text-center text-sm text-muted-foreground" role="status" aria-live="polite">
@@ -78,6 +78,11 @@ const WidgetSidebar = dynamic(
   { ssr: false, loading: () => <SidebarSkeleton /> },
 );
 
+const CollabPanel = dynamic(
+  () => import('@/components/collab-panel').then((m) => ({ default: m.CollabPanel })),
+  { ssr: false },
+);
+
 const PwaInstallPrompt = dynamic(
   () => import('@/components/pwa-install-prompt').then((m) => ({ default: m.PwaInstallPrompt })),
   { ssr: false, loading: () => null },
@@ -96,6 +101,7 @@ export default function Home() {
     typeof window !== 'undefined' ? getActiveTeamId() : null,
   );
   const [teamPanelOpen, setTeamPanelOpen] = useState(false);
+  const [collabPanelOpen, setCollabPanelOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [journalPreview, setJournalPreview] = useState<{ date: string; content: string } | null>(
     null,
@@ -362,6 +368,17 @@ export default function Home() {
               type="button"
               variant="ghost"
               size="icon"
+              className="h-9 w-9"
+              aria-label="실시간 협업"
+              aria-expanded={collabPanelOpen}
+              onClick={() => setCollabPanelOpen(true)}
+            >
+              <Users className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
               className="h-9 w-9 lg:hidden"
               aria-label="요약 패널 열기"
               aria-expanded={mobileSidebarOpen}
@@ -378,6 +395,31 @@ export default function Home() {
         onClose={() => setTeamPanelOpen(false)}
         activeTeamId={activeTeamId}
         onActiveTeamChange={handleActiveTeamChange}
+      />
+
+      <CollabPanel
+        open={collabPanelOpen}
+        onClose={() => setCollabPanelOpen(false)}
+        roomId={
+          tab === 'journal'
+            ? `journal:${journalPreview?.date ?? new Date().toISOString().slice(0, 10)}`
+            : tab === 'docs' && focusDocId
+              ? `doc:${focusDocId}`
+              : activeTeamId
+                ? `team:${activeTeamId}`
+                : `tab:${tab}`
+        }
+        target={
+          tab === 'journal'
+            ? {
+                kind: 'journal',
+                id: journalPreview?.date ?? new Date().toISOString().slice(0, 10),
+              }
+            : tab === 'docs' && focusDocId
+              ? { kind: 'doc', id: focusDocId }
+              : null
+        }
+        tabLabel={tab}
       />
 
       <div className="mx-auto flex w-full max-w-[1600px] flex-1">

@@ -31,6 +31,12 @@ import { recordFolioTimelineEvent } from '@/lib/beacon-timeline-consent';
 import { findBacklinks, wikiLinksToMarkdown } from '@/lib/link-parser';
 import { WikiLinkTextarea } from '@/components/wiki-link-textarea';
 import { ExportMenu } from '@/components/export-menu';
+import { PresenceBar } from '@/components/presence-bar';
+import { CollabTextarea } from '@/components/collab-textarea';
+import { DocCommentsPanel } from '@/components/doc-comments';
+import { useCollabUser } from '@/hooks/use-collab-user';
+import { publishActivity } from '@/lib/activity-stream';
+import { getOrCreateGuestId } from '@/lib/presence';
 import {
   docFilename,
   docToMarkdown,
@@ -134,6 +140,7 @@ export const DocsPanel = memo(function DocsPanel({
   /** 글쓰기 우선: 에디터 확대 · 링크 그래프 축약 */
   writingFirst?: boolean;
 } = {}) {
+  const collabUser = useCollabUser();
   const [docs, setDocs] = useState<DocEntry[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
 
@@ -258,6 +265,14 @@ export const DocsPanel = memo(function DocsPanel({
       await saveDocWithFallback(updated);
       setSaveState('saved');
       window.setTimeout(() => setSaveState('idle'), 2000);
+      void publishActivity({
+        type: 'save',
+        actorId: collabUser?.id ?? getOrCreateGuestId(),
+        actorName: collabUser?.name || collabUser?.email?.split('@')[0] || '게스트',
+        targetKind: 'doc',
+        targetId: updated.id,
+        summary: `문서 저장 · ${updated.title}`,
+      });
       void import('@/lib/push-notifications').then(({ showFolioPush }) =>
         showFolioPush({
           title: '문서 저장 완료',
@@ -731,10 +746,18 @@ export const DocsPanel = memo(function DocsPanel({
             </span>
 
             {editing && (
-              <div className="px-4 pt-3 flex items-center gap-1">
+              <div className="px-4 pt-3 flex flex-wrap items-center gap-2">
                 {paneButton('edit', '편집', <Pencil className="h-3 w-3" />)}
                 {paneButton('preview', '미리보기', <Eye className="h-3 w-3" />)}
                 {paneButton('split', '분할', <Columns2 className="h-3 w-3" />)}
+                {selectedId && (
+                  <PresenceBar
+                    className="ml-auto"
+                    roomId={`doc:${selectedId}`}
+                    tab="docs"
+                    user={collabUser}
+                  />
+                )}
               </div>
             )}
 
@@ -742,14 +765,25 @@ export const DocsPanel = memo(function DocsPanel({
               {editing ? (
                 editPane === 'split' ? (
                   <div className="grid min-h-0 grid-cols-1 gap-4 md:grid-cols-2">
-                    <WikiLinkTextarea
-                      value={content}
-                      onChange={setContent}
-                      docs={docs}
-                      excludeDocId={selectedId}
-                      placeholder="마크다운으로 작성 · [[문서명]] 링크 지원"
-                      className={`${editorMinH} resize-none border border-gray-100 rounded-xl text-sm leading-relaxed font-mono`}
-                    />
+                    {selectedId ? (
+                      <CollabTextarea
+                        roomId={`doc:${selectedId}`}
+                        value={content}
+                        onChange={setContent}
+                        user={collabUser}
+                        placeholder="마크다운으로 작성 · [[문서명]] 링크 · 실시간 협업"
+                        className={`${editorMinH} resize-none border border-gray-100 rounded-xl text-sm leading-relaxed font-mono`}
+                      />
+                    ) : (
+                      <WikiLinkTextarea
+                        value={content}
+                        onChange={setContent}
+                        docs={docs}
+                        excludeDocId={selectedId}
+                        placeholder="마크다운으로 작성 · [[문서명]] 링크 지원"
+                        className={`${editorMinH} resize-none border border-gray-100 rounded-xl text-sm leading-relaxed font-mono`}
+                      />
+                    )}
                     <ScrollArea
                       className={`${writingFirst ? 'h-[calc(100dvh-14rem)] lg:h-[calc(100dvh-12rem)]' : 'h-[400px]'} rounded-xl border border-gray-100 p-3`}
                     >
@@ -760,6 +794,15 @@ export const DocsPanel = memo(function DocsPanel({
                   <ScrollArea className={previewH}>
                     <MarkdownPreview content={content} docs={docs} onOpenDoc={openDocById} />
                   </ScrollArea>
+                ) : selectedId ? (
+                  <CollabTextarea
+                    roomId={`doc:${selectedId}`}
+                    value={content}
+                    onChange={setContent}
+                    user={collabUser}
+                    placeholder="마크다운으로 작성 · [[ 위키링크 · 실시간 협업(Yjs)"
+                    className={`${editorMinH} resize-none border-0 focus-visible:ring-0 text-sm leading-relaxed p-0 font-mono`}
+                  />
                 ) : (
                   <WikiLinkTextarea
                     value={content}
@@ -776,6 +819,19 @@ export const DocsPanel = memo(function DocsPanel({
                 </ScrollArea>
               )}
             </div>
+
+            {selectedId && (
+              <div className="border-t border-gray-50 px-4 py-3">
+                <DocCommentsPanel
+                  targetKind="doc"
+                  targetId={selectedId}
+                  user={collabUser}
+                  mentionSuggestions={
+                    collabUser?.email ? [collabUser.email.split('@')[0]!] : []
+                  }
+                />
+              </div>
+            )}
 
             {backlinks.length > 0 && (
               <div className="border-t border-gray-50 px-4 py-3">

@@ -2,7 +2,7 @@
 
 ![Dashboard](screenshots/dashboard.png)
 
-**프로젝트의 기록, 한 곳에서.** · **v1.3.0**
+**프로젝트의 기록, 한 곳에서.** · **v1.4.0-wip**
 
 Folio는 개발자의 일지·문서·일정·프로세스를 하나로 묶는 워크스페이스입니다.
 Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정을 tracking하는 흐름을,
@@ -36,6 +36,7 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **저장** | local / cloud(Supabase) / beacon · 오프라인 큐 · PWA |
 | **내보내기** | MD · CSV · JSON · ZIP · 탭별 ExportMenu · 전체 번들 |
 | **연동** | Slack Block Kit · Discord Embeds · GitHub Issues/PR · MCP · 팀 초대/공유 |
+| **협업** | Presence · Yjs 동시편집 · 주석/@멘션 · 활동 스트림 |
 | **배포** | Vercel Preview/Production · Docker/GHCR · Actions CI/Deploy/Rollback/Monitor |
 | **레이아웃** | Writing-first · 우측 요약 사이드바(280px) · 모바일 하단 네비/시트 |
 
@@ -203,6 +204,21 @@ GitHub Secrets (선택): `VERCEL_TOKEN` · `VERCEL_ORG_ID` · `VERCEL_PROJECT_ID
 
 ---
 
+## 실시간 협업 (P41)
+
+의존성: `yjs` · `y-protocols` · Supabase Realtime(선택) / BroadcastChannel 폴백
+
+| 기능 | 사용법 |
+|------|--------|
+| **Presence** | 일지·문서 편집 시 접속 아바타 · 헤더 **Users** 협업 패널 |
+| **동시 편집** | Journal/Docs `CollabTextarea` — Yjs CRDT로 충돌 병합 |
+| **주석** | 에디터 하단 주석 · `@이름` 멘션 · 해결/미해결 |
+| **활동 스트림** | 우측 사이드바 · 협업 패널 · 저장/주석/태스크 완료 이벤트 |
+
+선택 스키마: [docs/supabase-schema-collab.sql](docs/supabase-schema-collab.sql)
+
+---
+
 ## 가이드 (처음 쓰는 분)
 
 앱 헤더 **가이드** → [`/guide`](http://localhost:3000/guide) 또는 아래 문서:
@@ -253,14 +269,15 @@ npm run runbook:backup
 - **v1.1** ✅ — 링크 그래프·내보내기·MCP·Writing-first
 - **v1.2** ✅ — 가이드/매뉴얼 · AI 요약·고급 분석·Slack 고급
 - **v1.3** ✅ — Discord Embeds · GitHub PR/Board · 자동 배포 파이프라인
-- **v2.0** — 모바일 네이티브·실시간 협업
+- **v1.4** (진행) — 실시간 협업 (Presence · Yjs · 주석 · 활동 스트림)
+- **v2.0** — 모바일 네이티브 · 협업 고도화
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 12 완료** (v**1.3.0** 정식)
-- 진행 중: —
-- 완료: Phase 1~12 (1.3.0) · P39 Discord/GitHub · P40 배포 파이프라인
-- 다음: v2.0 모바일 네이티브 / 실시간 협업
+- 현재 Phase: **Phase 13** (v**1.4.0-wip**)
+- 진행 중: **P41** 실시간 협업
+- 완료: Phase 1~12 (1.3.0)
+- 다음: Phase 13 마무리 · 1.4.0 정식
 - 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md))
 
 ---
@@ -274,4 +291,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · v1.3.0
+**Folio** — 프로젝트의 기록, 한 곳에서. · v1.4.0-wip

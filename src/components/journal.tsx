@@ -3,7 +3,6 @@
 import { useState, useCallback, useEffect, useMemo, useRef, memo, type KeyboardEvent, type ChangeEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -21,6 +20,12 @@ import {
   journalsFilename,
   journalsToMarkdown,
 } from '@/lib/export';
+import { PresenceBar } from '@/components/presence-bar';
+import { CollabTextarea } from '@/components/collab-textarea';
+import { DocCommentsPanel } from '@/components/doc-comments';
+import { useCollabUser } from '@/hooks/use-collab-user';
+import { publishActivity } from '@/lib/activity-stream';
+import { getOrCreateGuestId } from '@/lib/presence';
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -76,6 +81,7 @@ export const JournalPanel = memo(function JournalPanel({
   /** 글쓰기 우선: 에디터 확대 · 보조 패널 접기 */
   writingFirst?: boolean;
 } = {}) {
+  const collabUser = useCollabUser();
   const [date, setDate] = useState(todayStr);
   const [filterTag, setFilterTag] = useState<string | null>(null);
   const [rangeStart, setRangeStart] = useState('');
@@ -255,6 +261,14 @@ export const JournalPanel = memo(function JournalPanel({
         }),
       );
       saveFeedbackTimer.current = setTimeout(() => setSaveState('idle'), 2000);
+      void publishActivity({
+        type: 'save',
+        actorId: collabUser?.id ?? getOrCreateGuestId(),
+        actorName: collabUser?.name || collabUser?.email?.split('@')[0] || '게스트',
+        targetKind: 'journal',
+        targetId: date,
+        summary: `일지 저장 · ${date}`,
+      });
       void saveJournalWithFallback(date, draft, tags)
         .then((result) => {
           if (result.usedFallback) {
@@ -301,7 +315,7 @@ export const JournalPanel = memo(function JournalPanel({
     } catch {
       /* 알림 실패는 저장 UX를 막지 않음 */
     }
-  }, [date, draft, tagsInput, hasNotifyChannel]);
+  }, [date, draft, tagsInput, hasNotifyChannel, collabUser]);
 
   useEffect(() => {
     setToastRetryHandler(() => {
@@ -662,20 +676,28 @@ export const JournalPanel = memo(function JournalPanel({
           <p className="px-4 pt-2 text-[11px] text-gray-500">{importMsg}</p>
         )}
         <div className={writingFirst ? 'shrink-0 px-3 pt-2 sm:px-4' : 'p-4'}>
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <PresenceBar roomId={`journal:${date}`} tab="journal" user={collabUser} />
+          </div>
           <label htmlFor="journal-draft" className="sr-only">
             일지 본문
           </label>
-          <Textarea
+          <CollabTextarea
             id="journal-draft"
+            roomId={`journal:${date}`}
             value={draft}
-            onChange={e => setDraft(e.target.value)}
+            onChange={setDraft}
+            user={collabUser}
             placeholder="오늘 한 일, 회의 내용, 이슈, 배운 것... 자유롭게 적으세요.\nMarkdown 지원: # 제목, - 리스트, **굵게**"
             className={editorClass}
             aria-describedby="journal-draft-hint"
           />
           <p id="journal-draft-hint" className="sr-only">
-            마크다운을 사용할 수 있습니다. 저장 버튼 또는 자동 저장으로 기록됩니다.
+            마크다운을 사용할 수 있습니다. 저장 버튼 또는 자동 저장으로 기록됩니다. 실시간 협업(Yjs)이 활성화되어 있습니다.
           </p>
+          <div className="mt-3">
+            <DocCommentsPanel targetKind="journal" targetId={date} user={collabUser} />
+          </div>
         </div>
         <div className={writingFirst ? 'shrink-0 px-3 pb-3 pt-1 sm:px-4' : 'px-4 pb-4'}>
           <Separator className={writingFirst ? 'mb-2' : 'mb-3'} />

@@ -10,6 +10,7 @@ import { loadJournalsWithFallback } from '@/lib/journal'
 import { loadTasksWithFallback, type Task } from '@/lib/board'
 import { fetchBeaconSummary, type ProjectSummary } from '@/lib/beacon'
 import { AiSummaryWidget } from '@/components/ai-summary-widget'
+import { ActivityFeed } from '@/components/activity-feed'
 import { cn } from '@/lib/utils'
 
 export type WidgetSidebarProps = {
@@ -197,6 +198,11 @@ export function WidgetSidebar({
 
       {/* AI 요약 위젯 */}
       <AiSummaryWidget compact />
+
+      {/* P41 활동 스트림 */}
+      <section className="rounded-xl border border-gray-100 dark:border-gray-800 bg-card p-3">
+        <ActivityFeed />
+      </section>
 
       {footer && (
         <div className="mt-auto space-y-2 border-t border-gray-100 pt-3 dark:border-gray-800">

@@ -622,6 +622,21 @@ export function BoardDndPanel({
         }),
       );
     }
+
+    if (status === 'done') {
+      void import('@/lib/activity-stream').then(({ publishActivity }) =>
+        import('@/lib/presence').then(({ getOrCreateGuestId }) =>
+          publishActivity({
+            type: 'task_done',
+            actorId: getOrCreateGuestId(),
+            actorName: 'Board',
+            targetKind: 'board',
+            targetId: task.id,
+            summary: `태스크 완료 · ${task.title}`,
+          }),
+        ),
+      );
+    }
   };
 
   const linkGitHubIssue = async (task: Task) => {
