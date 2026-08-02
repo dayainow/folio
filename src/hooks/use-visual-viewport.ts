@@ -13,21 +13,41 @@ export type VisualViewportState = {
   offsetTop: number
 }
 
+const SERVER_SNAPSHOT: VisualViewportState = {
+  height: 800,
+  keyboardInset: 0,
+  offsetTop: 0,
+}
+
+let cached: VisualViewportState = SERVER_SNAPSHOT
+
 function readViewport(): VisualViewportState {
-  if (typeof window === 'undefined') {
-    return { height: 800, keyboardInset: 0, offsetTop: 0 }
-  }
+  if (typeof window === 'undefined') return SERVER_SNAPSHOT
+
   const vv = window.visualViewport
   const layoutH = window.innerHeight
-  if (!vv) {
-    return { height: layoutH, keyboardInset: 0, offsetTop: 0 }
+  const next: VisualViewportState = !vv
+    ? { height: layoutH, keyboardInset: 0, offsetTop: 0 }
+    : {
+        height: Math.round(vv.height),
+        keyboardInset: Math.max(0, Math.round(layoutH - vv.height - vv.offsetTop)),
+        offsetTop: Math.round(vv.offsetTop),
+      }
+
+  // 값이 같으면 동일 참조 유지 — useSyncExternalStore 무한 루프 방지
+  if (
+    cached.height === next.height &&
+    cached.keyboardInset === next.keyboardInset &&
+    cached.offsetTop === next.offsetTop
+  ) {
+    return cached
   }
-  const keyboardInset = Math.max(0, Math.round(layoutH - vv.height - vv.offsetTop))
-  return {
-    height: Math.round(vv.height),
-    keyboardInset,
-    offsetTop: Math.round(vv.offsetTop),
-  }
+  cached = next
+  return cached
+}
+
+function getServerSnapshot(): VisualViewportState {
+  return SERVER_SNAPSHOT
 }
 
 function subscribe(onChange: () => void) {
@@ -45,11 +65,7 @@ function subscribe(onChange: () => void) {
 
 /** 가상 키보드가 올라올 때 에디터 높이 보정용 */
 export function useVisualViewport(): VisualViewportState {
-  return useSyncExternalStore(subscribe, readViewport, () => ({
-    height: 800,
-    keyboardInset: 0,
-    offsetTop: 0,
-  }))
+  return useSyncExternalStore(subscribe, readViewport, getServerSnapshot)
 }
 
 /** 모바일 writing-first 에디터 권장 높이 (px) */
