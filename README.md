@@ -2,7 +2,7 @@
 
 ![Dashboard](screenshots/dashboard.png)
 
-**프로젝트의 기록, 한 곳에서.** · **v1.6.0-wip**
+**프로젝트의 기록, 한 곳에서.** · **v1.6.0**
 
 Folio는 개발자의 일지·문서·일정·프로세스를 하나로 묶는 워크스페이스입니다.
 Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정을 tracking하는 흐름을,
@@ -68,7 +68,7 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 
 ---
 
-## Phase 1~15 (진행)
+## Phase 1~15 완료
 
 | Phase | 버전 | 요약 | 상태 |
 |-------|------|------|------|
@@ -86,7 +86,7 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **12** | 1.3.0 | Discord Embeds · GitHub PR/Board · 자동 배포 파이프라인 | ✅ |
 | **13** | **1.4.0** | 실시간 협업 (Presence · Yjs · 주석 · 활동 스트림) | ✅ |
 | **14** | **1.5.0** | 모바일 네이티브 (제스처 · 음성 · 이미지 · Background Sync) | ✅ |
-| **15** | **1.6.0-wip** | 협업 고도화 (커서 · Undo/diff · 역할 · 공유 · 알림) | 🔄 |
+| **15** | **1.6.0** | 협업 고도화 (커서 · Undo/diff · 역할 · 공유 · 알림) | ✅ |
 
 Phase 15 상세: **P43** Presence 커서/타이핑 · Yjs 이력 · owner/admin/editor/viewer · 멘션/Gate 알림  
 이력: [VERSION.md](VERSION.md)
@@ -140,6 +140,37 @@ npm run lint && npm run typecheck && npm run qa:smoke
 - 동기화 완료/복구 시 토스트 · (가능하면) 알림으로 안내합니다
 
 자세한 문제 해결: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
+
+---
+
+## 협업 사용법
+
+팀과 함께 일지·문서를 편집하고 권한·알림을 관리합니다.
+
+### Presence · 동시 편집
+
+| 기능 | 설명 |
+|------|------|
+| **접속 아바타** | 일지/문서 상단에 함께 편집 중인 사용자 표시 |
+| **커서** | 선택 영역이 실시간으로 공유되고 원격 커서가 표시됨 |
+| **타이핑** | 다른 사용자가 입력 중이면 「입력 중…」 표시 |
+| **Undo/Redo** | 에디터 툴바 또는 `Ctrl/⌘+Z` · `Ctrl/⌘+Shift+Z` |
+| **이력 · Diff** | **이력** 버튼 → 스냅샷 비교 · 이전 버전 복원 |
+
+### 역할 · 공유 · 초대
+
+- 역할: **owner** · **admin** · **editor** · **viewer** (`member`는 editor와 동일 취급)
+- 문서/보드 **공유** 버튼으로 활성 팀에 view/edit 권한 부여
+- 팀 초대 시 역할·만료일(1~30일) 선택 · **초대 링크** 복사 (`/?invite=<token>`)
+- DB 마이그레이션: [docs/supabase-schema-team-p43.sql](docs/supabase-schema-team-p43.sql)
+
+### 알림
+
+- 주석 `@멘션` → 푸시/팀 채널 알림
+- 문서·보드 공유 시 팀 알림
+- Beacon **Gate** 상태 변경 시 팀 전체에 알림
+
+헤더 **협업** 패널에서 Presence·활동 스트림을 확인할 수 있습니다.
 
 ---
 
@@ -322,15 +353,15 @@ npm run runbook:backup
 - **v1.3** ✅ — Discord Embeds · GitHub PR/Board · 자동 배포 파이프라인
 - **v1.4** ✅ — 실시간 협업 (Presence · Yjs · 주석 · 활동 스트림)
 - **v1.5** ✅ — 모바일 네이티브 (제스처 · 음성 · 이미지 · Background Sync)
-- **v1.6** 🔄 — 협업 고도화 (커서 · Undo/diff · 역할 · 공유 · 알림)
-- **v2.0** — 협업/모바일 이후 로드맵
+- **v1.6** ✅ — 협업 고도화 (커서 · Undo/diff · 역할 · 공유 · 알림)
+- **v2.0** — 이후 로드맵
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 15 진행 중** (v**1.6.0-wip**)
-- 진행 중: **P43** 협업 고도화
-- 완료: Phase 1~14 (1.5.0) · P42 모바일 네이티브
-- 다음: Phase 15 완료 · 1.6.0 정식
+- 현재 Phase: **Phase 15 완료** (v**1.6.0** 정식)
+- 진행 중: —
+- 완료: Phase 1~15 (1.6.0) · P43 협업 고도화
+- 다음: v2.0 로드맵
 - 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md))
 
 ---
@@ -344,4 +375,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · v1.6.0-wip
+**Folio** — 프로젝트의 기록, 한 곳에서. · v1.6.0
