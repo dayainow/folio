@@ -9,9 +9,11 @@ import { Button } from '@/components/ui/button'
 import { PresenceAvatars } from '@/components/presence-avatars'
 import { CommentThread } from '@/components/comment-thread'
 import { ActivityFeed } from '@/components/activity-feed'
+import { NotificationCenterButton } from '@/components/notification-center'
 import { usePresence } from '@/hooks/use-collab'
 import { useEscapeToClose } from '@/lib/a11y'
 import { cn } from '@/lib/utils'
+import type { PresenceStatus } from '@/lib/presence'
 
 export type CollabPanelProps = {
   open: boolean
@@ -23,8 +25,9 @@ export type CollabPanelProps = {
 }
 
 export function CollabPanel({ open, onClose, roomId, target, tabLabel }: CollabPanelProps) {
-  const { peers, self, transport } = usePresence(open ? roomId : null, tabLabel)
-  const [section, setSection] = useState<'comments' | 'activity'>('comments')
+  const { peers, self, transport, updatePresence } = usePresence(open ? roomId : null, tabLabel)
+  const [section, setSection] = useState<'comments' | 'activity' | 'alerts'>('comments')
+  const [status, setStatus] = useState<PresenceStatus>('online')
 
   useEscapeToClose(open, onClose)
 
@@ -34,6 +37,36 @@ export function CollabPanel({ open, onClose, roomId, target, tabLabel }: CollabP
     document.body.style.overflow = 'hidden'
     return () => {
       document.body.style.overflow = prev
+    }
+  }, [open])
+
+  useEffect(() => {
+    if (!open || !roomId) return
+    updatePresence({ status })
+  }, [open, roomId, status, updatePresence])
+
+  // 5분 무입력 → away (수동 busy는 유지)
+  useEffect(() => {
+    if (!open) return
+    let idleTimer: number | null = null
+    const bump = () => {
+      if (idleTimer) window.clearTimeout(idleTimer)
+      setStatus((s) => {
+        if (s === 'busy') return s
+        return s === 'away' ? 'online' : s
+      })
+      idleTimer = window.setTimeout(() => {
+        setStatus((s) => (s === 'busy' ? s : 'away'))
+      }, 5 * 60_000)
+    }
+    const evs = ['pointerdown', 'keydown'] as const
+    for (const e of evs) window.addEventListener(e, bump, { passive: true })
+    idleTimer = window.setTimeout(() => {
+      setStatus((s) => (s === 'busy' ? s : 'away'))
+    }, 5 * 60_000)
+    return () => {
+      if (idleTimer) window.clearTimeout(idleTimer)
+      for (const e of evs) window.removeEventListener(e, bump)
     }
   }, [open])
 
@@ -63,17 +96,35 @@ export function CollabPanel({ open, onClose, roomId, target, tabLabel }: CollabP
               {transport ? ` · ${transport}` : ''}
             </p>
           </div>
-          <Button type="button" size="icon" variant="ghost" className="size-8" onClick={onClose}>
-            <X className="size-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <NotificationCenterButton />
+            <Button type="button" size="icon" variant="ghost" className="size-8" onClick={onClose}>
+              <X className="size-4" />
+            </Button>
+          </div>
         </header>
 
         <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-2">
-          <PresenceAvatars peers={peers} />
-          <span className="text-[11px] text-muted-foreground">
-            {self ? `${self.name}` : '…'}
-            {peers.length > 0 ? ` · +${peers.length}` : ' · 혼자'}
-          </span>
+          <PresenceAvatars peers={peers} selfStatus={status} />
+          <div className="flex items-center gap-2">
+            <label className="sr-only" htmlFor="presence-status">
+              내 상태
+            </label>
+            <select
+              id="presence-status"
+              value={status}
+              onChange={(e) => setStatus(e.target.value as PresenceStatus)}
+              className="h-7 rounded-md border border-input bg-background px-1.5 text-[10px]"
+            >
+              <option value="online">online</option>
+              <option value="away">away</option>
+              <option value="busy">busy</option>
+            </select>
+            <span className="text-[11px] text-muted-foreground">
+              {self ? `${self.name}` : '…'}
+              {peers.length > 0 ? ` · +${peers.length}` : ' · 혼자'}
+            </span>
+          </div>
         </div>
 
         <div className="flex gap-1 border-b border-border px-3 py-2">
@@ -81,6 +132,7 @@ export function CollabPanel({ open, onClose, roomId, target, tabLabel }: CollabP
             [
               ['comments', '주석'],
               ['activity', '활동'],
+              ['alerts', '알림'],
             ] as const
           ).map(([id, label]) => (
             <button
@@ -109,6 +161,11 @@ export function CollabPanel({ open, onClose, roomId, target, tabLabel }: CollabP
             <p className="text-xs text-muted-foreground">일지·문서에서 항목을 선택하면 주석을 달 수 있습니다.</p>
           ) : null}
           {section === 'activity' ? <ActivityFeed /> : null}
+          {section === 'alerts' ? (
+            <p className="text-xs text-muted-foreground">
+              헤더 알림 벨에서 멘션·공유·초대·Gate 히스토리를 확인하세요.
+            </p>
+          ) : null}
         </div>
       </aside>
     </div>

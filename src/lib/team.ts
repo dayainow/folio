@@ -5,15 +5,23 @@
  */
 import { requireAuthUser } from '@/lib/supabase';
 
-export type TeamRole = 'owner' | 'admin' | 'editor' | 'viewer' | 'member'
+export type TeamRole = 'owner' | 'admin' | 'editor' | 'viewer' | 'guest' | 'member'
 export type SharePermission = 'view' | 'edit'
 export type InviteStatus = 'pending' | 'accepted' | 'revoked' | 'expired'
 
 /** UI용 역할 — legacy `member`는 editor로 취급 */
-export type TeamRoleUi = 'owner' | 'admin' | 'editor' | 'viewer'
+export type TeamRoleUi = 'owner' | 'admin' | 'editor' | 'viewer' | 'guest'
 
 export function normalizeTeamRole(role: TeamRole | string): TeamRoleUi {
-  if (role === 'owner' || role === 'admin' || role === 'editor' || role === 'viewer') return role
+  if (
+    role === 'owner' ||
+    role === 'admin' ||
+    role === 'editor' ||
+    role === 'viewer' ||
+    role === 'guest'
+  ) {
+    return role
+  }
   if (role === 'member') return 'editor'
   return 'viewer'
 }
@@ -28,11 +36,18 @@ export function canAdminWithRole(role: TeamRole | string): boolean {
   return r === 'owner' || r === 'admin'
 }
 
+/** viewer 이상 주석 가능 · guest는 읽기만 */
+export function canCommentWithRole(role: TeamRole | string): boolean {
+  const r = normalizeTeamRole(role)
+  return r === 'owner' || r === 'admin' || r === 'editor' || r === 'viewer'
+}
+
 export const TEAM_ROLE_LABELS: Record<TeamRoleUi, string> = {
   owner: 'Owner',
   admin: 'Admin',
   editor: 'Editor',
   viewer: 'Viewer',
+  guest: 'Guest',
 }
 
 export interface Team {
@@ -189,8 +204,9 @@ export async function inviteMember(
 
   const days = Math.min(90, Math.max(1, Math.floor(expiresInDays)))
   const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
-  // DB 레거시: member 허용 · editor/viewer는 P43 마이그레이션 후
-  const dbRole = role === 'member' ? 'member' : role
+  // DB: guest/viewer/editor/admin · legacy member
+  const dbRole =
+    role === 'member' ? 'member' : role === 'guest' ? 'viewer' : role
 
   const { supabase, userId } = await requireAuthUser()
   const { data, error } = await supabase
@@ -207,7 +223,10 @@ export async function inviteMember(
     .single()
 
   if (error) throw error
-  return rowToInvite(data as InviteRow)
+  const invite = rowToInvite(data as InviteRow)
+  // UI에는 요청한 guest 역할 반영 (DB는 viewer로 저장될 수 있음)
+  if (role === 'guest') invite.role = 'guest'
+  return invite
 }
 
 /** 초대 링크 (토큰 기반) */

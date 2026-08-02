@@ -14,6 +14,7 @@ import {
   type SharePermission,
 } from '@/lib/team'
 import { notifyShareInvite } from '@/lib/collab-notify'
+import { ResourceAclPanel } from '@/components/resource-acl-panel'
 import { Share2 } from 'lucide-react'
 
 function subscribeActiveTeam(onStoreChange: () => void) {
@@ -145,6 +146,7 @@ export function ShareResourceButton({
           </div>
           {msg && <p className="text-emerald-600 dark:text-emerald-400">{msg}</p>}
           {err && <p className="text-red-600 dark:text-red-400">{err}</p>}
+          <ResourceAclPanel kind={kind} resourceId={resourceId} className="pt-1" />
         </div>
       )}
     </div>

@@ -14,6 +14,9 @@ export type PresenceCursor = {
   head: number
 }
 
+/** P45 — 사용자 상태 표시기 */
+export type PresenceStatus = 'online' | 'away' | 'busy'
+
 export type PresenceUser = {
   userId: string
   name: string
@@ -24,6 +27,8 @@ export type PresenceUser = {
   cursor?: PresenceCursor | null
   /** P43 — 타이핑 중 */
   typing?: boolean
+  /** P45 — 온라인/자리비움/다른용무 */
+  status?: PresenceStatus
   updatedAt: string
 }
 
@@ -75,7 +80,7 @@ export function joinPresenceRoom(options: {
   self: Omit<PresenceUser, 'roomId' | 'updatedAt' | 'color'> & { color?: string }
   onPeers: (peers: PresenceUser[]) => void
 }): {
-  updateMeta: (patch: Partial<Pick<PresenceUser, 'cursor' | 'tab' | 'name' | 'typing'>>) => void
+  updateMeta: (patch: Partial<Pick<PresenceUser, 'cursor' | 'tab' | 'name' | 'typing' | 'status'>>) => void
   leave: PresenceUnsubscribe
   transport: 'supabase' | 'broadcast'
 } {
@@ -91,6 +96,8 @@ export function joinPresenceRoom(options: {
     tab: self.tab,
     roomId,
     cursor: self.cursor ?? null,
+    typing: self.typing ?? false,
+    status: self.status ?? 'online',
     updatedAt: new Date().toISOString(),
   })
 

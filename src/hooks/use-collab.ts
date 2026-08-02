@@ -46,7 +46,7 @@ export function usePresence(roomId: string | null, tab?: string) {
   const [self, setSelf] = useState<CollabIdentity | null>(null)
   const [transport, setTransport] = useState<'supabase' | 'broadcast' | null>(null)
   const updateRef = useRef<
-    ((patch: Partial<Pick<PresenceUser, 'cursor' | 'tab' | 'name' | 'typing'>>) => void) | null
+    ((patch: Partial<Pick<PresenceUser, 'cursor' | 'tab' | 'name' | 'typing' | 'status'>>) => void) | null
   >(null)
 
   useEffect(() => {
@@ -67,6 +67,7 @@ export function usePresence(roomId: string | null, tab?: string) {
           name: identity.name,
           email: identity.email,
           tab,
+          status: 'online',
         },
         onPeers: (next) => {
           if (!cancelled) setPeers(next)
@@ -88,10 +89,23 @@ export function usePresence(roomId: string | null, tab?: string) {
     updateRef.current?.({ cursor })
   }, [])
 
+  const updatePresence = useCallback(
+    (patch: Partial<Pick<PresenceUser, 'cursor' | 'tab' | 'name' | 'typing' | 'status'>>) => {
+      updateRef.current?.(patch)
+    },
+    [],
+  )
+
   const visiblePeers = roomId ? peers : []
   const visibleTransport = roomId ? transport : null
 
-  return { peers: visiblePeers, self, transport: visibleTransport, updateCursor }
+  return {
+    peers: visiblePeers,
+    self,
+    transport: visibleTransport,
+    updateCursor,
+    updatePresence,
+  }
 }
 
 /**

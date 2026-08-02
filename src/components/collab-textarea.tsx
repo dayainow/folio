@@ -107,9 +107,16 @@ export function CollabTextarea({
   const [canUndo, setCanUndo] = useState(false)
   const [canRedo, setCanRedo] = useState(false)
   const [cursorOverlays, setCursorOverlays] = useState<
-    Array<{ peer: PresenceUser; top: number; left: number }>
+    Array<{
+      peer: PresenceUser
+      top: number
+      left: number
+      /** 선택 영역 하이라이트 (문자 단위 근사) */
+      width: number
+    }>
   >([])
   const typingTimer = useRef<number | null>(null)
+  const lastRemoteSnap = useRef(0)
 
   const refreshUndoState = useCallback(() => {
     const s = sessionRef.current
@@ -145,6 +152,16 @@ export function CollabTextarea({
       if (origin === 'remote') {
         applyingRemote.current = true
         onChange(text)
+        const now = performance.now()
+        if (now - lastRemoteSnap.current > 2500) {
+          lastRemoteSnap.current = now
+          pushCollabSnapshot({
+            roomId,
+            text,
+            label: '원격 병합',
+            actorName: 'remote',
+          })
+        }
         queueMicrotask(() => {
           applyingRemote.current = false
         })
@@ -183,13 +200,24 @@ export function CollabTextarea({
       return
     }
     const ta = taRef.current
-    const next: Array<{ peer: PresenceUser; top: number; left: number }> = []
+    const next: Array<{
+      peer: PresenceUser
+      top: number
+      left: number
+      width: number
+    }> = []
     for (const p of peers) {
       if (!p.cursor || typeof p.cursor.anchor !== 'number') continue
-      const idx = Math.min(p.cursor.anchor, value.length)
+      const anchor = Math.min(Math.max(0, p.cursor.anchor), value.length)
+      const head = Math.min(Math.max(0, p.cursor.head ?? p.cursor.anchor), value.length)
       try {
-        const pos = caretMetrics(ta, idx)
-        next.push({ peer: p, top: pos.top, left: pos.left })
+        const pos = caretMetrics(ta, Math.min(anchor, head))
+        const end = caretMetrics(ta, Math.max(anchor, head))
+        const width =
+          Math.max(anchor, head) === Math.min(anchor, head)
+            ? 2
+            : Math.max(2, Math.abs(end.left - pos.left))
+        next.push({ peer: p, top: pos.top, left: pos.left, width })
       } catch {
         /* ignore */
       }
@@ -342,12 +370,18 @@ export function CollabTextarea({
         {cursorOverlays.map((item) => (
           <span
             key={item.peer.userId}
-            className="pointer-events-none absolute z-10 -translate-x-1/2"
+            className="pointer-events-none absolute z-10"
             style={{ top: item.top, left: item.left }}
-            title={`${item.peer.name} 커서`}
+            title={`${item.peer.name} 커서${item.peer.typing ? ' · 입력 중' : ''}`}
           >
+            {item.width > 2 ? (
+              <span
+                className="absolute top-0 h-4 rounded-sm opacity-30"
+                style={{ width: item.width, backgroundColor: item.peer.color }}
+              />
+            ) : null}
             <span
-              className="block h-4 w-0.5 animate-pulse rounded-full"
+              className="relative block h-4 w-0.5 animate-pulse rounded-full"
               style={{ backgroundColor: item.peer.color }}
             />
             <span
@@ -355,6 +389,7 @@ export function CollabTextarea({
               style={{ backgroundColor: item.peer.color }}
             >
               {item.peer.name}
+              {item.peer.typing ? ' …' : ''}
             </span>
           </span>
         ))}

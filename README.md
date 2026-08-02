@@ -2,7 +2,7 @@
 
 ![Dashboard](screenshots/dashboard.png)
 
-**프로젝트의 기록, 한 곳에서.** · **v1.7.0**
+**프로젝트의 기록, 한 곳에서.** · **v1.8.0-wip**
 
 Folio는 개발자의 일지·문서·일정·프로세스를 하나로 묶는 워크스페이스입니다.
 Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정을 tracking하는 흐름을,
@@ -36,7 +36,7 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **저장** | local / cloud(Supabase) / beacon · 오프라인 큐 · PWA |
 | **내보내기** | MD · CSV · JSON · ZIP · 탭별 ExportMenu · 전체 번들 |
 | **연동** | Slack Block Kit · Discord Embeds · GitHub Issues/PR · MCP · 팀 초대/공유 |
-| **협업** | Presence · 커서/타이핑 · Yjs Undo/이력 · 주석/@멘션 · 역할(owner/admin/editor/viewer) · 공유 |
+| **협업** | Presence · 커서/타이핑/상태 · Yjs Undo/이력 · guest·ACL · 알림 센터 · 주석/@멘션 |
 | **배포** | Vercel Preview/Production · Docker/GHCR · Actions CI/Deploy/Rollback/Monitor |
 | **레이아웃** | Writing-first · 우측 요약 사이드바(280px) · 모바일 하단 네비/글쓰기 FAB · 스와이프 |
 | **모바일** | PWA · Background Sync · 음성/이미지 · 키보드 보정 · FAB · 풀스크린 · 동기화 상태 |
@@ -68,7 +68,7 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 
 ---
 
-## Phase 1~16 완료
+## Phase 1~17
 
 | Phase | 버전 | 요약 | 상태 |
 |-------|------|------|------|
@@ -88,8 +88,9 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **14** | **1.5.0** | 모바일 네이티브 (제스처 · 음성 · 이미지 · Background Sync) | ✅ |
 | **15** | **1.6.0** | 협업 고도화 (커서 · Undo/diff · 역할 · 공유 · 알림) | ✅ |
 | **16** | **1.7.0** | 모바일 고도화 (키보드 · FAB · 동기화 상태 · 풀스크린) | ✅ |
+| **17** | **1.8.0-wip** | 실시간 협업 고도화 (Presence 상태 · guest/ACL · 알림 센터) | 🔄 |
 
-Phase 16 상세: **P44** visualViewport · 48px 터치 · 상하 스와이프 · 로컬 우선 병합 · FAB/풀스크린  
+Phase 17 상세: **P45** 커서/타이핑/상태 · Yjs 충돌·diff · guest·ACL · 초대 커스텀 · 알림 센터  
 이력: [VERSION.md](VERSION.md)
 
 ---
@@ -367,14 +368,15 @@ npm run runbook:backup
 - **v1.5** ✅ — 모바일 네이티브 (제스처 · 음성 · 이미지 · Background Sync)
 - **v1.6** ✅ — 협업 고도화 (커서 · Undo/diff · 역할 · 공유 · 알림)
 - **v1.7** ✅ — 모바일 고도화 (키보드 · FAB · 동기화 상태 · 풀스크린)
+- **v1.8** 🔄 — 실시간 협업 고도화 (Presence 상태 · guest/ACL · 알림 센터) — **진행 중 (1.8.0-wip)**
 - **v2.0** — 이후 로드맵
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 16 완료** (v**1.7.0** 정식)
-- 진행 중: —
+- 현재 Phase: **Phase 17 진행 중** (v**1.8.0-wip**)
+- 진행 중: **P45** 실시간 협업 고도화
 - 완료: Phase 1~16 (1.7.0) · P44 모바일 고도화
-- 다음: v2.0 로드맵
+- 다음: Phase 17 완료 · 1.8.0 정식
 - 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md))
 
 ---
@@ -388,4 +390,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · v1.7.0
+**Folio** — 프로젝트의 기록, 한 곳에서. · v1.8.0-wip

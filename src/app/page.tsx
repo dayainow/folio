@@ -90,6 +90,14 @@ const CollabPanel = dynamic(
   { ssr: false },
 );
 
+const NotificationCenterButton = dynamic(
+  () =>
+    import('@/components/notification-center').then((m) => ({
+      default: m.NotificationCenterButton,
+    })),
+  { ssr: false },
+);
+
 const PwaInstallPrompt = dynamic(
   () => import('@/components/pwa-install-prompt').then((m) => ({ default: m.PwaInstallPrompt })),
   { ssr: false, loading: () => null },
@@ -425,6 +433,7 @@ export default function Home() {
               <span className="hidden sm:inline">가이드</span>
             </Link>
             <GlobalSearch variant="icon" onNavigate={handleSearchNavigate} />
+            <NotificationCenterButton />
             <Button
               type="button"
               variant="ghost"

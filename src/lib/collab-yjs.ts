@@ -1,7 +1,8 @@
 /**
- * P41/P43 — Yjs CRDT 실시간 동시 편집
- * · 구간 치환 setText (충돌 완화)
- * · UndoManager 되돌리기
+ * P41/P43/P45 — Yjs CRDT 실시간 동시 편집
+ * · 공통 prefix/suffix 구간 치환으로 충돌 면적 축소
+ * · UndoManager 되돌리기/다시 실행
+ * · 원격 병합 시 이력 스냅샷 (UI: CollabHistoryPanel)
  * · Supabase Realtime / BroadcastChannel 동기화
  */
 'use client'

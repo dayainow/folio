@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge';
 import { Mail, Ticket, Copy, Check, Link2 } from 'lucide-react';
 import {
   acceptInvite,
-  buildInviteLink,
   inviteMember,
   isInviteExpired,
   type Invitation,
@@ -22,7 +21,7 @@ interface TeamInviteProps {
   onInvited?: (invite: Invitation) => void;
 }
 
-type InviteRole = 'admin' | 'editor' | 'viewer' | 'member';
+type InviteRole = 'admin' | 'editor' | 'viewer' | 'guest' | 'member';
 
 export function TeamInvite({
   teamId,
@@ -33,6 +32,8 @@ export function TeamInvite({
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<InviteRole>('editor');
   const [expiresDays, setExpiresDays] = useState(7);
+  const [inviteNote, setInviteNote] = useState('');
+  const [maxUses, setMaxUses] = useState<number | ''>('');
   const [token, setToken] = useState(() => {
     if (typeof window === 'undefined') return '';
     try {
@@ -59,7 +60,13 @@ export function TeamInvite({
       const inv = await inviteMember(teamId, email, role as Exclude<TeamRole, 'owner'>, expiresDays);
       setLastInvite(inv);
       setEmail('');
-      const link = buildInviteLink(inv.token);
+      const { saveInviteLinkMeta, buildCustomInviteLink } = await import('@/lib/invite-link');
+      saveInviteLinkMeta({
+        token: inv.token,
+        note: inviteNote || undefined,
+        maxUses: maxUses === '' ? undefined : Number(maxUses),
+      });
+      const link = buildCustomInviteLink(inv.token, { note: inviteNote || undefined });
       const expiredHint = isInviteExpired(inv) ? ' (이미 만료)' : '';
       setMessage(`${inv.email} 초대 생성 · 만료 ${new Date(inv.expiresAt).toLocaleString('ko-KR')}${expiredHint}`);
       void notifyTeamInviteCreated({
@@ -81,7 +88,11 @@ export function TeamInvite({
     setError(null);
     setMessage(null);
     try {
+      const { canUseInviteLink, recordInviteLinkUse } = await import('@/lib/invite-link');
+      const gate = canUseInviteLink(token.trim());
+      if (!gate.ok) throw new Error(gate.reason ?? '초대 링크를 사용할 수 없습니다.');
       const joined = await acceptInvite(token);
+      recordInviteLinkUse(token.trim());
       setToken('');
       setMessage('초대가 수락되었습니다.');
       onAccepted?.(joined);
@@ -94,7 +105,11 @@ export function TeamInvite({
 
   const copy = async (kind: 'token' | 'link') => {
     if (!lastInvite) return;
-    const text = kind === 'link' ? buildInviteLink(lastInvite.token) : lastInvite.token;
+    const { buildCustomInviteLink } = await import('@/lib/invite-link');
+    const text =
+      kind === 'link'
+        ? buildCustomInviteLink(lastInvite.token, { note: inviteNote || undefined })
+        : lastInvite.token;
     try {
       await navigator.clipboard.writeText(text);
       setCopied(kind);
@@ -126,6 +141,7 @@ export function TeamInvite({
               className="h-8 text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-2 bg-background"
               aria-label="역할"
             >
+              <option value="guest">guest</option>
               <option value="viewer">viewer</option>
               <option value="editor">editor</option>
               <option value="admin">admin</option>
@@ -142,6 +158,23 @@ export function TeamInvite({
               <option value={14}>14일</option>
               <option value={30}>30일</option>
             </select>
+            <Input
+              value={inviteNote}
+              onChange={(e) => setInviteNote(e.target.value)}
+              placeholder="초대 메모 (링크에 포함)"
+              className="h-8 text-xs flex-1 min-w-[10rem]"
+              aria-label="초대 메모"
+            />
+            <Input
+              type="number"
+              min={1}
+              max={100}
+              value={maxUses}
+              onChange={(e) => setMaxUses(e.target.value === '' ? '' : Number(e.target.value))}
+              placeholder="최대 사용(선택)"
+              className="h-8 w-28 text-xs"
+              aria-label="최대 사용 횟수"
+            />
             <Button
               type="button"
               size="sm"

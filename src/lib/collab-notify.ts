@@ -33,11 +33,14 @@ function channel(): BroadcastChannel | null {
   }
 }
 
-/** 팀 채널로 알림 브로드캐스트 + 로컬 푸시 */
+/** 팀 채널로 알림 브로드캐스트 + 로컬 푸시 + 알림 센터 */
 export async function broadcastTeamNotify(payload: TeamNotifyPayload): Promise<void> {
   const teamId = payload.teamId ?? getActiveTeamId()
   const msg: TeamNotifyPayload = { ...payload, teamId }
   channel()?.postMessage(msg)
+  void import('@/lib/notification-center').then(({ pushFromTeamNotify }) => {
+    pushFromTeamNotify(msg)
+  })
   await showFolioPush({
     title: payload.title,
     body: payload.body,
@@ -70,6 +73,9 @@ export function subscribeTeamNotify(
       if (data.actorId && self.userId && data.actorId === self.userId) return
     }
     onNotify?.(data)
+    void import('@/lib/notification-center').then(({ pushFromTeamNotify }) => {
+      pushFromTeamNotify(data)
+    })
     void showFolioPush({
       title: data.title,
       body: data.body,
