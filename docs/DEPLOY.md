@@ -193,7 +193,7 @@ curl -sS https://<host>/api/runtime
 docker build -t folio:local \
   --build-arg NEXT_PUBLIC_SUPABASE_URL="$NEXT_PUBLIC_SUPABASE_URL" \
   --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY="$NEXT_PUBLIC_SUPABASE_ANON_KEY" \
-  --build-arg FOLIO_VERSION=2.0.0 \
+  --build-arg FOLIO_VERSION=2.1.0 \
   .
 
 docker run --rm -p 3000:3000 --env-file .env.local folio:local

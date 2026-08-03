@@ -55,7 +55,6 @@ const MAX_ENTRIES = 2000
 let cachedUser = 'guest'
 let retentionDays = DEFAULT_RETENTION_DAYS
 let alertThreshold = DEFAULT_ALERT_THRESHOLD
-let configLoaded = false
 
 function uid(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID()
@@ -146,12 +145,7 @@ export async function loadAuditConfigFromRuntime(): Promise<{
   const pubThr = process.env.NEXT_PUBLIC_STORAGE_ALERT_THRESHOLD
   if (pubRet) retentionDays = parseDays(pubRet, retentionDays)
   if (pubThr) alertThreshold = parseThreshold(pubThr, alertThreshold)
-  configLoaded = true
   return { retentionDays, alertThreshold }
-}
-
-export function isAuditConfigLoaded(): boolean {
-  return configLoaded
 }
 
 function prune(entries: AuditLogEntry[], days = getAuditRetentionDays()): AuditLogEntry[] {

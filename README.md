@@ -2,7 +2,7 @@
 
 ![Dashboard](screenshots/dashboard.png)
 
-**프로젝트의 기록, 한 곳에서.** · **v2.1.0-wip**
+**프로젝트의 기록, 한 곳에서.** · **v2.1.0**
 
 Folio는 개발자의 일지·문서·일정·프로세스를 하나로 묶는 워크스페이스입니다.
 Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정을 tracking하는 흐름을,
@@ -68,7 +68,7 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 
 ---
 
-## Phase 1~18 완료
+## Phase 1~19 완료
 
 | Phase | 버전 | 요약 | 상태 |
 |-------|------|------|------|
@@ -90,7 +90,7 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **16** | **1.7.0** | 모바일 고도화 (키보드 · FAB · 동기화 상태 · 풀스크린) | ✅ |
 | **17** | **1.8.0** | 실시간 협업 고도화 (Presence 상태 · guest/ACL · 알림 센터) | ✅ |
 | **18** | **2.0.0** | v2.0 기반 정비 (Vitest · CSP · CI · 마이그레이션 문서) | ✅ |
-| **19** | **2.1.0-wip** | 저장 관측 (감사 로그 · 대시보드 · 무결성 · 알림) | 🔄 |
+| **19** | **2.1.0** | 저장 관측 (감사 로그 · 대시보드 · 무결성 · 알림) | ✅ |
 
 Phase 19 상세: P47 저장 관측 — audit log · Recharts 대시보드 · 연속 실패 알림 · checksum 무결성  
 이력: [VERSION.md](VERSION.md) · 마이그레이션: [docs/MIGRATION.md](docs/MIGRATION.md)
@@ -124,7 +124,7 @@ npm run lint && npm run typecheck && npm run test && npm run qa:smoke
 | 테마 | 내용 | 상태 |
 |------|------|------|
 | **기반 정비** | Vitest · CI · ARCHITECTURE · CSP · sanitize | ✅ 2.0.0 |
-| **저장·관측** | WithFallback 관측성 강화 (P47) | 🔄 2.1.0-wip |
+| **저장·관측** | WithFallback 관측성 강화 (P47) | ✅ 2.1.0 |
 | **협업** | Presence/Yjs 서버 동기화 옵션 | 예정 |
 | **DX** | 성능 예산 · 기여/테스트 가이드 | ✅ |
 
@@ -296,6 +296,39 @@ GitHub Secrets (선택): `VERCEL_TOKEN` · `VERCEL_ORG_ID` · `VERCEL_PROJECT_ID
 
 ---
 
+## 저장 관측 (P47)
+
+일지·문서·일정 저장 시 `saveWithFallback` 경로의 성공/실패·지연·모드를 기록하고, 사이드바에서 확인할 수 있습니다.
+
+### 대시보드
+
+1. 우측 요약 사이드바 → **저장 관측** 버튼
+2. 확인 항목:
+   - **성공률** · **평균 응답시간** · **실패/폴백** · **연속 실패**
+   - 시간별 저장 추이 · 모드별(local/cloud/beacon) 사용량 (Recharts)
+   - 실패 원인 상위 목록 · 최근 감사 이벤트
+3. **검사 실행** — localStorage / Supabase 캐시 / Beacon checksum 비교 · 불일치 시 복구 제안
+4. **로그 비우기** — 브라우저 감사 로그 초기화 (보존 기간 경과분도 자동 정리)
+
+### 알림 · 재시도
+
+| 항목 | 동작 |
+|------|------|
+| **원격 실패** | 최대 3회 지수 백오프 재시도 후 로컬 폴백 · 오프라인 큐 적재 |
+| **연속 실패** | 임계값 이상이면 Slack / Discord / 브라우저 푸시 알림 |
+| **쿨다운** | 웹훅·푸시 알림 과다 발송 방지 |
+
+### 환경변수
+
+| 키 | 기본 | 설명 |
+|----|------|------|
+| `AUDIT_LOG_RETENTION_DAYS` | `30` | 감사 로그 보존 일수 |
+| `STORAGE_ALERT_THRESHOLD` | `3` | 연속 저장 실패 알림 임계 |
+
+템플릿: [docs/env.example](docs/env.example) · 런타임 노출: `GET /api/runtime` (`auditLogRetentionDays` · `storageAlertThreshold`)
+
+---
+
 ## Discord / GitHub 연동
 
 환경변수: [docs/env.example](docs/env.example) · Production: [.env.production.example](.env.production.example)
@@ -407,14 +440,14 @@ npm run runbook:backup
 - **v1.7** ✅ — 모바일 고도화 (키보드 · FAB · 동기화 상태 · 풀스크린)
 - **v1.8** ✅ — 실시간 협업 고도화 (Presence 상태 · guest/ACL · 알림 센터)
 - **v2.0** ✅ — 기반 정비 · 테스트 · CSP · CI · 마이그레이션 문서
-- **v2.1** 🔄 — 저장 관측 (감사 로그 · 대시보드 · 무결성 · 알림)
+- **v2.1** ✅ — 저장 관측 (감사 로그 · 대시보드 · 무결성 · 알림)
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 19** (v**2.1.0-wip**)
-- 진행 중: **P47** 저장 관측 (감사 로그 · 대시보드 · 무결성 · 알림)
-- 완료: Phase 1~18 (2.0.0) · P46 v2.0 기반 정비
-- 다음: Phase 19 마무리 · 협업 서버 옵션
+- 현재 Phase: **Phase 19 완료** (v**2.1.0** 정식)
+- 진행 중: —
+- 완료: Phase 1~19 (2.1.0) · P47 저장 관측
+- 다음: v2.x (협업 서버 옵션)
 - 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md))
 
 ---
@@ -428,4 +461,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · v2.1.0-wip
+**Folio** — 프로젝트의 기록, 한 곳에서. · v2.1.0
