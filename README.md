@@ -2,7 +2,7 @@
 
 ![Dashboard](screenshots/dashboard.png)
 
-**프로젝트의 기록, 한 곳에서.** · **v2.5.0-wip**
+**프로젝트의 기록, 한 곳에서.** · **v2.5.0**
 
 Folio는 개발자의 일지·문서·일정·프로세스를 하나로 묶는 워크스페이스입니다.
 Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정을 tracking하는 흐름을,
@@ -94,7 +94,7 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **20** | **2.2.0** | 협업 서버 옵션 (WebSocket · Yjs · 채팅 · 충돌) | ✅ |
 | **21** | **2.3.0** | 고급 보안 (2FA · SSO · RBAC · 감사 · GDPR) | ✅ |
 | **22** | **2.4.0** | 성능 관측 · 자동 최적화 (Web Vitals · LHCI) | ✅ |
-| **23** | **2.5.0-wip** | 플러그인/확장 (위젯 · 필드 · 마켓) | 🔄 |
+| **23** | **2.5.0** | 플러그인/확장 (위젯 · 필드 · 마켓) | ✅ |
 
 Phase 23 상세: P51 플러그인 — registry · sandbox · marketplace · custom fields  
 Phase 22 상세: P50 성능 관측 — Web Vitals · API/렌더 · 대시보드 · 알림 · LHCI · 번들 예산  
@@ -133,7 +133,7 @@ npm run lint && npm run typecheck && npm run test && npm run qa:smoke
 | **협업** | Presence/Yjs 서버 동기화 옵션 (P48) | ✅ 2.2.0 |
 | **보안** | 2FA · SSO · RBAC · 감사 · GDPR (P49) | ✅ 2.3.0 |
 | **성능** | Web Vitals · 대시보드 · LHCI · 번들 예산 (P50) | ✅ 2.4.0 |
-| **확장** | 플러그인 · 위젯 · 커스텀 필드 · 마켓 (P51) | 🔄 2.5.0-wip |
+| **확장** | 플러그인 · 위젯 · 커스텀 필드 · 마켓 (P51) | ✅ 2.5.0 |
 | **DX** | 성능 예산 · 기여/테스트 가이드 | ✅ |
 
 상세: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/PERFORMANCE.md](docs/PERFORMANCE.md) · [VERSION.md](VERSION.md)
@@ -385,19 +385,42 @@ npm run dev
 | **스캔** | `npm run audit` · `npm run security:scan` |
 
 
-## 플러그인 / 확장 (P51)
+## 플러그인 / 확장 사용법 (P51)
 
 사이드바 **플러그인**에서 내부 마켓 설치·활성화·필드 관리를 합니다. 상세: [docs/plugins/README.md](docs/plugins/README.md)
 
-| 기능 | 설명 |
-|------|------|
-| **레지스트리** | `plugin-system` — 등록/활성/lifecycle hooks |
-| **위젯** | 사이드바 슬롯 · 크기/순서/데이터소스 설정 |
-| **커스텀 필드** | journal/doc/task · text/number/date/select/multi/rich · 그룹·조건부 표시 |
-| **마켓** | 검색 · 설치 · 업데이트 · 의존성 검사 |
-| **샌드박스** | Worker / iframe 옵션 (`sandbox-echo` 데모) |
+### 마켓 · 설치
 
-예제: countdown · mood-tracker · estimate-points · sandbox-echo (`src/plugins/`)
+1. 사이드바 → **플러그인** → **마켓**
+2. 검색 후 **설치** (의존성 미충족 시 안내)
+3. **설치됨** 탭에서 활성/비활성 · 업데이트 · 제거
+4. featured 플러그인(countdown · mood-tracker)은 앱 시작 시 자동 부트스트랩
+
+### 위젯
+
+1. 설치·활성화된 위젯이 우측 사이드바 **플러그인 위젯**에 표시
+2. 위젯 우측 상단 설정(톱니)에서 **크기** · **순서** · **데이터 소스** 저장
+3. 예제: Countdown · Mood · Sandbox Echo
+
+### 커스텀 필드
+
+1. **플러그인 → 필드** 탭에서 사용자 필드 추가 (entity · type · key · label)
+2. 플러그인 contributes 필드는 활성 시 자동 병합
+3. 일지 에디터 하단에 **커스텀 필드** 패널 표시
+4. 타입: `text` · `number` · `date` · `select` · `multi-select` · `rich-text`
+5. 그룹 · `showWhen` 조건부 표시 지원
+
+### 샌드박스 · 개발
+
+| 모드 | 설명 |
+|------|------|
+| `none` | 신뢰된 builtin (기본) |
+| `worker` | DOM/네트워크 없는 Worker 실행 |
+| `iframe` | UI 격리 호스트 골격 |
+
+매니페스트: `src/plugins/*/package.json`의 `folio` 블록 · API는 `plugin-system.ts`
+
+예제: countdown · mood-tracker · estimate-points · sandbox-echo
 
 ## 성능 관측 사용법 (P50)
 
@@ -591,14 +614,14 @@ npm run runbook:backup
 - **v2.2** ✅ — 협업 서버 옵션 (WebSocket · Yjs · 채팅 · 충돌 해결)
 - **v2.3** ✅ — 고급 보안 (2FA · SSO · RBAC · 감사 · GDPR)
 - **v2.4** ✅ — 성능 관측 · 자동 최적화 (Web Vitals · LHCI)
-- **v2.5** 🔄 — 플러그인/확장 (위젯 · 커스텀 필드 · 마켓)
+- **v2.5** ✅ — 플러그인/확장 (위젯 · 커스텀 필드 · 마켓)
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 23** (v**2.5.0-wip**)
-- 진행 중: **P51** 플러그인/확장 시스템
-- 완료: Phase 1~22 (2.4.0) · P50 성능 관측
-- 다음: Phase 23 마무리 · 2.5.0 정식
+- 현재 Phase: **Phase 23 완료** (v**2.5.0** 정식)
+- 진행 중: —
+- 완료: Phase 1~23 (2.5.0) · P51 플러그인/확장
+- 다음: v2.x
 - 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md))
 
 ---
@@ -612,4 +635,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · v2.5.0-wip
+**Folio** — 프로젝트의 기록, 한 곳에서. · v2.5.0
