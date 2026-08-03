@@ -2,7 +2,7 @@
 
 ![Dashboard](screenshots/dashboard.png)
 
-**프로젝트의 기록, 한 곳에서.** · **v2.4.0-wip**
+**프로젝트의 기록, 한 곳에서.** · **v2.4.0**
 
 Folio는 개발자의 일지·문서·일정·프로세스를 하나로 묶는 워크스페이스입니다.
 Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정을 tracking하는 흐름을,
@@ -93,11 +93,11 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **19** | **2.1.0** | 저장 관측 (감사 로그 · 대시보드 · 무결성 · 알림) | ✅ |
 | **20** | **2.2.0** | 협업 서버 옵션 (WebSocket · Yjs · 채팅 · 충돌) | ✅ |
 | **21** | **2.3.0** | 고급 보안 (2FA · SSO · RBAC · 감사 · GDPR) | ✅ |
-| **22** | **2.4.0-wip** | 성능 관측 · 자동 최적화 (Web Vitals · LHCI) | 🔄 |
+| **22** | **2.4.0** | 성능 관측 · 자동 최적화 (Web Vitals · LHCI) | ✅ |
 
 Phase 22 상세: P50 성능 관측 — Web Vitals · API/렌더 · 대시보드 · 알림 · LHCI · 번들 예산  
 Phase 21 상세: P49 고급 보안 — TOTP · OAuth/SAML · 세션 · RBAC/ACL · 감사 · GDPR · CSP/CSRF  
-이력: [VERSION.md](VERSION.md) · 보안: [docs/SECURITY.md](docs/SECURITY.md)
+이력: [VERSION.md](VERSION.md) · 보안: [docs/SECURITY.md](docs/SECURITY.md) · 성능: [docs/PERFORMANCE.md](docs/PERFORMANCE.md)
 
 ---
 
@@ -131,7 +131,7 @@ npm run lint && npm run typecheck && npm run test && npm run qa:smoke
 | **저장·관측** | WithFallback 관측성 강화 (P47) | ✅ 2.1.0 |
 | **협업** | Presence/Yjs 서버 동기화 옵션 (P48) | ✅ 2.2.0 |
 | **보안** | 2FA · SSO · RBAC · 감사 · GDPR (P49) | ✅ 2.3.0 |
-| **성능** | Web Vitals · 대시보드 · LHCI · 번들 예산 (P50) | 🔄 2.4.0-wip |
+| **성능** | Web Vitals · 대시보드 · LHCI · 번들 예산 (P50) | ✅ 2.4.0 |
 | **DX** | 성능 예산 · 기여/테스트 가이드 | ✅ |
 
 상세: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/PERFORMANCE.md](docs/PERFORMANCE.md) · [VERSION.md](VERSION.md)
@@ -383,27 +383,47 @@ npm run dev
 | **스캔** | `npm run audit` · `npm run security:scan` |
 
 
-## 성능 관측 (P50)
+## 성능 관측 사용법 (P50)
 
-사이드바 **성능** 버튼에서 Web Vitals·API·렌더 메트릭을 확인합니다.
+사이드바 **성능** 버튼에서 Web Vitals·API·렌더 메트릭을 확인합니다. 상세: [docs/PERFORMANCE.md](docs/PERFORMANCE.md)
 
-| 기능 | 설명 |
+### 대시보드
+
+1. 사이드바 → **성능**
+2. 기간 필터: **24h** / **7d** / **30d**
+3. 확인 항목:
+   - **LCP p75** · **API 평균** · **API 에러율** · **느린 렌더**
+   - Recharts 추이 (LCP · API ms · 에러)
+   - Web Vitals 상세 (LCP · INP/FID · CLS · TTFB · FCP)
+   - 경로별 API 지연 · 느린 컴포넌트 · 최근 이벤트
+4. **비우기** — 브라우저 성능 로그 초기화
+
+### Web Vitals · 알림
+
+| 지표 | good | 알림 |
+|------|------|------|
+| **LCP** | ≤ 2.5s | poor 초과 시 Slack/Discord/푸시 |
+| **INP** (FID 후속) | ≤ 200ms | 동일 |
+| **CLS** | ≤ 0.1 | 동일 |
+| **TTFB** | ≤ 800ms | 동일 |
+| **API** | 기본 3s | `NEXT_PUBLIC_PERF_API_SLOW_MS` |
+
+### 자동 최적화 · CI
+
+| 항목 | 동작 |
 |------|------|
-| **Web Vitals** | LCP · INP(FID 후속) · CLS · TTFB · FCP 수집 |
-| **API** | `timedFetch` 응답시간 · 에러율 · 경로별 지연 |
-| **렌더** | `PerfProfiler` 느린 렌더 기록 · dev 경고 |
-| **대시보드** | Recharts 추이 · 24h / 7d / 30d 필터 |
-| **알림** | Vital/API 임계 초과 시 Slack · Discord · 푸시 |
-| **이미지** | `OptimizedImage` (`next/image`) |
-| **CI** | 번들 예산 초과 시 fail · Lighthouse CI |
+| **이미지** | Docs 마크다운 → `OptimizedImage` (`next/image`) |
+| **코드 분할** | 패널/차트 `next/dynamic` |
+| **렌더** | `PerfProfiler` — 느린 렌더 기록 · dev 경고 |
+| **API** | `timedFetch` (CSRF + 타이밍) |
+| **번들** | `npm run bundle:size` — CI에서 예산 초과 시 fail |
+| **Lighthouse** | `npm run lhci` · `npm run perf:regression` |
 
 ```bash
+npm run build
 npm run bundle:size
 npm run lhci
-npm run perf:regression
 ```
-
-상세: [docs/PERFORMANCE.md](docs/PERFORMANCE.md)
 
 ## 저장 관측 (P47)
 
@@ -553,14 +573,14 @@ npm run runbook:backup
 - **v2.1** ✅ — 저장 관측 (감사 로그 · 대시보드 · 무결성 · 알림)
 - **v2.2** ✅ — 협업 서버 옵션 (WebSocket · Yjs · 채팅 · 충돌 해결)
 - **v2.3** ✅ — 고급 보안 (2FA · SSO · RBAC · 감사 · GDPR)
-- **v2.4** 🔄 — 성능 관측 · 자동 최적화 (Web Vitals · LHCI)
+- **v2.4** ✅ — 성능 관측 · 자동 최적화 (Web Vitals · LHCI)
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 22** (v**2.4.0-wip**)
-- 진행 중: **P50** 성능 관측 및 자동 최적화
-- 완료: Phase 1~21 (2.3.0) · P49 고급 보안
-- 다음: Phase 22 마무리 · 2.4.0 정식
+- 현재 Phase: **Phase 22 완료** (v**2.4.0** 정식)
+- 진행 중: —
+- 완료: Phase 1~22 (2.4.0) · P50 성능 관측
+- 다음: v2.x
 - 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md))
 
 ---
@@ -574,4 +594,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · v2.4.0-wip
+**Folio** — 프로젝트의 기록, 한 곳에서. · v2.4.0
