@@ -6,11 +6,11 @@
 
 | 항목 | 값 |
 |------|-----|
-| 버전 | **2.0.0** (정식 릴리즈) |
-| Phase | Phase 18 완료 |
-| 진행 중 | — |
-| 다음 | v2.x 로드맵 (저장 관측 · 협업 서버 옵션) |
-| 이어가기 | `origin/main` @ v2.0.0 정식 |
+| 버전 | **2.1.0-wip** |
+| Phase | Phase 19 |
+| 진행 중 | **P47** 저장 관측 |
+| 다음 | Phase 19 마무리 · 협업 서버 옵션 |
+| 이어가기 | `origin/main` @ 2.1.0-wip |
 
 ## 완료 항목
 
@@ -78,12 +78,19 @@
 | — | Phase 17 완료 · 1.8.0 정식 릴리즈 | `b3f7099` |
 | P46 | v2.0 기반 정비 | `4509228` |
 | — | Phase 18 완료 · 2.0.0 정식 릴리즈 | (본 커밋) |
+| P47 | 저장 관측 (감사 로그 · 대시보드 · 무결성 · 알림) | (본 커밋) |
 
 ## 진행 중
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| — | — | Phase 18 완료 (v2.0.0 정식 릴리즈) |
+| P47 | 저장 관측 | Phase 19 · 2.1.0-wip |
+
+## Phase 19 계획
+
+| ID | 요약 | 노트 |
+|----|------|------|
+| P47 | 저장 관측 | 🔄 audit-log · observability 대시보드 · 재시도/알림 · checksum 무결성 |
 
 ## Phase 18 계획 (완료)
 
@@ -97,7 +104,7 @@
 | 테마 | 목표 | 상태 |
 |------|------|------|
 | 기반 | Vitest CI · 타입 · 문서 · CSP | ✅ 2.0.0 |
-| 저장 | WithFallback 관측성 강화 | 예정 |
+| 저장 | WithFallback 관측성 강화 | 🔄 P47 / 2.1.0-wip |
 | 협업 | Presence/Yjs 서버 동기화 옵션 | 예정 |
 | DX | 성능 예산 · 기여 가이드 | ✅ |
 
@@ -194,6 +201,15 @@
 | P22 | 운영 런북 | ✅ |
 
 ## 변경 이력
+
+### 2.1.0-wip — 2026-08-03 (Phase 19 P47 저장 관측)
+
+- 버전 **2.1.0-wip** · Phase 19 시작
+- `src/lib/audit-log.ts` — 저장 감사 로그 · 모드별 성공/실패 · 보존 기간
+- `src/components/storage-observability.tsx` — 성공률·실패 원인·모드 통계·Recharts 추이
+- 연속 실패 알림 (Slack/Discord/푸시) · 지수 백오프 재시도 (`storage-retry`)
+- checksum 무결성 검사 (`storage-integrity`) · 복구 제안
+- env: `AUDIT_LOG_RETENTION_DAYS` · `STORAGE_ALERT_THRESHOLD`
 
 ### 2.0.0 — 2026-08-03 (Phase 18 완료)
 

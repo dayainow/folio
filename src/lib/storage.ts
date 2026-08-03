@@ -6,6 +6,8 @@
  *
  * v2.0: `*WithFallback` 이중 경로는 의도된 아키텍처다 (오프라인·원격 장애 UX).
  * 저장은 항상 로컬을 선행한다. Beacon CLI 원본(project.json / beacon.db)은 건드리지 않는다.
+ *
+ * P47: 감사 로그 · 재시도/백오프 · 연속 실패 알림을 저장 경로에 연동.
  */
 
 export type StorageMode = 'local' | 'cloud' | 'beacon'
@@ -118,10 +120,61 @@ export async function saveBeaconCache(type: StorageDataType, data: unknown): Pro
   }
 }
 
+function typeLabel(type: StorageDataType): string {
+  if (type === 'journal') return '일지'
+  if (type === 'docs') return '문서'
+  return '일정'
+}
+
+function observeSave(opts: {
+  mode: StorageMode
+  type: StorageDataType
+  status: 'success' | 'failure' | 'fallback'
+  change: string
+  size: number
+  durationMs: number
+  error?: string
+  attempt?: number
+  usedFallback: boolean
+}): void {
+  if (typeof window === 'undefined') return
+  void import('@/lib/audit-log').then(async (audit) => {
+    audit.recordAudit({
+      mode: opts.mode,
+      type: opts.type,
+      action: opts.attempt && opts.attempt > 1 ? 'retry' : 'save',
+      change: opts.change,
+      status: opts.status,
+      size: opts.size,
+      durationMs: opts.durationMs,
+      error: opts.error,
+      attempt: opts.attempt,
+    })
+
+    if (opts.status === 'failure' || opts.status === 'fallback') {
+      const streak = audit.noteRemoteSaveOutcome(false)
+      const { maybeAlertConsecutiveSaveFailures } = await import('@/lib/storage-alerts')
+      await maybeAlertConsecutiveSaveFailures({
+        mode: opts.mode,
+        type: opts.type,
+        error: opts.error,
+        streak,
+      })
+      if (opts.usedFallback) {
+        void import('@/lib/health-monitor').then(({ alertRemoteSaveFailure }) =>
+          alertRemoteSaveFailure(opts.type, opts.mode),
+        )
+      }
+    } else {
+      audit.noteRemoteSaveOutcome(true)
+    }
+  })
+}
+
 /**
  * 모드에 따라 저장.
  * - 항상 로컬을 먼저 영속화 (탭 종료·새로고침 대비)
- * - beacon/cloud: 원격은 최대 5초, 실패해도 로컬은 이미 반영됨
+ * - beacon/cloud: 원격은 최대 5초×재시도, 실패해도 로컬은 이미 반영됨
  */
 export async function saveWithFallback(
   data: unknown,
@@ -134,9 +187,36 @@ export async function saveWithFallback(
   },
 ): Promise<SaveWithFallbackResult> {
   const mode = getStorageMode()
+  const started = typeof performance !== 'undefined' ? performance.now() : Date.now()
+  let size = 0
+  if (typeof window !== 'undefined') {
+    try {
+      const { estimatePayloadSize } = await import('@/lib/audit-log')
+      size = estimatePayloadSize(data)
+    } catch {
+      size = 0
+    }
+  }
 
   // 1) 로컬 선행 — cloud/beacon 대기를 기다리지 않음
-  await options.localSave(data)
+  try {
+    await options.localSave(data)
+  } catch (err) {
+    const durationMs = Math.round(
+      (typeof performance !== 'undefined' ? performance.now() : Date.now()) - started,
+    )
+    observeSave({
+      mode,
+      type,
+      status: 'failure',
+      change: `${typeLabel(type)} 로컬 저장 실패`,
+      size,
+      durationMs,
+      error: err instanceof Error ? err.message : String(err),
+      usedFallback: false,
+    })
+    throw err
+  }
 
   // IndexedDB 미러 (오프라인 복구용)
   if (typeof window !== 'undefined') {
@@ -149,53 +229,166 @@ export async function saveWithFallback(
   }
 
   if (mode === 'local') {
+    const durationMs = Math.round(
+      (typeof performance !== 'undefined' ? performance.now() : Date.now()) - started,
+    )
+    observeSave({
+      mode,
+      type,
+      status: 'success',
+      change: `${typeLabel(type)} 로컬 저장`,
+      size,
+      durationMs,
+      usedFallback: false,
+    })
     return { mode, usedFallback: false }
   }
 
   // 오프라인이면 원격 시도 생략 · 큐에 적재됨
   if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    const durationMs = Math.round(
+      (typeof performance !== 'undefined' ? performance.now() : Date.now()) - started,
+    )
+    observeSave({
+      mode,
+      type,
+      status: 'fallback',
+      change: `${typeLabel(type)} 오프라인 — 로컬만 저장`,
+      size,
+      durationMs,
+      error: 'offline',
+      usedFallback: true,
+    })
     return { mode, usedFallback: true }
   }
 
   const remoteData = options.resolveRemoteData?.() ?? data
 
-  if (mode === 'beacon') {
-    try {
-      await withTimeout(
-        (async () => {
-          const available = await isBeaconAvailable()
-          if (!available) throw new Error('Beacon 미초기화')
-          await saveBeaconCache(type, remoteData)
-        })(),
-        5000,
-        'beacon-save',
+  const runRemote = async (): Promise<SaveWithFallbackResult> => {
+    if (mode === 'beacon') {
+      const { withBackoffRetry } = await import('@/lib/storage-retry')
+      let lastAttempt = 1
+      try {
+        await withBackoffRetry(
+          async (attempt) => {
+            lastAttempt = attempt
+            await withTimeout(
+              (async () => {
+                const available = await isBeaconAvailable()
+                if (!available) throw new Error('Beacon 미초기화')
+                await saveBeaconCache(type, remoteData)
+              })(),
+              5000,
+              'beacon-save',
+            )
+          },
+          { maxAttempts: 3, baseDelayMs: 300, maxDelayMs: 2500 },
+        )
+        const durationMs = Math.round(
+          (typeof performance !== 'undefined' ? performance.now() : Date.now()) - started,
+        )
+        observeSave({
+          mode,
+          type,
+          status: 'success',
+          change: `${typeLabel(type)} Beacon 저장`,
+          size,
+          durationMs,
+          attempt: lastAttempt,
+          usedFallback: false,
+        })
+        return { mode, usedFallback: false }
+      } catch (err) {
+        if (typeof window !== 'undefined') {
+          void import('@/lib/offline-sync').then(({ queueRemoteSync }) =>
+            queueRemoteSync(type, remoteData, `${type} beacon-fail`),
+          )
+        }
+        const durationMs = Math.round(
+          (typeof performance !== 'undefined' ? performance.now() : Date.now()) - started,
+        )
+        observeSave({
+          mode,
+          type,
+          status: 'fallback',
+          change: `${typeLabel(type)} Beacon 실패 → 로컬 폴백`,
+          size,
+          durationMs,
+          error: err instanceof Error ? err.message : String(err),
+          attempt: lastAttempt,
+          usedFallback: true,
+        })
+        return { mode, usedFallback: true }
+      }
+    }
+
+    // cloud
+    if (!options.cloudSave) {
+      const durationMs = Math.round(
+        (typeof performance !== 'undefined' ? performance.now() : Date.now()) - started,
       )
+      observeSave({
+        mode,
+        type,
+        status: 'fallback',
+        change: `${typeLabel(type)} 클라우드 핸들러 없음 → 로컬`,
+        size,
+        durationMs,
+        error: 'no-cloud-save',
+        usedFallback: true,
+      })
+      return { mode, usedFallback: true }
+    }
+
+    const { withBackoffRetry } = await import('@/lib/storage-retry')
+    let lastAttempt = 1
+    try {
+      await withBackoffRetry(
+        async (attempt) => {
+          lastAttempt = attempt
+          await withTimeout(options.cloudSave!(remoteData), 5000, 'cloud-save')
+        },
+        { maxAttempts: 3, baseDelayMs: 300, maxDelayMs: 2500 },
+      )
+      const durationMs = Math.round(
+        (typeof performance !== 'undefined' ? performance.now() : Date.now()) - started,
+      )
+      observeSave({
+        mode,
+        type,
+        status: 'success',
+        change: `${typeLabel(type)} 클라우드 저장`,
+        size,
+        durationMs,
+        attempt: lastAttempt,
+        usedFallback: false,
+      })
       return { mode, usedFallback: false }
-    } catch {
+    } catch (err) {
       if (typeof window !== 'undefined') {
         void import('@/lib/offline-sync').then(({ queueRemoteSync }) =>
-          queueRemoteSync(type, remoteData, `${type} beacon-fail`),
+          queueRemoteSync(type, remoteData, `${type} cloud-fail`),
         )
       }
+      const durationMs = Math.round(
+        (typeof performance !== 'undefined' ? performance.now() : Date.now()) - started,
+      )
+      observeSave({
+        mode,
+        type,
+        status: 'fallback',
+        change: `${typeLabel(type)} 클라우드 실패 → 로컬 폴백`,
+        size,
+        durationMs,
+        error: err instanceof Error ? err.message : String(err),
+        attempt: lastAttempt,
+        usedFallback: true,
+      })
       return { mode, usedFallback: true }
     }
   }
 
-  // cloud
-  if (!options.cloudSave) {
-    return { mode, usedFallback: true }
-  }
-  try {
-    await withTimeout(options.cloudSave(remoteData), 5000, 'cloud-save')
-    return { mode, usedFallback: false }
-  } catch {
-    if (typeof window !== 'undefined') {
-      void import('@/lib/offline-sync').then(({ queueRemoteSync }) =>
-        queueRemoteSync(type, remoteData, `${type} cloud-fail`),
-      )
-    }
-    return { mode, usedFallback: true }
-  }
+  return runRemote()
 }
 
 /**

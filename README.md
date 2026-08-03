@@ -2,7 +2,7 @@
 
 ![Dashboard](screenshots/dashboard.png)
 
-**프로젝트의 기록, 한 곳에서.** · **v2.0.0**
+**프로젝트의 기록, 한 곳에서.** · **v2.1.0-wip**
 
 Folio는 개발자의 일지·문서·일정·프로세스를 하나로 묶는 워크스페이스입니다.
 Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정을 tracking하는 흐름을,
@@ -33,7 +33,7 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **일정** | 4컬럼 칸반 DnD · 우선순위/태그/즐겨찾기 · Jira · GitHub Issues |
 | **프로세스** | Beacon Gate(P0–P4) · Timeline · 산출물 · 변경 감지 · 스냅샷 |
 | **검색** | `Cmd/Ctrl+K` · 일지·문서·일정 통합 · 아이콘 확장 검색 |
-| **저장** | local / cloud(Supabase) / beacon · 오프라인 큐 · PWA |
+| **저장** | local / cloud(Supabase) / beacon · 오프라인 큐 · PWA · **저장 관측(P47)** |
 | **내보내기** | MD · CSV · JSON · ZIP · 탭별 ExportMenu · 전체 번들 |
 | **연동** | Slack Block Kit · Discord Embeds · GitHub Issues/PR · MCP · 팀 초대/공유 |
 | **협업** | Presence · 커서/타이핑/상태 · Yjs Undo/이력 · guest·ACL · 알림 센터 · 주석/@멘션 |
@@ -90,8 +90,9 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **16** | **1.7.0** | 모바일 고도화 (키보드 · FAB · 동기화 상태 · 풀스크린) | ✅ |
 | **17** | **1.8.0** | 실시간 협업 고도화 (Presence 상태 · guest/ACL · 알림 센터) | ✅ |
 | **18** | **2.0.0** | v2.0 기반 정비 (Vitest · CSP · CI · 마이그레이션 문서) | ✅ |
+| **19** | **2.1.0-wip** | 저장 관측 (감사 로그 · 대시보드 · 무결성 · 알림) | 🔄 |
 
-Phase 18 상세: Vitest 61 · ARCHITECTURE/MIGRATION/TESTING · CSP · lint/test/release 워크플로  
+Phase 19 상세: P47 저장 관측 — audit log · Recharts 대시보드 · 연속 실패 알림 · checksum 무결성  
 이력: [VERSION.md](VERSION.md) · 마이그레이션: [docs/MIGRATION.md](docs/MIGRATION.md)
 
 ---
@@ -123,7 +124,7 @@ npm run lint && npm run typecheck && npm run test && npm run qa:smoke
 | 테마 | 내용 | 상태 |
 |------|------|------|
 | **기반 정비** | Vitest · CI · ARCHITECTURE · CSP · sanitize | ✅ 2.0.0 |
-| **저장·관측** | WithFallback 관측성 강화 | 예정 |
+| **저장·관측** | WithFallback 관측성 강화 (P47) | 🔄 2.1.0-wip |
 | **협업** | Presence/Yjs 서버 동기화 옵션 | 예정 |
 | **DX** | 성능 예산 · 기여/테스트 가이드 | ✅ |
 
@@ -406,13 +407,14 @@ npm run runbook:backup
 - **v1.7** ✅ — 모바일 고도화 (키보드 · FAB · 동기화 상태 · 풀스크린)
 - **v1.8** ✅ — 실시간 협업 고도화 (Presence 상태 · guest/ACL · 알림 센터)
 - **v2.0** ✅ — 기반 정비 · 테스트 · CSP · CI · 마이그레이션 문서
+- **v2.1** 🔄 — 저장 관측 (감사 로그 · 대시보드 · 무결성 · 알림)
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 18 완료** (v**2.0.0** 정식)
-- 진행 중: —
+- 현재 Phase: **Phase 19** (v**2.1.0-wip**)
+- 진행 중: **P47** 저장 관측 (감사 로그 · 대시보드 · 무결성 · 알림)
 - 완료: Phase 1~18 (2.0.0) · P46 v2.0 기반 정비
-- 다음: v2.x (저장 관측 · 협업 서버 옵션)
+- 다음: Phase 19 마무리 · 협업 서버 옵션
 - 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md))
 
 ---
@@ -426,4 +428,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · v2.0.0
+**Folio** — 프로젝트의 기록, 한 곳에서. · v2.1.0-wip

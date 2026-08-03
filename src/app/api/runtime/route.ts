@@ -47,6 +47,17 @@ export async function GET() {
   const { version, nextVersion } = await readPackageMeta()
   const uptimeSec = Math.max(0, Math.floor((Date.now() - startedAt) / 1000))
 
+  const auditLogRetentionDays = (() => {
+    const n = Number(process.env.AUDIT_LOG_RETENTION_DAYS ?? process.env.NEXT_PUBLIC_AUDIT_LOG_RETENTION_DAYS)
+    if (!Number.isFinite(n) || n < 1) return 30
+    return Math.min(365, Math.floor(n))
+  })()
+  const storageAlertThreshold = (() => {
+    const n = Number(process.env.STORAGE_ALERT_THRESHOLD ?? process.env.NEXT_PUBLIC_STORAGE_ALERT_THRESHOLD)
+    if (!Number.isFinite(n) || n < 1) return 3
+    return Math.min(50, Math.floor(n))
+  })()
+
   const env = {
     supabase: isSet(process.env.NEXT_PUBLIC_SUPABASE_URL) && isSet(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
     jira:
@@ -58,6 +69,8 @@ export async function GET() {
     github: isSet(process.env.GITHUB_TOKEN) && isSet(process.env.GITHUB_REPO),
     beaconRoot: isSet(process.env.BEACON_PROJECT_ROOT),
     folioVersionEnv: isSet(process.env.FOLIO_VERSION),
+    auditLogRetentionDays: isSet(process.env.AUDIT_LOG_RETENTION_DAYS) || isSet(process.env.NEXT_PUBLIC_AUDIT_LOG_RETENTION_DAYS),
+    storageAlertThreshold: isSet(process.env.STORAGE_ALERT_THRESHOLD) || isSet(process.env.NEXT_PUBLIC_STORAGE_ALERT_THRESHOLD),
   }
 
   return NextResponse.json(
@@ -70,6 +83,8 @@ export async function GET() {
       nodeEnv: process.env.NODE_ENV ?? 'unknown',
       platform: process.platform,
       uptime: uptimeSec,
+      auditLogRetentionDays,
+      storageAlertThreshold,
       env,
       timestamp: new Date().toISOString(),
     },

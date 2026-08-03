@@ -12,6 +12,7 @@ import { StorageModeToggle } from '@/components/storage-mode-toggle';
 import { HealthStatus } from '@/components/health-status';
 import { BeaconChangeBadge } from '@/components/beacon-change-badge';
 import { OfflineStatusBadge } from '@/components/offline-status';
+import { StorageObservabilityButton } from '@/components/storage-observability';
 import { MobileNav } from '@/components/mobile-nav';
 import { FullExportButton } from '@/components/full-export-button';
 import { McpSyncButton } from '@/components/mcp-sync-button';
@@ -225,6 +226,10 @@ export default function Home() {
         if (cancelled) return;
         setEmail(data.user?.email ?? null);
         setAuthReady(true);
+        void import('@/lib/audit-log').then(({ setAuditUser, loadAuditConfigFromRuntime }) => {
+          setAuditUser(data.user?.email ?? 'guest');
+          void loadAuditConfigFromRuntime();
+        });
         if (data.user) {
           void migrateLocalDataOnLogin().catch(() => undefined);
         }
@@ -233,6 +238,9 @@ export default function Home() {
         } = supabase.auth.onAuthStateChange((event, session) => {
           setEmail(session?.user?.email ?? null);
           setAuthReady(true);
+          void import('@/lib/audit-log').then(({ setAuditUser }) => {
+            setAuditUser(session?.user?.email ?? 'guest');
+          });
           if (event === 'SIGNED_IN' && session?.user) {
             void import('@/lib/migrate').then(({ migrateLocalDataOnLogin: migrate }) =>
               migrate().catch(() => undefined),
@@ -312,6 +320,7 @@ export default function Home() {
       </div>
       <div className="flex flex-wrap items-center gap-1.5">
         <HealthStatus />
+        <StorageObservabilityButton />
         <OfflineStatusBadge />
         <BeaconChangeBadge />
       </div>

@@ -71,6 +71,8 @@ describe('storage fallback contracts (env)', () => {
     const checks = listEnvChecks()
     expect(checks.some((c) => c.key === 'FOLIO_VERSION')).toBe(true)
     expect(checks.some((c) => c.key === 'NEXT_PUBLIC_SUPABASE_URL')).toBe(true)
+    expect(checks.some((c) => c.key === 'AUDIT_LOG_RETENTION_DAYS')).toBe(true)
+    expect(checks.some((c) => c.key === 'STORAGE_ALERT_THRESHOLD')).toBe(true)
   })
 
   it('formats required env error', () => {

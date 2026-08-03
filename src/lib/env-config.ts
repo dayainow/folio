@@ -31,6 +31,8 @@ const SERVER_OPTIONAL = [
   'GITHUB_WEBHOOK_SECRET',
   'BEACON_PROJECT_ROOT',
   'FOLIO_MCP_WEBHOOK_SECRET',
+  'AUDIT_LOG_RETENTION_DAYS',
+  'STORAGE_ALERT_THRESHOLD',
 ] as const
 
 function hasValue(key: string): boolean {
