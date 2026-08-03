@@ -1,6 +1,6 @@
 {
   "name": "workspace",
-  "version": "2.3.0-wip",
+  "version": "2.3.0",
   "private": true,
   "scripts": {
     "dev": "next dev",

@@ -2,7 +2,7 @@
 
 ![Dashboard](screenshots/dashboard.png)
 
-**프로젝트의 기록, 한 곳에서.** · **v2.3.0-wip**
+**프로젝트의 기록, 한 곳에서.** · **v2.3.0**
 
 Folio는 개발자의 일지·문서·일정·프로세스를 하나로 묶는 워크스페이스입니다.
 Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정을 tracking하는 흐름을,
@@ -92,7 +92,7 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **18** | **2.0.0** | v2.0 기반 정비 (Vitest · CSP · CI · 마이그레이션 문서) | ✅ |
 | **19** | **2.1.0** | 저장 관측 (감사 로그 · 대시보드 · 무결성 · 알림) | ✅ |
 | **20** | **2.2.0** | 협업 서버 옵션 (WebSocket · Yjs · 채팅 · 충돌) | ✅ |
-| **21** | **2.3.0-wip** | 고급 보안 (2FA · SSO · RBAC · 감사 · GDPR) | 🔄 |
+| **21** | **2.3.0** | 고급 보안 (2FA · SSO · RBAC · 감사 · GDPR) | ✅ |
 
 Phase 21 상세: P49 고급 보안 — TOTP · OAuth/SAML · 세션 · RBAC/ACL · 감사 · GDPR · CSP/CSRF  
 이력: [VERSION.md](VERSION.md) · 보안: [docs/SECURITY.md](docs/SECURITY.md)
@@ -128,7 +128,7 @@ npm run lint && npm run typecheck && npm run test && npm run qa:smoke
 | **기반 정비** | Vitest · CI · ARCHITECTURE · CSP · sanitize | ✅ 2.0.0 |
 | **저장·관측** | WithFallback 관측성 강화 (P47) | ✅ 2.1.0 |
 | **협업** | Presence/Yjs 서버 동기화 옵션 (P48) | ✅ 2.2.0 |
-| **보안** | 2FA · SSO · RBAC · 감사 · GDPR (P49) | 🔄 2.3.0-wip |
+| **보안** | 2FA · SSO · RBAC · 감사 · GDPR (P49) | ✅ 2.3.0 |
 | **DX** | 성능 예산 · 기여/테스트 가이드 | ✅ |
 
 상세: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/PERFORMANCE.md](docs/PERFORMANCE.md) · [VERSION.md](VERSION.md)
@@ -323,22 +323,61 @@ npm run dev
 
 문서: [COLLAB-SERVER.md](docs/COLLAB-SERVER.md) · [WEBSOCKET.md](docs/WEBSOCKET.md)
 
-## 고급 보안 (P49)
+## 고급 보안 사용법 (P49)
 
-사이드바 계정 영역 **보안** 버튼에서 2FA·세션·감사·GDPR을 관리합니다.
+사이드바 계정 영역 **보안** 버튼에서 2FA·세션·감사·GDPR을 관리합니다. 상세: [docs/SECURITY.md](docs/SECURITY.md)
 
-| 기능 | 설명 |
+### 2FA (TOTP)
+
+1. 로그인 후 사이드바 → **보안** → **2FA** 탭
+2. **등록** → Authenticator 앱으로 QR/시크릿 스캔
+3. 6자리 코드로 검증 완료
+4. 해제 시 동일 탭에서 factor 삭제
+
+요구: Supabase Dashboard에서 MFA(TOTP) 활성화.
+
+### SSO (OAuth / SAML)
+
+1. `.env`에 `NEXT_PUBLIC_AUTH_OAUTH_PROVIDERS=google,github` 설정
+2. Supabase Auth에서 해당 OAuth provider 활성화
+3. `/login`에 provider 버튼 표시 → 클릭 후 리다이렉트 로그인
+4. SAML/Enterprise SSO는 Supabase Dashboard SSO 설정 사용
+
+### RBAC · 리소스 권한
+
+| 계층 | 설명 |
 |------|------|
-| **2FA (TOTP)** | Authenticator 앱 등록 · Supabase MFA |
-| **SSO** | Google/GitHub 등 OAuth (`NEXT_PUBLIC_AUTH_OAUTH_PROVIDERS`) · SAML은 Dashboard |
-| **세션** | 다중 세션 추적 · 다른 기기/전체 원격 종료 |
-| **RBAC/ACL** | 팀 역할 + 리소스 `view/comment/edit/admin/owner` · 프로젝트 격리 |
-| **감사** | CRUD/auth/ACL/export 보안 로그 |
-| **GDPR** | 데이터 삭제 · 익명화 · 로컬 정리 |
-| **스캔** | `npm run audit` · `npm run security:scan` |
-| **CSP/CSRF** | 헤더 강화 · API CSRF 미들웨어 |
+| **팀 역할** | viewer / editor / admin 등 기존 팀 RBAC |
+| **리소스 ACL** | 문서·보드·프로세스별 `view` / `comment` / `edit` / `admin` / `owner` |
+| **프로젝트 격리** | 다른 프로젝트 리소스 접근 차단 (`canAccessResource`) |
 
-상세: [docs/SECURITY.md](docs/SECURITY.md)
+공유 패널에서 사용자·팀에 ACL을 부여합니다.
+
+### 세션 관리
+
+1. **보안** → **세션** 탭에서 활성 세션 목록 확인
+2. **다른 기기 종료** / **전체 종료**로 원격 로그아웃
+3. 만료된 세션은 자동 prune
+
+### 감사 로그
+
+1. **보안** → **감사** 탭 — CRUD · auth · ACL · export · GDPR 이벤트
+2. 전체 내보내기 시 export 감사 이벤트 기록
+3. 로그 비우기 가능 (브라우저 localStorage)
+
+### GDPR · 개인정보
+
+1. **보안** → **GDPR** 탭
+2. **클라우드 데이터 삭제** · **익명화** · **로컬 정리** 실행
+3. 실행 전 확인 — 되돌리기 어려움
+
+### CSP · CSRF · 의존성 스캔
+
+| 항목 | 동작 |
+|------|------|
+| **CSP** | `next.config` 강화 헤더 · Report-Only |
+| **CSRF** | mutating `/api/*`에 `x-folio-csrf` 헤더 필요 (웹훅·health 제외) |
+| **스캔** | `npm run audit` · `npm run security:scan` |
 
 ## 저장 관측 (P47)
 
@@ -487,14 +526,14 @@ npm run runbook:backup
 - **v2.0** ✅ — 기반 정비 · 테스트 · CSP · CI · 마이그레이션 문서
 - **v2.1** ✅ — 저장 관측 (감사 로그 · 대시보드 · 무결성 · 알림)
 - **v2.2** ✅ — 협업 서버 옵션 (WebSocket · Yjs · 채팅 · 충돌 해결)
-- **v2.3** 🔄 — 고급 보안 (2FA · SSO · RBAC · 감사 · GDPR)
+- **v2.3** ✅ — 고급 보안 (2FA · SSO · RBAC · 감사 · GDPR)
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 21** (v**2.3.0-wip**)
-- 진행 중: **P49** 고급 보안
-- 완료: Phase 1~20 (2.2.0) · P48 협업 서버
-- 다음: Phase 21 마무리 · 2.3.0 정식
+- 현재 Phase: **Phase 21 완료** (v**2.3.0** 정식)
+- 진행 중: —
+- 완료: Phase 1~21 (2.3.0) · P49 고급 보안
+- 다음: v2.x
 - 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md))
 
 ---
@@ -508,4 +547,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · v2.3.0-wip
+**Folio** — 프로젝트의 기록, 한 곳에서. · v2.3.0

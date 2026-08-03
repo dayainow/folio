@@ -4,8 +4,7 @@
 'use client'
 
 import { createBrowserSupabaseClient } from '@/lib/supabase'
-import { recordSecurityAudit } from '@/lib/security-audit'
-import { SECURITY_AUDIT_KEY } from '@/lib/security-audit'
+import { recordSecurityAudit, SECURITY_AUDIT_KEY } from '@/lib/security-audit'
 
 const LOCAL_KEYS_PREFIXES = [
   'workspace_',
