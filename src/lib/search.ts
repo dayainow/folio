@@ -2,10 +2,17 @@
 
 /**
  * Journal / Docs / Board 통합 검색.
+ * P52: Lunr 고급 검색은 `@/lib/search-engine` · `advancedSearchAll`.
  */
 import { loadJournalsWithFallback, type JournalEntry } from '@/lib/journal';
 import { loadDocsWithFallback, type DocEntry } from '@/lib/docs';
 import { loadTasksWithFallback, type Task } from '@/lib/board';
+import {
+  runAdvancedSearch,
+  toSearchAllResult,
+  type AdvancedSearchFilters,
+  type AdvancedSearchResult,
+} from '@/lib/search-engine';
 
 export type SearchSource = 'journal' | 'docs' | 'board';
 export type MatchField = 'title' | 'content' | 'tag';
@@ -187,4 +194,23 @@ export async function searchAll(query: string): Promise<SearchAllResult> {
     docs: searchDocs(docs, q),
     tasks: searchTasks(tasks, q),
   };
+}
+
+/** P52 — Lunr 고급 검색 + 필터 */
+export async function advancedSearchAll(
+  query: string,
+  filters: AdvancedSearchFilters = {},
+): Promise<AdvancedSearchResult> {
+  const [journals, docs, tasks] = await Promise.all([
+    loadJournalsWithFallback(),
+    loadDocsWithFallback(),
+    loadTasksWithFallback(),
+  ]);
+  return runAdvancedSearch(query, journals, docs, tasks, filters);
+}
+
+/** 간단 검색을 Lunr 경로로 (선택) */
+export async function searchAllAdvanced(query: string): Promise<SearchAllResult> {
+  const adv = await advancedSearchAll(query, { sort: 'relevance' });
+  return toSearchAllResult(adv);
 }

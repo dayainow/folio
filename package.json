@@ -1,6 +1,6 @@
 {
   "name": "workspace",
-  "version": "2.5.0",
+  "version": "2.6.0-wip",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -43,6 +43,7 @@
     "idb": "^8.0.3",
     "jszip": "^3.10.1",
     "lucide-react": "^1.25.0",
+    "lunr": "^2.3.9",
     "next": "16.2.11",
     "react": "19.2.4",
     "react-dom": "19.2.4",
@@ -70,6 +71,7 @@
     "@testing-library/jest-dom": "^7.0.0",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
+    "@types/lunr": "^2.3.7",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

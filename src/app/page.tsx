@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { GlobalSearch, type SearchNavigatePayload } from '@/components/global-search';
+import { AdvancedSearchButton } from '@/components/advanced-search';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { StorageModeToggle } from '@/components/storage-mode-toggle';
 import { CollabModeToggle } from '@/components/collab-mode-toggle';
@@ -496,6 +497,7 @@ export default function Home() {
               <span className="hidden sm:inline">가이드</span>
             </Link>
             <GlobalSearch variant="icon" onNavigate={handleSearchNavigate} />
+            <AdvancedSearchButton onNavigate={handleSearchNavigate} />
             <NotificationCenterButton />
             <Button
               type="button"
