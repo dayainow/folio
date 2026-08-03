@@ -11,6 +11,7 @@ import { loadTasksWithFallback, type Task } from '@/lib/board'
 import { fetchBeaconSummary, type ProjectSummary } from '@/lib/beacon'
 import { AiSummaryWidget } from '@/components/ai-summary-widget'
 import { ActivityFeed } from '@/components/activity-feed'
+import { PluginWidgetHost } from '@/components/plugin-widget-host'
 import { cn } from '@/lib/utils'
 
 export type WidgetSidebarProps = {
@@ -198,6 +199,9 @@ export function WidgetSidebar({
 
       {/* AI 요약 위젯 */}
       <AiSummaryWidget compact />
+
+      {/* P51 플러그인 위젯 */}
+      <PluginWidgetHost />
 
       {/* P41 활동 스트림 */}
       <section className="rounded-xl border border-gray-100 dark:border-gray-800 bg-card p-3">

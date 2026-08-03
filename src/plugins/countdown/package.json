@@ -1,0 +1,15 @@
+{
+  "name": "@folio/plugin-countdown",
+  "version": "1.1.0",
+  "private": true,
+  "description": "목표일 카운트다운 위젯 + 태스크 마감일 필드",
+  "folio": {
+    "id": "countdown",
+    "displayName": "Countdown",
+    "sandbox": "none",
+    "contributes": {
+      "widgets": ["countdown-widget"],
+      "fields": ["countdown-deadline"]
+    }
+  }
+}

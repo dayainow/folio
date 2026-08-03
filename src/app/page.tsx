@@ -111,6 +111,14 @@ const SecuritySettingsButton = dynamic(
   { ssr: false },
 );
 
+const PluginsButton = dynamic(
+  () =>
+    import('@/components/plugin-marketplace').then((m) => ({
+      default: m.PluginsButton,
+    })),
+  { ssr: false, loading: () => null },
+);
+
 const PwaInstallPrompt = dynamic(
   () => import('@/components/pwa-install-prompt').then((m) => ({ default: m.PwaInstallPrompt })),
   { ssr: false, loading: () => null },
@@ -146,6 +154,10 @@ export default function Home() {
   const swipeRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => subscribeMobileFullscreen(setMobileFs), []);
+
+  useEffect(() => {
+    void import('@/plugins').then((m) => m.bootstrapBuiltinPlugins());
+  }, []);
 
   useEffect(() => {
     const onOnline = () => {
@@ -356,6 +368,7 @@ export default function Home() {
         <HealthStatus />
         <StorageObservabilityButton />
         <PerfObservabilityButton />
+        <PluginsButton />
         <OfflineStatusBadge />
         <BeaconChangeBadge />
       </div>

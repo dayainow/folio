@@ -1,0 +1,14 @@
+{
+  "name": "@folio/plugin-sandbox-echo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Web Worker 샌드박스 데모",
+  "folio": {
+    "id": "sandbox-echo",
+    "displayName": "Sandbox Echo",
+    "sandbox": "worker",
+    "contributes": {
+      "widgets": ["sandbox-echo-widget"]
+    }
+  }
+}

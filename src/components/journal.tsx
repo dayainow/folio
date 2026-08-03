@@ -23,6 +23,7 @@ import {
 import { PresenceBar } from '@/components/presence-bar';
 import { CollabTextarea } from '@/components/collab-textarea';
 import { DocCommentsPanel } from '@/components/doc-comments';
+import { CustomFieldsPanel } from '@/components/custom-fields-panel';
 import dynamic from 'next/dynamic';
 import { useCollabUser } from '@/hooks/use-collab-user';
 import { useSwipe } from '@/hooks/use-swipe';
@@ -834,6 +835,9 @@ export const JournalPanel = memo(function JournalPanel({
               </div>
             )}
           </div>
+        </div>
+        <div className={writingFirst ? 'px-3 pb-3 sm:px-4' : 'px-4 pb-4'}>
+          <CustomFieldsPanel entity="journal" recordId={date} />
         </div>
       </Card>
 

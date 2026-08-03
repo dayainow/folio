@@ -1,0 +1,15 @@
+{
+  "name": "@folio/plugin-mood-tracker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "일지 기분 필드 + 요약 위젯",
+  "folio": {
+    "id": "mood-tracker",
+    "displayName": "Mood Tracker",
+    "sandbox": "none",
+    "contributes": {
+      "widgets": ["mood-widget"],
+      "fields": ["mood-field", "mood-note"]
+    }
+  }
+}

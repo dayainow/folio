@@ -1,0 +1,14 @@
+{
+  "name": "@folio/plugin-estimate-points",
+  "version": "1.0.2",
+  "private": true,
+  "description": "보드 스토리 포인트 필드",
+  "folio": {
+    "id": "estimate-points",
+    "displayName": "Estimate Points",
+    "sandbox": "none",
+    "contributes": {
+      "fields": ["story-points"]
+    }
+  }
+}

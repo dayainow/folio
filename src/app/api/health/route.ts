@@ -7,7 +7,7 @@ const startedAt = Date.now()
 const VERSION =
   process.env.npm_package_version ??
   process.env.FOLIO_VERSION ??
-  '2.4.0'
+  '2.5.0-wip'
 
 /**
  * GET /api/health
