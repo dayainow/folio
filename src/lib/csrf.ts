@@ -52,12 +52,9 @@ export function csrfHeaders(): HeadersInit {
   return { [CSRF_HEADER]: token }
 }
 
-/** CSRF 헤더를 합친 fetch (브라우저 변경 요청용) */
+/** CSRF 헤더를 합친 fetch — 타이밍은 timed-fetch 권장 */
 export async function csrfFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-  const headers = new Headers(init?.headers)
-  const csrf = csrfHeaders()
-  for (const [k, v] of Object.entries(csrf)) {
-    if (!headers.has(k)) headers.set(k, String(v))
-  }
-  return fetch(input, { ...init, headers })
+  // 순환 의존 방지: 동적 import
+  const { timedFetch } = await import('@/lib/timed-fetch')
+  return timedFetch(input, init)
 }

@@ -4,7 +4,7 @@
  * 클라이언트 알림 — 연동 상태 조회 및 Slack/Discord 알림 요청.
  */
 import { buildFolioDeepLink, type FolioDeepLink } from '@/lib/folio-links'
-import { csrfHeaders } from '@/lib/csrf'
+import { timedFetch } from '@/lib/timed-fetch'
 
 export interface IntegrationsStatus {
   slack: boolean
@@ -32,7 +32,7 @@ export async function fetchIntegrationsStatus(): Promise<IntegrationsStatus> {
 
   statusPromise = (async () => {
     try {
-      const res = await fetch('/api/integrations/status', { cache: 'no-store' })
+      const res = await timedFetch('/api/integrations/status', { cache: 'no-store' })
       if (!res.ok) {
         return { slack: false, discord: false, github: false, githubRepo: null }
       }
@@ -68,9 +68,9 @@ export async function notifyChannels(
       ? buildFolioDeepLink(opts.deepLink)
       : undefined
 
-    await fetch('/api/notify', {
+    await timedFetch('/api/notify', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         message,
         body: opts.body,

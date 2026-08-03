@@ -64,3 +64,7 @@ public/swe-worker-*.js.map
 public/worker-*.js
 public/fallback-*.js
 .security-audit.json
+
+.bundle-size-report.json
+.lighthouseci/
+lhci_reports/

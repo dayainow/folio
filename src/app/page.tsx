@@ -14,6 +14,9 @@ import { HealthStatus } from '@/components/health-status';
 import { BeaconChangeBadge } from '@/components/beacon-change-badge';
 import { OfflineStatusBadge } from '@/components/offline-status';
 import { StorageObservabilityButton } from '@/components/storage-observability';
+import { PerfObservabilityButton } from '@/components/perf-observability';
+import { WebVitalsReporter } from '@/components/web-vitals-reporter';
+import { PerfProfiler } from '@/lib/render-profiler';
 import { MobileNav } from '@/components/mobile-nav';
 import { FullExportButton } from '@/components/full-export-button';
 import { McpSyncButton } from '@/components/mcp-sync-button';
@@ -352,6 +355,7 @@ export default function Home() {
       <div className="flex flex-wrap items-center gap-1.5">
         <HealthStatus />
         <StorageObservabilityButton />
+        <PerfObservabilityButton />
         <OfflineStatusBadge />
         <BeaconChangeBadge />
       </div>
@@ -406,6 +410,9 @@ export default function Home() {
   );
 
   return (
+    <>
+      <WebVitalsReporter />
+      <PerfProfiler id="FolioHome">
     <div className={cn('flex min-h-screen flex-col bg-background', mobileFs && 'folio-fs-root')}>
       <a href="#main-content" className="skip-link">
         본문으로 건너뛰기
@@ -700,5 +707,7 @@ export default function Home() {
         </Button>
       )}
     </div>
+      </PerfProfiler>
+    </>
   );
 }

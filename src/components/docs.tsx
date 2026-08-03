@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { OptimizedImage } from '@/components/optimized-image';
 import {
   Plus,
   FileText,
@@ -106,8 +107,7 @@ function MarkdownPreview({
         remarkPlugins={[remarkGfm]}
         components={{
           img: ({ src, alt }) => (
-            // eslint-disable-next-line @next/next/no-img-element -- 마크다운 data URL / 외부 이미지
-            <img src={src} alt={alt ?? ''} loading="lazy" decoding="async" />
+            <OptimizedImage src={typeof src === 'string' ? src : undefined} alt={alt ?? ''} />
           ),
           a: ({ href, children }) => {
             if (href?.startsWith('#doc:') && onOpenDoc) {

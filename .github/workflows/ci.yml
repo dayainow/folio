@@ -14,7 +14,7 @@ concurrency:
 
 env:
   NEXT_TELEMETRY_DISABLED: "1"
-  FOLIO_VERSION: "2.3.0"
+  FOLIO_VERSION: "2.4.0-wip"
 
 jobs:
   quality:
@@ -56,15 +56,25 @@ jobs:
           NEXT_PUBLIC_FOLIO_URL: http://localhost:3000
           FOLIO_VERSION: ${{ env.FOLIO_VERSION }}
 
-      - name: Bundle size
+      - name: Bundle size (budget fail)
         run: npm run bundle:size
+        env:
+          BUNDLE_BUDGET_FAIL: "1"
+          FOLIO_BUNDLE_BUDGET_MB: "8"
+
+      - name: Lighthouse CI
+        run: npm run lhci
+        continue-on-error: true
+        env:
+          FOLIO_VERSION: ${{ env.FOLIO_VERSION }}
 
       - name: Summary
         if: always()
         run: |
           {
-            echo "## CI (v2.0)"
+            echo "## CI (v2.4 P50)"
             echo "- ref: \`${{ github.sha }}\`"
-            echo "- required: lint · typecheck · test · qa:smoke · build · bundle-size"
+            echo "- required: lint · typecheck · test · qa:smoke · build · bundle-size(budget)"
+            echo "- optional: lighthouse CI"
             echo "- FOLIO_VERSION=\`${{ env.FOLIO_VERSION }}\`"
           } >> "$GITHUB_STEP_SUMMARY"

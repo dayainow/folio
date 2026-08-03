@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * 간단 번들/의존성 사이즈 로깅
+ * 번들/의존성 사이즈 + 예산 검사 (P50)
  * 사용: npm run bundle:size
- * (빌드 후 .next/static 도 함께 출력)
+ * CI: BUNDLE_BUDGET_FAIL=1 이면 초과 시 exit 1
  */
 
-import { existsSync, readdirSync, statSync } from 'node:fs'
+import { existsSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 
 const root = process.cwd()
@@ -48,9 +48,10 @@ const PACKAGES = [
   'react-markdown',
   'sql.js',
   'lucide-react',
+  'web-vitals',
 ]
 
-console.log('=== Folio bundle-size ===\n')
+console.log('=== Folio bundle-size (P50) ===\n')
 console.log('주요 의존성 (node_modules):')
 for (const name of PACKAGES) {
   const size = dirSize(path.join(root, 'node_modules', ...name.split('/')))
@@ -58,9 +59,26 @@ for (const name of PACKAGES) {
 }
 
 const nextStatic = path.join(root, '.next', 'static')
+const BUDGET_STATIC_MB = Number(process.env.FOLIO_BUNDLE_BUDGET_MB ?? 8)
+const CHUNK_BUDGET_KB = Number(process.env.FOLIO_CHUNK_BUDGET_KB ?? 500)
+const failOnBudget =
+  process.env.BUNDLE_BUDGET_FAIL === '1' ||
+  process.env.BUNDLE_BUDGET_FAIL === 'true' ||
+  process.env.CI === 'true'
+
+let violated = false
+const report = {
+  staticMb: null,
+  budgetMb: BUDGET_STATIC_MB,
+  topChunks: [],
+  chunkBudgetKb: CHUNK_BUDGET_KB,
+  ok: true,
+}
+
 if (existsSync(nextStatic)) {
   console.log('\n.next/static:')
-  console.log(`  total                     ${fmt(dirSize(nextStatic))}`)
+  const totalBytes = dirSize(nextStatic)
+  console.log(`  total                     ${fmt(totalBytes)}`)
   const chunks = path.join(nextStatic, 'chunks')
   if (existsSync(chunks)) {
     console.log(`  chunks                    ${fmt(dirSize(chunks))}`)
@@ -74,24 +92,41 @@ if (existsSync(nextStatic)) {
       .slice(0, 8)
     console.log('\n  top chunks:')
     for (const { f, s } of files) {
-      console.log(`    ${f.padEnd(40)} ${fmt(s)}`)
+      const kb = s / 1024
+      const flag = kb > CHUNK_BUDGET_KB ? ' ⚠' : ''
+      console.log(`    ${f.padEnd(40)} ${fmt(s)}${flag}`)
+      report.topChunks.push({ file: f, bytes: s })
+      if (kb > CHUNK_BUDGET_KB) {
+        console.warn(`    → chunk 예산 초과 (${kb.toFixed(0)} > ${CHUNK_BUDGET_KB} KB): ${f}`)
+        // chunk는 경고만 (webpack 분할 특성) — static total만 fail 기준
+      }
     }
+  }
+  const mb = totalBytes / (1024 * 1024)
+  report.staticMb = Math.round(mb * 100) / 100
+  console.log(`\n예산: .next/static ≤ ${BUDGET_STATIC_MB} MB → 현재 ${mb.toFixed(2)} MB`)
+  if (mb > BUDGET_STATIC_MB) {
+    violated = true
+    report.ok = false
+    console.warn(
+      `⚠ 번들 예산을 초과했습니다 (${mb.toFixed(2)} > ${BUDGET_STATIC_MB}). docs/PERFORMANCE.md 참고`,
+    )
+  } else {
+    console.log('✓ 번들 예산 이내')
   }
 } else {
   console.log('\n.next/static: (없음 — npm run build 후 재실행)')
 }
 
-console.log('\n권장: ANALYZE=true npm run analyze')
+try {
+  writeFileSync(path.join(root, '.bundle-size-report.json'), JSON.stringify(report, null, 2))
+} catch {
+  /* ignore */
+}
 
-// v2.0 성능 예산 (경고만 — CI에서 로그로 확인)
-const BUDGET_STATIC_MB = 8
-if (existsSync(nextStatic)) {
-  const bytes = dirSize(nextStatic)
-  const mb = bytes / (1024 * 1024)
-  console.log(`\n예산: .next/static ≤ ${BUDGET_STATIC_MB} MB → 현재 ${mb.toFixed(2)} MB`)
-  if (mb > BUDGET_STATIC_MB) {
-    console.warn(`⚠ 번들 예산을 초과했습니다 (${mb.toFixed(2)} > ${BUDGET_STATIC_MB}). docs/PERFORMANCE.md 참고`)
-  } else {
-    console.log('✓ 번들 예산 이내')
-  }
+console.log('\n권장: ANALYZE=true npm run analyze · npm run lhci')
+
+if (violated && failOnBudget) {
+  console.error('\n✗ BUNDLE_BUDGET_FAIL — CI 실패')
+  process.exit(1)
 }
