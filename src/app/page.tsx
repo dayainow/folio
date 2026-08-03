@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { GlobalSearch, type SearchNavigatePayload } from '@/components/global-search';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { StorageModeToggle } from '@/components/storage-mode-toggle';
+import { CollabModeToggle } from '@/components/collab-mode-toggle';
 import { HealthStatus } from '@/components/health-status';
 import { BeaconChangeBadge } from '@/components/beacon-change-badge';
 import { OfflineStatusBadge } from '@/components/offline-status';
@@ -312,6 +313,7 @@ export default function Home() {
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-1.5">
         <StorageModeToggle />
+        <CollabModeToggle />
         <ThemeToggle />
       </div>
       <div className="flex flex-wrap items-center gap-1.5">

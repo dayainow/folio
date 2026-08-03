@@ -1,9 +1,10 @@
 /**
- * P41/P43/P45 — Yjs CRDT 실시간 동시 편집
+ * P41/P43/P45/P48 — Yjs CRDT 실시간 동시 편집
  * · 공통 prefix/suffix 구간 치환으로 충돌 면적 축소
  * · UndoManager 되돌리기/다시 실행
  * · 원격 병합 시 이력 스냅샷 (UI: CollabHistoryPanel)
- * · Supabase Realtime / BroadcastChannel 동기화
+ * · P48: collab mode — local(BC) · server(WS) · hybrid(WS+BC)
+ * · Supabase Realtime은 local에서 기존처럼 우선 시도(호환)
  */
 'use client'
 
@@ -11,7 +12,11 @@ import * as Y from 'yjs'
 import { Awareness, encodeAwarenessUpdate, applyAwarenessUpdate, removeAwarenessStates } from 'y-protocols/awareness'
 import { createBrowserSupabaseClient } from '@/lib/supabase'
 import { findReplaceRange } from '@/lib/collab-history'
+import { getCollabMode, type CollabMode } from '@/lib/collab-mode'
+import type { CollabWsClient } from '@/lib/collab-ws-client'
 import type { RealtimeChannel } from '@supabase/supabase-js'
+
+export type CollabTransport = 'supabase' | 'broadcast' | 'websocket' | 'hybrid' | 'local'
 
 export type CollabSession = {
   doc: Y.Doc
@@ -26,7 +31,8 @@ export type CollabSession = {
   canUndo: () => boolean
   canRedo: () => boolean
   destroy: () => void
-  transport: 'supabase' | 'broadcast' | 'local'
+  transport: CollabTransport
+  mode: CollabMode
 }
 
 function hasSupabaseEnv(): boolean {
@@ -56,8 +62,17 @@ export function createCollabSession(options: {
   userName: string
   color?: string
   initialText?: string
+  /** 미지정 시 getCollabMode() */
+  mode?: CollabMode
 }): CollabSession {
-  const { roomId, userId, userName, color = '#0d9488', initialText = '' } = options
+  const {
+    roomId,
+    userId,
+    userName,
+    color = '#0d9488',
+    initialText = '',
+    mode = getCollabMode(),
+  } = options
   const doc = new Y.Doc()
   const awareness = new Awareness(doc)
   const ytext = doc.getText('content')
@@ -72,10 +87,15 @@ export function createCollabSession(options: {
     ytext.insert(0, initialText)
   }
 
-  let transport: CollabSession['transport'] = 'local'
+  let transport: CollabTransport = 'local'
   let channel: RealtimeChannel | null = null
   let bc: BroadcastChannel | null = null
+  let wsClient: CollabWsClient | null = null
   const remoteOrigin = 'remote'
+
+  const useWs = mode === 'server' || mode === 'hybrid'
+  const useBc = mode === 'local' || mode === 'hybrid'
+  const useSupabase = mode === 'local' && hasSupabaseEnv()
 
   const broadcastUpdate = (update: Uint8Array) => {
     const payload = { update: toArray(update) }
@@ -87,6 +107,7 @@ export function createCollabSession(options: {
       })
     }
     bc?.postMessage({ type: 'yjs', ...payload })
+    wsClient?.sendYjs(payload.update)
   }
 
   const broadcastAwareness = (changedClients: number[]) => {
@@ -96,6 +117,7 @@ export function createCollabSession(options: {
       void channel.send({ type: 'broadcast', event: 'awareness', payload })
     }
     bc?.postMessage({ type: 'awareness', ...payload })
+    wsClient?.sendAwareness(payload.update)
   }
 
   const onDocUpdate = (update: Uint8Array, origin: unknown) => {
@@ -125,7 +147,7 @@ export function createCollabSession(options: {
     }
   }
 
-  if (hasSupabaseEnv()) {
+  if (useSupabase) {
     try {
       const supabase = createBrowserSupabaseClient()
       channel = supabase.channel(`yjs:${roomId}`, {
@@ -150,9 +172,9 @@ export function createCollabSession(options: {
     }
   }
 
-  if (!channel && typeof BroadcastChannel !== 'undefined') {
+  if (useBc && typeof BroadcastChannel !== 'undefined') {
     bc = new BroadcastChannel(`folio-yjs:${roomId}`)
-    transport = 'broadcast'
+    if (!channel && !useWs) transport = 'broadcast'
     bc.onmessage = (ev) => {
       const data = ev.data as { type?: string; update?: number[] }
       if (data?.type === 'yjs' && data.update) applyRemoteYjs(data.update)
@@ -163,7 +185,36 @@ export function createCollabSession(options: {
       }
     }
     bc.postMessage({ type: 'hello' })
-    broadcastUpdate(Y.encodeStateAsUpdate(doc))
+    if (!useWs) broadcastUpdate(Y.encodeStateAsUpdate(doc))
+  }
+
+  if (useWs && typeof window !== 'undefined') {
+    // 동적 import로 서버 번들 분리 부담 감소
+    void import('@/lib/collab-ws-client').then(({ createCollabWsClient }) => {
+      if (wsClient) return
+      wsClient = createCollabWsClient({
+        roomId,
+        clientId: `${userId}-${doc.clientID}`,
+        user: { id: userId, name: userName },
+        handlers: {
+          onYjs: applyRemoteYjs,
+          onAwareness: applyRemoteAwareness,
+          onStatus: (s) => {
+            if (s === 'open') {
+              transport = mode === 'hybrid' ? 'hybrid' : 'websocket'
+              broadcastUpdate(Y.encodeStateAsUpdate(doc))
+              broadcastAwareness([doc.clientID])
+            }
+          },
+        },
+      })
+      if (mode === 'server') transport = 'websocket'
+      if (mode === 'hybrid') transport = bc ? 'hybrid' : 'websocket'
+    })
+  }
+
+  if (!channel && !bc && !useWs) {
+    transport = 'local'
   }
 
   return {
@@ -172,6 +223,7 @@ export function createCollabSession(options: {
     ytext,
     undoManager,
     transport,
+    mode,
     getText: () => ytext.toString(),
     setText(next: string) {
       const cur = ytext.toString()
@@ -209,6 +261,8 @@ export function createCollabSession(options: {
       awareness.destroy()
       void channel?.unsubscribe()
       bc?.close()
+      wsClient?.destroy()
+      wsClient = null
       doc.destroy()
     },
   }

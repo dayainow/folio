@@ -2,7 +2,7 @@
 
 ![Dashboard](screenshots/dashboard.png)
 
-**프로젝트의 기록, 한 곳에서.** · **v2.1.0**
+**프로젝트의 기록, 한 곳에서.** · **v2.2.0-wip**
 
 Folio는 개발자의 일지·문서·일정·프로세스를 하나로 묶는 워크스페이스입니다.
 Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정을 tracking하는 흐름을,
@@ -68,7 +68,7 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 
 ---
 
-## Phase 1~19 완료
+## Phase 1~20
 
 | Phase | 버전 | 요약 | 상태 |
 |-------|------|------|------|
@@ -91,8 +91,10 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **17** | **1.8.0** | 실시간 협업 고도화 (Presence 상태 · guest/ACL · 알림 센터) | ✅ |
 | **18** | **2.0.0** | v2.0 기반 정비 (Vitest · CSP · CI · 마이그레이션 문서) | ✅ |
 | **19** | **2.1.0** | 저장 관측 (감사 로그 · 대시보드 · 무결성 · 알림) | ✅ |
+| **20** | **2.2.0-wip** | 협업 서버 옵션 (WebSocket · Yjs · 채팅 · 충돌) | 🔄 |
 
-Phase 19 상세: P47 저장 관측 — audit log · Recharts 대시보드 · 연속 실패 알림 · checksum 무결성  
+Phase 20 상세: P48 협업 서버 — WebSocket · Yjs sync · 채팅/화이트보드 · 3-way merge
+Phase 19: P47 저장 관측  
 이력: [VERSION.md](VERSION.md) · 마이그레이션: [docs/MIGRATION.md](docs/MIGRATION.md)
 
 ---
@@ -125,7 +127,7 @@ npm run lint && npm run typecheck && npm run test && npm run qa:smoke
 |------|------|------|
 | **기반 정비** | Vitest · CI · ARCHITECTURE · CSP · sanitize | ✅ 2.0.0 |
 | **저장·관측** | WithFallback 관측성 강화 (P47) | ✅ 2.1.0 |
-| **협업** | Presence/Yjs 서버 동기화 옵션 | 예정 |
+| **협업** | Presence/Yjs 서버 동기화 옵션 (P48) | 🔄 2.2.0-wip |
 | **DX** | 성능 예산 · 기여/테스트 가이드 | ✅ |
 
 상세: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/PERFORMANCE.md](docs/PERFORMANCE.md) · [VERSION.md](VERSION.md)
@@ -296,6 +298,30 @@ GitHub Secrets (선택): `VERCEL_TOKEN` · `VERCEL_ORG_ID` · `VERCEL_PROJECT_ID
 
 ---
 
+
+## 협업 서버 (P48)
+
+로컬 BroadcastChannel / Supabase Realtime에 더해 **전용 WebSocket 서버**로 Yjs·채팅·화이트보드·WebRTC 시그널링을 확장합니다.
+
+### 빠른 시작
+
+```bash
+npm run collab:server   # ws://127.0.0.1:1234/collab
+npm run dev
+```
+
+사이드바 **협업 · 로컬/서버/하이브리드**에서 모드 선택. 서버 모드에서는 `NEXT_PUBLIC_COLLAB_WS_URL` 또는 토글의 URL을 사용합니다.
+
+| 기능 | 설명 |
+|------|------|
+| **Yjs sync** | 문서/일지 room · Awareness(커서/타이핑) |
+| **채팅** | 협업 패널 → 채팅 탭 |
+| **화이트보드** | 협업 패널 → 보드 탭 |
+| **음성/화면공유** | WebRTC 시그널링 (`collab-webrtc`) — 옵션 |
+| **충돌 해결** | 3-way merge UI · [CONFLICT-RESOLUTION.md](docs/CONFLICT-RESOLUTION.md) |
+
+문서: [COLLAB-SERVER.md](docs/COLLAB-SERVER.md) · [WEBSOCKET.md](docs/WEBSOCKET.md)
+
 ## 저장 관측 (P47)
 
 일지·문서·일정 저장 시 `saveWithFallback` 경로의 성공/실패·지연·모드를 기록하고, 사이드바에서 확인할 수 있습니다.
@@ -441,13 +467,14 @@ npm run runbook:backup
 - **v1.8** ✅ — 실시간 협업 고도화 (Presence 상태 · guest/ACL · 알림 센터)
 - **v2.0** ✅ — 기반 정비 · 테스트 · CSP · CI · 마이그레이션 문서
 - **v2.1** ✅ — 저장 관측 (감사 로그 · 대시보드 · 무결성 · 알림)
+- **v2.2** 🔄 — 협업 서버 옵션 (WebSocket · Yjs · 채팅 · 충돌 해결)
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 19 완료** (v**2.1.0** 정식)
-- 진행 중: —
+- 현재 Phase: **Phase 20** (v**2.2.0-wip**)
+- 진행 중: **P48** 협업 서버 옵션 (WebSocket · Yjs · 채팅 · 충돌 해결)
 - 완료: Phase 1~19 (2.1.0) · P47 저장 관측
-- 다음: v2.x (협업 서버 옵션)
+- 다음: Phase 20 마무리 · 2.2.0 정식
 - 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md))
 
 ---
@@ -461,4 +488,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · v2.1.0
+**Folio** — 프로젝트의 기록, 한 곳에서. · v2.2.0-wip

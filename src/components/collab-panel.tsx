@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * P41/P45 — 협업 패널 (Presence · 상태 · 주석 · 활동 · 알림)
+ * P41/P45/P48 — 협업 패널 (Presence · 상태 · 주석 · 활동 · 채팅 · 화이트보드)
  */
 import { useEffect, useState } from 'react'
 import { Users, X } from 'lucide-react'
@@ -10,6 +10,9 @@ import { PresenceAvatars } from '@/components/presence-avatars'
 import { CommentThread } from '@/components/comment-thread'
 import { ActivityFeed } from '@/components/activity-feed'
 import { NotificationCenterButton } from '@/components/notification-center'
+import { CollabChatPanel } from '@/components/collab-chat'
+import { CollabWhiteboard } from '@/components/collab-whiteboard'
+import { CollabModeToggle } from '@/components/collab-mode-toggle'
 import { usePresence } from '@/hooks/use-collab'
 import { useEscapeToClose } from '@/lib/a11y'
 import { cn } from '@/lib/utils'
@@ -18,7 +21,6 @@ import type { PresenceStatus } from '@/lib/presence'
 export type CollabPanelProps = {
   open: boolean
   onClose: () => void
-  /** 예: journal:2026-08-02 · doc:<id> · team:<id> */
   roomId: string | null
   target: { kind: 'doc' | 'journal'; id: string } | null
   tabLabel?: string
@@ -26,7 +28,7 @@ export type CollabPanelProps = {
 
 export function CollabPanel({ open, onClose, roomId, target, tabLabel }: CollabPanelProps) {
   const { peers, self, transport, updatePresence } = usePresence(open ? roomId : null, tabLabel)
-  const [section, setSection] = useState<'comments' | 'activity' | 'alerts'>('comments')
+  const [section, setSection] = useState<'comments' | 'activity' | 'alerts' | 'chat' | 'board'>('comments')
   const [status, setStatus] = useState<PresenceStatus>('online')
 
   useEscapeToClose(open, onClose)
@@ -45,7 +47,6 @@ export function CollabPanel({ open, onClose, roomId, target, tabLabel }: CollabP
     updatePresence({ status })
   }, [open, roomId, status, updatePresence])
 
-  // 5분 무입력 → away (수동 busy는 유지)
   useEffect(() => {
     if (!open) return
     let idleTimer: number | null = null
@@ -74,17 +75,8 @@ export function CollabPanel({ open, onClose, roomId, target, tabLabel }: CollabP
 
   return (
     <div className="fixed inset-0 z-[60]" role="dialog" aria-modal="true" aria-label="실시간 협업">
-      <button
-        type="button"
-        className="absolute inset-0 bg-black/40"
-        aria-label="닫기"
-        onClick={onClose}
-      />
-      <aside
-        className={cn(
-          'absolute inset-y-0 right-0 flex w-full max-w-md flex-col border-l border-border bg-background shadow-xl',
-        )}
-      >
+      <button type="button" className="absolute inset-0 bg-black/40" aria-label="닫기" onClick={onClose} />
+      <aside className="absolute inset-y-0 right-0 flex w-full max-w-md flex-col border-l border-border bg-background shadow-xl">
         <header className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
@@ -97,6 +89,7 @@ export function CollabPanel({ open, onClose, roomId, target, tabLabel }: CollabP
             </p>
           </div>
           <div className="flex items-center gap-1">
+            <CollabModeToggle />
             <NotificationCenterButton />
             <Button type="button" size="icon" variant="ghost" className="size-8" onClick={onClose}>
               <X className="size-4" />
@@ -127,10 +120,12 @@ export function CollabPanel({ open, onClose, roomId, target, tabLabel }: CollabP
           </div>
         </div>
 
-        <div className="flex gap-1 border-b border-border px-3 py-2">
+        <div className="flex flex-wrap gap-1 border-b border-border px-3 py-2">
           {(
             [
               ['comments', '주석'],
+              ['chat', '채팅'],
+              ['board', '보드'],
               ['activity', '활동'],
               ['alerts', '알림'],
             ] as const
@@ -139,7 +134,7 @@ export function CollabPanel({ open, onClose, roomId, target, tabLabel }: CollabP
               key={id}
               type="button"
               className={cn(
-                'rounded-md px-3 py-1.5 text-xs',
+                'rounded-md px-2.5 py-1.5 text-xs',
                 section === id ? 'bg-foreground/5 font-medium' : 'text-muted-foreground hover:bg-muted/40',
               )}
               onClick={() => setSection(id)}
@@ -149,16 +144,21 @@ export function CollabPanel({ open, onClose, roomId, target, tabLabel }: CollabP
           ))}
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 space-y-3 overflow-y-auto p-4">
           {section === 'comments' && target && self ? (
-            <CommentThread
-              target={target}
-              authorId={self.userId}
-              authorName={self.name}
-            />
+            <CommentThread target={target} authorId={self.userId} authorName={self.name} />
           ) : null}
           {section === 'comments' && !target ? (
             <p className="text-xs text-muted-foreground">일지·문서에서 항목을 선택하면 주석을 달 수 있습니다.</p>
+          ) : null}
+          {section === 'chat' && roomId && self ? (
+            <CollabChatPanel roomId={roomId} userId={self.userId} userName={self.name} />
+          ) : null}
+          {section === 'chat' && !roomId ? (
+            <p className="text-xs text-muted-foreground">룸이 필요합니다. 서버/하이브리드 모드에서 채팅하세요.</p>
+          ) : null}
+          {section === 'board' && roomId && self ? (
+            <CollabWhiteboard roomId={roomId} userId={self.userId} color={self.color} />
           ) : null}
           {section === 'activity' ? <ActivityFeed /> : null}
           {section === 'alerts' ? (

@@ -6,11 +6,11 @@
 
 | 항목 | 값 |
 |------|-----|
-| 버전 | **2.1.0** (정식 릴리즈) |
-| Phase | Phase 19 완료 |
-| 진행 중 | — |
-| 다음 | v2.x 로드맵 (협업 서버 옵션) |
-| 이어가기 | `origin/main` @ v2.1.0 정식 |
+| 버전 | **2.2.0-wip** |
+| Phase | Phase 20 |
+| 진행 중 | **P48** 협업 서버 옵션 |
+| 다음 | Phase 20 마무리 · 2.2.0 정식 |
+| 이어가기 | `origin/main` @ 2.2.0-wip |
 
 ## 완료 항목
 
@@ -79,13 +79,20 @@
 | P46 | v2.0 기반 정비 | `4509228` |
 | — | Phase 18 완료 · 2.0.0 정식 릴리즈 | `d15851f` |
 | P47 | 저장 관측 (감사 로그 · 대시보드 · 무결성 · 알림) | `6ecdd69` |
-| — | Phase 19 완료 · 2.1.0 정식 릴리즈 | (본 커밋) |
+| — | Phase 19 완료 · 2.1.0 정식 릴리즈 | `1322b32` |
+| P48 | 협업 서버 옵션 (WebSocket · Yjs · 채팅 · 충돌) | (본 커밋) |
 
 ## 진행 중
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| — | — | Phase 19 완료 (v2.1.0 정식 릴리즈) |
+| P48 | 협업 서버 옵션 | Phase 20 · 2.2.0-wip |
+
+## Phase 20 계획
+
+| ID | 요약 | 노트 |
+|----|------|------|
+| P48 | 협업 서버 옵션 | 🔄 WS 서버 · Yjs · 채팅/보드 · 3-way merge · WebRTC 시그널 |
 
 ## Phase 19 계획 (완료)
 
@@ -107,7 +114,7 @@
 |------|------|------|
 | 기반 | Vitest CI · 타입 · 문서 · CSP | ✅ 2.0.0 |
 | 저장 | WithFallback 관측성 강화 | ✅ 2.1.0 (P47) |
-| 협업 | Presence/Yjs 서버 동기화 옵션 | 예정 |
+| 협업 | Presence/Yjs 서버 동기화 옵션 | 🔄 2.2.0-wip (P48) |
 | DX | 성능 예산 · 기여 가이드 | ✅ |
 
 ## Phase 17 계획 (완료)
@@ -203,6 +210,15 @@
 | P22 | 운영 런북 | ✅ |
 
 ## 변경 이력
+
+### 2.2.0-wip — 2026-08-03 (Phase 20 P48 협업 서버)
+
+- 버전 **2.2.0-wip** · Phase 20 시작
+- `src/server/collab/` WebSocket 서버 · Room · memory pub/sub
+- collab mode local/server/hybrid · Yjs WS 연동 · 채팅 · 화이트보드 · WebRTC 시그널
+- 3-way merge · ConflictMergeDialog · throttle/압축/대역폭 절약
+- docs: COLLAB-SERVER · WEBSOCKET · CONFLICT-RESOLUTION
+- 테스트: WS 서버 · merge · load script (`collab:load`)
 
 ### 2.1.0 — 2026-08-03 (Phase 19 완료)
 
