@@ -4,7 +4,7 @@ Vercel · Docker · GHCR · GitHub Actions · 헬스체크 · **롤백**. (P22 �
 
 상세 배경: [docs/DEPLOY.md](../DEPLOY.md) · 환경변수: [.env.production.example](../../.env.production.example) · [docs/env.example](../env.example)
 
-**v2.1 배포 전:** `npm run test` · CSP(`next.config.ts`) · [MIGRATION.md](../MIGRATION.md) · 저장 관측 env 확인. 태그 `v2.1.0` 푸시 시 Release 워크플로가 노트를 생성합니다.
+**v2.2 배포 전:** `npm run test` · CSP · [COLLAB-SERVER.md](../COLLAB-SERVER.md) · 저장 관측 env 확인. 태그 `v2.2.0` 푸시 시 Release 워크플로가 노트를 생성합니다.
 
 ---
 
@@ -55,7 +55,7 @@ feature/* ──PR──▶ Preview
 |------|--------|----------------|
 | `NEXT_PUBLIC_*` | Production + Preview | build-arg + runtime |
 | `JIRA_*` / 웹훅 / `GITHUB_*` | Production (필요 시 Preview) | `.env.local` / `env_file` |
-| `FOLIO_VERSION` | `2.1.0` | Dockerfile ARG / compose |
+| `FOLIO_VERSION` | `2.2.0` | Dockerfile ARG / compose |
 | `BEACON_PROJECT_ROOT` | 보통 미사용 | 자가호스팅 시 설정 |
 
 ### GitHub Actions Secrets (P40)

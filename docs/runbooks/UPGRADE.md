@@ -1,10 +1,28 @@
 # 업그레이드 런북 (Upgrade)
 
-버전 업그레이드 · 마이그레이션 · 다운타임 최소화. (P22 · **v2.1 갱신**)
+버전 업그레이드 · 마이그레이션 · 다운타임 최소화. (P22 · **v2.2 갱신**)
 
 ---
 
-## 0. v2.1 (2.0 → 2.1)
+## 0. v2.2 (2.1 → 2.2)
+
+| 구분 | 예 | 의미 |
+|------|----|------|
+| 정식 | `2.2.0` | Phase 20 완료 릴리즈 |
+| WIP | `2.2.0-wip` | Phase 진행 중 |
+| Patch | `2.2.1` | 버그픽스 · 문서 |
+
+체크리스트:
+
+- [ ] `npm run runbook:backup`
+- [ ] `NEXT_PUBLIC_COLLAB_WS_URL` · `npm run collab:server` 확인 ([docs/COLLAB-SERVER.md](../COLLAB-SERVER.md))
+- [ ] `npm ci` · `npm run lint && npm run typecheck && npm run test && npm run qa:smoke`
+- [ ] 협업 모드 local/server/hybrid · 채팅/보드 스모크
+- [ ] Preview/스테이징 스모크 후 Production
+
+---
+
+## 0.1. v2.1 (2.0 → 2.1)
 
 | 구분 | 예 | 의미 |
 |------|----|------|
@@ -45,7 +63,7 @@
 
 | 구분 | 예 | 의미 |
 |------|----|------|
-| 정식 | `0.7.0` / `2.0.0` / `2.1.0` | Phase 완료 릴리즈 |
+| 정식 | `0.7.0` / `2.0.0` / `2.1.0` / `2.2.0` | Phase 완료 릴리즈 |
 | WIP | `0.7.0-wip` | Phase 진행 중 |
 | Patch | `0.7.1` | 버그픽스 · 문서 |
 

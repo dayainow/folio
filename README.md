@@ -2,7 +2,7 @@
 
 ![Dashboard](screenshots/dashboard.png)
 
-**프로젝트의 기록, 한 곳에서.** · **v2.2.0-wip**
+**프로젝트의 기록, 한 곳에서.** · **v2.2.0**
 
 Folio는 개발자의 일지·문서·일정·프로세스를 하나로 묶는 워크스페이스입니다.
 Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정을 tracking하는 흐름을,
@@ -68,7 +68,7 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 
 ---
 
-## Phase 1~20
+## Phase 1~20 완료
 
 | Phase | 버전 | 요약 | 상태 |
 |-------|------|------|------|
@@ -91,10 +91,9 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **17** | **1.8.0** | 실시간 협업 고도화 (Presence 상태 · guest/ACL · 알림 센터) | ✅ |
 | **18** | **2.0.0** | v2.0 기반 정비 (Vitest · CSP · CI · 마이그레이션 문서) | ✅ |
 | **19** | **2.1.0** | 저장 관측 (감사 로그 · 대시보드 · 무결성 · 알림) | ✅ |
-| **20** | **2.2.0-wip** | 협업 서버 옵션 (WebSocket · Yjs · 채팅 · 충돌) | 🔄 |
+| **20** | **2.2.0** | 협업 서버 옵션 (WebSocket · Yjs · 채팅 · 충돌) | ✅ |
 
-Phase 20 상세: P48 협업 서버 — WebSocket · Yjs sync · 채팅/화이트보드 · 3-way merge
-Phase 19: P47 저장 관측  
+Phase 20 상세: P48 협업 서버 — WebSocket · Yjs sync · 채팅/화이트보드 · 3-way merge  
 이력: [VERSION.md](VERSION.md) · 마이그레이션: [docs/MIGRATION.md](docs/MIGRATION.md)
 
 ---
@@ -127,7 +126,7 @@ npm run lint && npm run typecheck && npm run test && npm run qa:smoke
 |------|------|------|
 | **기반 정비** | Vitest · CI · ARCHITECTURE · CSP · sanitize | ✅ 2.0.0 |
 | **저장·관측** | WithFallback 관측성 강화 (P47) | ✅ 2.1.0 |
-| **협업** | Presence/Yjs 서버 동기화 옵션 (P48) | 🔄 2.2.0-wip |
+| **협업** | Presence/Yjs 서버 동기화 옵션 (P48) | ✅ 2.2.0 |
 | **DX** | 성능 예산 · 기여/테스트 가이드 | ✅ |
 
 상세: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/PERFORMANCE.md](docs/PERFORMANCE.md) · [VERSION.md](VERSION.md)
@@ -467,14 +466,14 @@ npm run runbook:backup
 - **v1.8** ✅ — 실시간 협업 고도화 (Presence 상태 · guest/ACL · 알림 센터)
 - **v2.0** ✅ — 기반 정비 · 테스트 · CSP · CI · 마이그레이션 문서
 - **v2.1** ✅ — 저장 관측 (감사 로그 · 대시보드 · 무결성 · 알림)
-- **v2.2** 🔄 — 협업 서버 옵션 (WebSocket · Yjs · 채팅 · 충돌 해결)
+- **v2.2** ✅ — 협업 서버 옵션 (WebSocket · Yjs · 채팅 · 충돌 해결)
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 20** (v**2.2.0-wip**)
-- 진행 중: **P48** 협업 서버 옵션 (WebSocket · Yjs · 채팅 · 충돌 해결)
-- 완료: Phase 1~19 (2.1.0) · P47 저장 관측
-- 다음: Phase 20 마무리 · 2.2.0 정식
+- 현재 Phase: **Phase 20 완료** (v**2.2.0** 정식)
+- 진행 중: —
+- 완료: Phase 1~20 (2.2.0) · P48 협업 서버 옵션
+- 다음: v2.x
 - 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md))
 
 ---
@@ -488,4 +487,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · v2.2.0-wip
+**Folio** — 프로젝트의 기록, 한 곳에서. · v2.2.0
