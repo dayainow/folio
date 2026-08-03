@@ -2,7 +2,7 @@
 
 ![Dashboard](screenshots/dashboard.png)
 
-**프로젝트의 기록, 한 곳에서.** · **v2.6.0-wip**
+**프로젝트의 기록, 한 곳에서.** · **v2.6.0**
 
 Folio는 개발자의 일지·문서·일정·프로세스를 하나로 묶는 워크스페이스입니다.
 Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정을 tracking하는 흐름을,
@@ -95,11 +95,11 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **21** | **2.3.0** | 고급 보안 (2FA · SSO · RBAC · 감사 · GDPR) | ✅ |
 | **22** | **2.4.0** | 성능 관측 · 자동 최적화 (Web Vitals · LHCI) | ✅ |
 | **23** | **2.5.0** | 플러그인/확장 (위젯 · 필드 · 마켓) | ✅ |
-| **24** | **2.6.0-wip** | 고급 검색/필터 (Lunr · 저장검색 · 실시간) | 🔄 |
+| **24** | **2.6.0** | 고급 검색/필터 (Lunr · 저장검색 · 실시간) | ✅ |
 
 Phase 24 상세: P52 고급 검색 — Lunr · 부울 · 프리셋 · debounce · 일괄/내보내기  
 Phase 23 상세: P51 플러그인 — registry · sandbox · marketplace · custom fields  
-이력: [VERSION.md](VERSION.md) · 플러그인: [docs/plugins/README.md](docs/plugins/README.md)
+이력: [VERSION.md](VERSION.md) · 검색: [docs/SEARCH.md](docs/SEARCH.md) · 플러그인: [docs/plugins/README.md](docs/plugins/README.md)
 
 ---
 
@@ -135,7 +135,7 @@ npm run lint && npm run typecheck && npm run test && npm run qa:smoke
 | **보안** | 2FA · SSO · RBAC · 감사 · GDPR (P49) | ✅ 2.3.0 |
 | **성능** | Web Vitals · 대시보드 · LHCI · 번들 예산 (P50) | ✅ 2.4.0 |
 | **확장** | 플러그인 · 위젯 · 커스텀 필드 · 마켓 (P51) | ✅ 2.5.0 |
-| **검색** | Lunr 고급 검색 · 저장 필터 · 실시간 (P52) | 🔄 2.6.0-wip |
+| **검색** | Lunr 고급 검색 · 저장 필터 · 실시간 (P52) | ✅ 2.6.0 |
 | **DX** | 성능 예산 · 기여/테스트 가이드 | ✅ |
 
 상세: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/PERFORMANCE.md](docs/PERFORMANCE.md) · [VERSION.md](VERSION.md)
@@ -387,18 +387,39 @@ npm run dev
 | **스캔** | `npm run audit` · `npm run security:scan` |
 
 
-## 고급 검색 / 필터 (P52)
+## 고급 검색 / 필터 사용법 (P52)
 
-헤더 **고급검색** 버튼에서 Lunr 기반 전문 검색과 저장 필터를 사용합니다. (간단 검색은 ⌘/Ctrl+K)
+헤더 **고급검색** 버튼에서 Lunr 기반 전문 검색과 저장 필터를 사용합니다. 간단 검색은 ⌘/Ctrl+K. 상세: [docs/SEARCH.md](docs/SEARCH.md)
 
-| 기능 | 설명 |
-|------|------|
-| **쿼리** | AND / OR / NOT · `"구문"` · `title:` `tag:` `content:` · `*` 와일드카드 · `/regex/i` |
-| **필터** | 소스(일지/문서/일정) · 날짜 · 태그 · 상태 · 우선순위 · 정렬 |
-| **프리셋** | 이번 주 일지 · 진행 중 태스크 · 미완료 문서 · 높은 우선순위 |
-| **실시간** | 입력 debounce 150ms · 하이라이트 · 그룹화 미리보기 |
-| **일괄** | 선택 결과 태그 추가/삭제 · CSV/JSON 내보내기 |
-| **히스토리** | 최근 검색 · 추천 검색어 |
+### 검색 열기 · 실시간
+
+1. 헤더 → **고급검색**
+2. 쿼리 입력 — **150ms debounce**로 결과 즉시 갱신
+3. 매칭 구간 **하이라이트** · 일지/문서/일정 **그룹** 미리보기 카드
+4. 결과 클릭 시 해당 항목으로 이동
+
+### 쿼리 문법
+
+| 문법 | 예 |
+|------|-----|
+| **AND / OR / NOT** | `배포 AND API` · `TODO OR WIP` · `NOT draft` |
+| **구문** | `"API 설계"` |
+| **필드** | `title:가이드` · `tag:배포` · `content:마이그레이션` |
+| **와일드카드** | `API*` |
+| **정규식** | `/WIP/i` |
+
+### 필터 · 프리셋
+
+1. 소스(일지/문서/일정) · 날짜 범위 · 태그 · 상태 · 우선순위 조합
+2. 정렬: **관련성** · **날짜** · **우선순위**
+3. 내장 프리셋: **이번 주 내 일지** · **진행 중 태스크** · **미완료 문서** · **높은 우선순위**
+4. 자주 쓰는 조건은 **저장 검색**으로 보관 · 최근 검색·추천어 재사용
+
+### 일괄 · 내보내기
+
+1. 결과 체크박스로 선택
+2. **태그 추가/삭제** 일괄 적용
+3. **CSV** / **JSON** 내보내기
 
 ## 플러그인 / 확장 사용법 (P51)
 
@@ -630,14 +651,14 @@ npm run runbook:backup
 - **v2.3** ✅ — 고급 보안 (2FA · SSO · RBAC · 감사 · GDPR)
 - **v2.4** ✅ — 성능 관측 · 자동 최적화 (Web Vitals · LHCI)
 - **v2.5** ✅ — 플러그인/확장 (위젯 · 커스텀 필드 · 마켓)
-- **v2.6** 🔄 — 고급 검색/필터 (Lunr · 저장검색 · 실시간)
+- **v2.6** ✅ — 고급 검색/필터 (Lunr · 저장검색 · 실시간)
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 24** (v**2.6.0-wip**)
-- 진행 중: **P52** 고급 검색/필터
-- 완료: Phase 1~23 (2.5.0) · P51 플러그인/확장
-- 다음: Phase 24 마무리 · 2.6.0 정식
+- 현재 Phase: **Phase 24 완료** (v**2.6.0** 정식)
+- 진행 중: —
+- 완료: Phase 1~24 (2.6.0) · P52 고급 검색/필터
+- 다음: v2.x
 - 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md))
 
 ---
@@ -651,4 +672,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · v2.6.0-wip
+**Folio** — 프로젝트의 기록, 한 곳에서. · v2.6.0
