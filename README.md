@@ -2,7 +2,7 @@
 
 ![Dashboard](screenshots/dashboard.png)
 
-**프로젝트의 기록, 한 곳에서.** · **v2.2.0**
+**프로젝트의 기록, 한 곳에서.** · **v2.3.0-wip**
 
 Folio는 개발자의 일지·문서·일정·프로세스를 하나로 묶는 워크스페이스입니다.
 Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정을 tracking하는 흐름을,
@@ -92,9 +92,10 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **18** | **2.0.0** | v2.0 기반 정비 (Vitest · CSP · CI · 마이그레이션 문서) | ✅ |
 | **19** | **2.1.0** | 저장 관측 (감사 로그 · 대시보드 · 무결성 · 알림) | ✅ |
 | **20** | **2.2.0** | 협업 서버 옵션 (WebSocket · Yjs · 채팅 · 충돌) | ✅ |
+| **21** | **2.3.0-wip** | 고급 보안 (2FA · SSO · RBAC · 감사 · GDPR) | 🔄 |
 
-Phase 20 상세: P48 협업 서버 — WebSocket · Yjs sync · 채팅/화이트보드 · 3-way merge  
-이력: [VERSION.md](VERSION.md) · 마이그레이션: [docs/MIGRATION.md](docs/MIGRATION.md)
+Phase 21 상세: P49 고급 보안 — TOTP · OAuth/SAML · 세션 · RBAC/ACL · 감사 · GDPR · CSP/CSRF  
+이력: [VERSION.md](VERSION.md) · 보안: [docs/SECURITY.md](docs/SECURITY.md)
 
 ---
 
@@ -127,6 +128,7 @@ npm run lint && npm run typecheck && npm run test && npm run qa:smoke
 | **기반 정비** | Vitest · CI · ARCHITECTURE · CSP · sanitize | ✅ 2.0.0 |
 | **저장·관측** | WithFallback 관측성 강화 (P47) | ✅ 2.1.0 |
 | **협업** | Presence/Yjs 서버 동기화 옵션 (P48) | ✅ 2.2.0 |
+| **보안** | 2FA · SSO · RBAC · 감사 · GDPR (P49) | 🔄 2.3.0-wip |
 | **DX** | 성능 예산 · 기여/테스트 가이드 | ✅ |
 
 상세: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/PERFORMANCE.md](docs/PERFORMANCE.md) · [VERSION.md](VERSION.md)
@@ -321,6 +323,23 @@ npm run dev
 
 문서: [COLLAB-SERVER.md](docs/COLLAB-SERVER.md) · [WEBSOCKET.md](docs/WEBSOCKET.md)
 
+## 고급 보안 (P49)
+
+사이드바 계정 영역 **보안** 버튼에서 2FA·세션·감사·GDPR을 관리합니다.
+
+| 기능 | 설명 |
+|------|------|
+| **2FA (TOTP)** | Authenticator 앱 등록 · Supabase MFA |
+| **SSO** | Google/GitHub 등 OAuth (`NEXT_PUBLIC_AUTH_OAUTH_PROVIDERS`) · SAML은 Dashboard |
+| **세션** | 다중 세션 추적 · 다른 기기/전체 원격 종료 |
+| **RBAC/ACL** | 팀 역할 + 리소스 `view/comment/edit/admin/owner` · 프로젝트 격리 |
+| **감사** | CRUD/auth/ACL/export 보안 로그 |
+| **GDPR** | 데이터 삭제 · 익명화 · 로컬 정리 |
+| **스캔** | `npm run audit` · `npm run security:scan` |
+| **CSP/CSRF** | 헤더 강화 · API CSRF 미들웨어 |
+
+상세: [docs/SECURITY.md](docs/SECURITY.md)
+
 ## 저장 관측 (P47)
 
 일지·문서·일정 저장 시 `saveWithFallback` 경로의 성공/실패·지연·모드를 기록하고, 사이드바에서 확인할 수 있습니다.
@@ -436,6 +455,7 @@ Folio는 동시 편집 충돌 해결에 **[Yjs](https://yjs.dev/)** CRDT를 사�
 | 접근성 | [docs/A11Y.md](docs/A11Y.md) |
 | API 레퍼런스 | [docs/API.md](docs/API.md) |
 | 버전 이력 | [VERSION.md](VERSION.md) |
+| **보안** | [docs/SECURITY.md](docs/SECURITY.md) |
 
 ---
 
@@ -467,13 +487,14 @@ npm run runbook:backup
 - **v2.0** ✅ — 기반 정비 · 테스트 · CSP · CI · 마이그레이션 문서
 - **v2.1** ✅ — 저장 관측 (감사 로그 · 대시보드 · 무결성 · 알림)
 - **v2.2** ✅ — 협업 서버 옵션 (WebSocket · Yjs · 채팅 · 충돌 해결)
+- **v2.3** 🔄 — 고급 보안 (2FA · SSO · RBAC · 감사 · GDPR)
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 20 완료** (v**2.2.0** 정식)
-- 진행 중: —
-- 완료: Phase 1~20 (2.2.0) · P48 협업 서버 옵션
-- 다음: v2.x
+- 현재 Phase: **Phase 21** (v**2.3.0-wip**)
+- 진행 중: **P49** 고급 보안
+- 완료: Phase 1~20 (2.2.0) · P48 협업 서버
+- 다음: Phase 21 마무리 · 2.3.0 정식
 - 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md))
 
 ---
@@ -487,4 +508,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · v2.2.0
+**Folio** — 프로젝트의 기록, 한 곳에서. · v2.3.0-wip

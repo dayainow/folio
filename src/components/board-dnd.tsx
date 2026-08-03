@@ -1,5 +1,7 @@
 'use client';
 
+import { csrfHeaders } from '@/lib/csrf';
+
 import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import {
   DndContext,
@@ -536,7 +538,7 @@ export function BoardDndPanel({
       // P39 — Jira → Board 동기화 워크플로우 이벤트
       void fetch('/api/workflow/events', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
         body: JSON.stringify({
           kind: 'jira_sync',
           title: 'Jira → Board 동기화',
@@ -648,7 +650,7 @@ export function BoardDndPanel({
     try {
       const res = await fetch('/api/github/issues', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
         body: JSON.stringify({
           title: task.title,
           body: task.description || `Created from Folio board task \`${task.id}\``,

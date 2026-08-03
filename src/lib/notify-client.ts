@@ -4,6 +4,7 @@
  * 클라이언트 알림 — 연동 상태 조회 및 Slack/Discord 알림 요청.
  */
 import { buildFolioDeepLink, type FolioDeepLink } from '@/lib/folio-links'
+import { csrfHeaders } from '@/lib/csrf'
 
 export interface IntegrationsStatus {
   slack: boolean
@@ -69,7 +70,7 @@ export async function notifyChannels(
 
     await fetch('/api/notify', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
       body: JSON.stringify({
         message,
         body: opts.body,

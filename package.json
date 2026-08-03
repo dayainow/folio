@@ -1,6 +1,6 @@
 {
   "name": "workspace",
-  "version": "2.2.0",
+  "version": "2.3.0-wip",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -22,7 +22,9 @@
     "mcp:client": "node scripts/mcp-client.mjs",
     "mcp:link": "node scripts/link-folio-mcp.mjs",
     "collab:server": "tsx src/server/collab/cli.ts",
-    "collab:load": "node scripts/collab-load-test.mjs"
+    "collab:load": "node scripts/collab-load-test.mjs",
+    "audit": "npm audit --omit=dev",
+    "security:scan": "npm audit --omit=dev --json > .security-audit.json || true; npm audit --omit=dev"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

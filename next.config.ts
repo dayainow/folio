@@ -93,25 +93,49 @@ const nextConfig: NextConfig = {
     ],
   },
   async headers() {
+    const supabaseHost = (() => {
+      try {
+        const u = process.env.NEXT_PUBLIC_SUPABASE_URL
+        if (!u || u.includes('placeholder') || u.includes('your-')) return null
+        return new URL(u).origin
+      } catch {
+        return null
+      }
+    })()
+    const collabWs = process.env.NEXT_PUBLIC_COLLAB_WS_URL?.trim()
+    const connect = ["'self'", 'https:', 'wss:']
+    if (supabaseHost) connect.push(supabaseHost)
+    if (collabWs) {
+      try {
+        const w = new URL(collabWs.replace(/^ws/, 'http'))
+        connect.push(w.origin.replace(/^http/, 'ws'))
+        connect.push(w.origin)
+      } catch {
+        /* ignore */
+      }
+    }
     const csp = [
       "default-src 'self'",
+      // Next.js / PWA: unsafe-inline 유지 · eval은 개발 편의용(프로덕션 빌드는 최소화)
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https:",
       "font-src 'self' data:",
-      "connect-src 'self' https: wss:",
+      `connect-src ${[...new Set(connect)].join(' ')}`,
       "worker-src 'self' blob:",
       "manifest-src 'self'",
       "frame-ancestors 'self'",
       "base-uri 'self'",
       "form-action 'self'",
       "object-src 'none'",
+      "upgrade-insecure-requests",
     ].join('; ')
     return [
       {
         source: '/:path*',
         headers: [
           { key: 'Content-Security-Policy', value: csp },
+          { key: 'Content-Security-Policy-Report-Only', value: csp.replace(" 'unsafe-eval'", '') },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
@@ -119,6 +143,7 @@ const nextConfig: NextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=()',
           },
+          { key: 'Cross-Origin-Opener-Policy', value: 'same-origin-allow-popups' },
         ],
       },
     ]

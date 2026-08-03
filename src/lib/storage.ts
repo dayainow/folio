@@ -10,6 +10,8 @@
  * P47: 감사 로그 · 재시도/백오프 · 연속 실패 알림을 저장 경로에 연동.
  */
 
+import { csrfHeaders } from '@/lib/csrf'
+
 export type StorageMode = 'local' | 'cloud' | 'beacon'
 
 /** saveWithFallback / Beacon 캐시 키 */
@@ -111,7 +113,7 @@ export async function loadBeaconCache<T>(type: StorageDataType): Promise<T | nul
 export async function saveBeaconCache(type: StorageDataType, data: unknown): Promise<void> {
   const res = await fetch('/api/beacon/folio', {
     method: 'PUT',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...csrfHeaders() },
     body: JSON.stringify({ type: beaconFileType(type), data }),
   })
   if (!res.ok) {

@@ -100,6 +100,14 @@ const NotificationCenterButton = dynamic(
   { ssr: false },
 );
 
+const SecuritySettingsButton = dynamic(
+  () =>
+    import('@/components/security-settings').then((m) => ({
+      default: m.SecuritySettingsButton,
+    })),
+  { ssr: false },
+);
+
 const PwaInstallPrompt = dynamic(
   () => import('@/components/pwa-install-prompt').then((m) => ({ default: m.PwaInstallPrompt })),
   { ssr: false, loading: () => null },
@@ -111,6 +119,7 @@ const TAB_ORDER: TabValue[] = ['journal', 'docs', 'board', 'process'];
 
 export default function Home() {
   const [email, setEmail] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [tab, setTab] = useState<TabValue>('journal');
   const [focusJournalDate, setFocusJournalDate] = useState<string | null>(null);
@@ -226,6 +235,7 @@ export default function Home() {
         const { data } = await supabase.auth.getUser();
         if (cancelled) return;
         setEmail(data.user?.email ?? null);
+        setUserId(data.user?.id ?? null);
         setAuthReady(true);
         void import('@/lib/audit-log').then(({ setAuditUser, loadAuditConfigFromRuntime }) => {
           setAuditUser(data.user?.email ?? 'guest');
@@ -233,11 +243,16 @@ export default function Home() {
         });
         if (data.user) {
           void migrateLocalDataOnLogin().catch(() => undefined);
+          void import('@/lib/sessions').then(({ trackCurrentSession, touchCurrentSession }) => {
+            void trackCurrentSession(data.user!.id);
+            touchCurrentSession(data.user!.id);
+          });
         }
         const {
           data: { subscription },
         } = supabase.auth.onAuthStateChange((event, session) => {
           setEmail(session?.user?.email ?? null);
+          setUserId(session?.user?.id ?? null);
           setAuthReady(true);
           void import('@/lib/audit-log').then(({ setAuditUser }) => {
             setAuditUser(session?.user?.email ?? 'guest');
@@ -246,10 +261,22 @@ export default function Home() {
             void import('@/lib/migrate').then(({ migrateLocalDataOnLogin: migrate }) =>
               migrate().catch(() => undefined),
             );
+            void import('@/lib/sessions').then(({ trackCurrentSession }) =>
+              trackCurrentSession(session.user!.id),
+            );
+            void import('@/lib/security-audit').then(({ recordSecurityAudit }) =>
+              recordSecurityAudit({
+                userId: session.user!.id,
+                action: 'auth.login',
+              }),
+            );
           }
           if (event === 'SIGNED_OUT') {
             setActiveTeamIdState(null);
             setTeamPanelOpen(false);
+            void import('@/lib/security-audit').then(({ recordSecurityAudit }) =>
+              recordSecurityAudit({ action: 'auth.logout' }),
+            );
           }
         });
         unsubscribe = () => subscription.unsubscribe();
@@ -288,9 +315,11 @@ export default function Home() {
       const { signOut } = await import('@/lib/supabase');
       await signOut();
       setEmail(null);
+      setUserId(null);
       setActiveTeamIdState(null);
     } catch {
       setEmail(null);
+      setUserId(null);
     }
   };
 
@@ -336,18 +365,21 @@ export default function Home() {
       )}
       {authReady ? (
         email ? (
-          <div className="flex items-center justify-between gap-2 pt-1">
-            <span className="truncate text-[11px] text-muted-foreground" title={email}>
-              {email}
-            </span>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-8 px-2 text-[11px]"
-              onClick={() => void handleSignOut()}
-            >
-              로그아웃
-            </Button>
+          <div className="space-y-2 pt-1">
+            <div className="flex items-center justify-between gap-2">
+              <span className="truncate text-[11px] text-muted-foreground" title={email}>
+                {email}
+              </span>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 px-2 text-[11px]"
+                onClick={() => void handleSignOut()}
+              >
+                로그아웃
+              </Button>
+            </div>
+            {userId ? <SecuritySettingsButton userId={userId} /> : null}
           </div>
         ) : (
           <Link

@@ -41,6 +41,13 @@ export function FullExportButton() {
               (r, label) => setProgress(0.15 + r * 0.85, label),
             )
             downloadBlob(blob, fullExportFilename())
+            void import('@/lib/security-audit').then(({ recordSecurityAudit }) =>
+              recordSecurityAudit({
+                action: 'export',
+                resource: 'full-zip',
+                detail: `j=${Object.keys(journals).length} d=${docs.length} b=${tasks.length}`,
+              }),
+            )
           },
         },
       ]}

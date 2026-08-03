@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 import { Auth } from '@supabase/auth-ui-react'
 import { ThemeSupa } from '@supabase/auth-ui-shared'
 import { createBrowserSupabaseClient } from '@/lib/supabase'
+import { getEnabledOAuthProviders } from '@/lib/auth-sso'
+import { recordSecurityAudit } from '@/lib/security-audit'
 
 type AuthView = 'sign_in' | 'sign_up' | 'forgotten_password'
 
@@ -43,8 +45,18 @@ export default function LoginPage() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN') router.replace('/')
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN') {
+        recordSecurityAudit({
+          userId: session?.user?.id,
+          action: 'auth.login',
+          detail: 'password_or_sso',
+        })
+        void import('@/lib/sessions').then(({ trackCurrentSession }) => {
+          if (session?.user?.id) void trackCurrentSession(session.user.id)
+        })
+        router.replace('/')
+      }
     })
 
     return () => {
@@ -114,7 +126,7 @@ export default function LoginPage() {
               key={view}
               supabaseClient={supabase}
               view={view}
-              providers={[]}
+              providers={getEnabledOAuthProviders()}
               redirectTo={typeof window !== 'undefined' ? `${window.location.origin}/` : undefined}
               appearance={{
                 theme: ThemeSupa,

@@ -71,6 +71,7 @@ export function ResourceAclPanel({
           <option value="comment">comment</option>
           <option value="edit">edit</option>
           <option value="admin">admin</option>
+          <option value="owner">owner</option>
         </select>
         <Button type="button" size="sm" className="h-8 text-xs" onClick={add} disabled={!subject.trim()}>
           추가

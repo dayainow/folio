@@ -8,6 +8,7 @@ import { loadDocs } from '@/lib/docs';
 import { loadTasks } from '@/lib/board';
 import { AiSummaryResponse, generateRuleBasedSummary, AiSummaryType } from '@/lib/ai-summary';
 import { cn } from '@/lib/utils';
+import { csrfHeaders } from '@/lib/csrf';
 
 export type AiSummaryWidgetProps = {
   type?: AiSummaryType;
@@ -39,7 +40,7 @@ export function AiSummaryWidget({ type = 'all', className, compact = false }: Ai
 
       const res = await fetch('/api/ai/summarize', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
         body: JSON.stringify(reqData),
       });
 
@@ -73,7 +74,7 @@ export function AiSummaryWidget({ type = 'all', className, compact = false }: Ai
     try {
       const res = await fetch('/api/notify', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
         body: JSON.stringify({
           message: `[Folio 요약 리포트] ${summary.generatedAt.slice(0, 10)}`,
           body: summary.summary,

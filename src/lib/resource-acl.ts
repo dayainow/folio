@@ -4,10 +4,10 @@
  */
 'use client'
 
-export type ResourceKind = 'doc' | 'board' | 'journal'
+export type ResourceKind = 'doc' | 'board' | 'journal' | 'process'
 
-/** view < comment < edit < admin */
-export type ResourceAccess = 'view' | 'comment' | 'edit' | 'admin'
+/** view < comment < edit < admin < owner */
+export type ResourceAccess = 'view' | 'comment' | 'edit' | 'admin' | 'owner'
 
 export type ResourceAclEntry = {
   id: string
@@ -22,7 +22,7 @@ export type ResourceAclEntry = {
 const KEY = 'folio_resource_acl_v1'
 const CHANGE = 'folio-resource-acl'
 
-const ORDER: ResourceAccess[] = ['view', 'comment', 'edit', 'admin']
+const ORDER: ResourceAccess[] = ['view', 'comment', 'edit', 'admin', 'owner']
 
 export function accessAtLeast(have: ResourceAccess, need: ResourceAccess): boolean {
   return ORDER.indexOf(have) >= ORDER.indexOf(need)
@@ -72,11 +72,28 @@ export function setResourceAcl(input: {
     updatedAt: new Date().toISOString(),
   }
   writeAll([entry, ...all])
+  void import('@/lib/security-audit').then(({ recordSecurityAudit }) =>
+    recordSecurityAudit({
+      action: 'acl.grant',
+      resource: `${input.kind}:${input.resourceId}`,
+      detail: `${input.subject}=${input.access}`,
+    }),
+  )
   return entry
 }
 
 export function removeResourceAcl(id: string): void {
+  const prev = readAll().find((e) => e.id === id)
   writeAll(readAll().filter((e) => e.id !== id))
+  if (prev) {
+    void import('@/lib/security-audit').then(({ recordSecurityAudit }) =>
+      recordSecurityAudit({
+        action: 'acl.revoke',
+        resource: `${prev.kind}:${prev.resourceId}`,
+        detail: prev.subject,
+      }),
+    )
+  }
 }
 
 /** 주체 목록에 대한 최대 권한 (없으면 null) */

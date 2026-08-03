@@ -14,7 +14,7 @@ concurrency:
 
 env:
   NEXT_TELEMETRY_DISABLED: "1"
-  FOLIO_VERSION: "2.2.0"
+  FOLIO_VERSION: "2.3.0-wip"
 
 jobs:
   quality:
@@ -40,6 +40,10 @@ jobs:
 
       - name: Unit tests
         run: npm run test
+
+      - name: Dependency audit (high+)
+        run: npm audit --omit=dev --audit-level=high
+        continue-on-error: true
 
       - name: QA smoke
         run: npm run qa:smoke

@@ -4,6 +4,8 @@
  */
 'use client'
 
+import { csrfHeaders } from '@/lib/csrf'
+
 const CONSENT_KEY = 'folio_push_consent'
 const SUB_KEY = 'folio_push_subscription'
 
@@ -93,7 +95,7 @@ export async function requestPushSubscription(): Promise<{
       }
       await fetch('/api/push/subscribe', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
         body: JSON.stringify({ subscription }),
       }).catch(() => undefined)
     } catch {
@@ -155,7 +157,7 @@ export async function showFolioPush(payload: FolioPushPayload): Promise<void> {
   // 서버 Web Push (구독·VAPID 있을 때)
   void fetch('/api/push/send', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
     body: JSON.stringify(payload),
   }).catch(() => undefined)
 }

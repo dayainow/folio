@@ -1,5 +1,7 @@
 'use client';
 
+import { csrfHeaders } from '@/lib/csrf';
+
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Activity,
@@ -432,7 +434,7 @@ export function BeaconPanel() {
         // P39 — Gate 변경 → Discord/Slack + 프로세스 갱신 힌트
         void fetch('/api/workflow/events', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
           body: JSON.stringify({
             kind: 'gate_change',
             title: 'Gate 상태 변경',

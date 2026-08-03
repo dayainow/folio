@@ -1,5 +1,7 @@
 'use client'
 
+import { csrfHeaders } from '@/lib/csrf'
+
 /**
  * P23 — Beacon Timeline 자동 기록 동의 (기본 off)
  */
@@ -53,7 +55,7 @@ export async function recordFolioTimelineEvent(input: {
   try {
     await fetch('/api/beacon/timeline', {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', ...csrfHeaders() },
       body: JSON.stringify({
         title: input.title,
         detail: input.detail ?? '',

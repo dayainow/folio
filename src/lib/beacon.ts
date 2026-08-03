@@ -1,3 +1,4 @@
+import { csrfHeaders } from '@/lib/csrf'
 /**
  * Beacon 프로세스 상태 읽기 + Folio 오버레이(P23)
  * - 서버: BEACON_PROJECT_ROOT 또는 process.cwd() 아래 `.beacon/`
@@ -1103,7 +1104,7 @@ export async function createBeaconSnapshotClient(
   try {
     const res = await fetch('/api/beacon/snapshots', {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', ...csrfHeaders() },
       body: JSON.stringify({ source }),
     })
     if (!res.ok) return null
@@ -1152,7 +1153,7 @@ export async function putBeaconProject(body: {
   try {
     const res = await fetch('/api/beacon/project', {
       method: 'PUT',
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', ...csrfHeaders() },
       body: JSON.stringify(body),
     })
     const json = (await res.json()) as BeaconProjectPutResult
@@ -1174,7 +1175,7 @@ export async function exportDocToBeacon(body: {
   try {
     const res = await fetch('/api/beacon/artifacts', {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', ...csrfHeaders() },
       body: JSON.stringify(body),
     })
     const json = (await res.json()) as BeaconProjectPutResult
