@@ -1,7 +1,9 @@
 'use client'
 
 /**
- * 로그인 시 로컬 데이터를 Supabase로 마이그레이션.
+ * 마이그레이션 진입점
+ * - 로그인 시 로컬 → Supabase (기존)
+ * - P54 버전 스키마 마이그레이션 / 덤프 / 롤백 (data-migration)
  */
 import { requireAuthUser } from '@/lib/supabase'
 import {
@@ -16,6 +18,37 @@ import {
   loadTasks,
   saveTasksSupabase,
 } from '@/lib/board'
+
+export {
+  LATEST_SCHEMA_VERSION,
+  MIGRATIONS,
+  buildMigrationReport,
+  downloadDatasetJson,
+  downloadDatasetSqlite,
+  downloadMigrationReport,
+  exportDatasetJson,
+  exportDatasetSqlite,
+  getCurrentSchemaVersion,
+  importAndApply,
+  importDatasetSqlite,
+  listMigrationLogs,
+  loadDataset,
+  loadLastSnapshot,
+  mergeDatasets,
+  migrateToLatest,
+  parseDatasetJson,
+  persistDataset,
+  rollbackOne,
+  rollbackToSnapshot,
+  runMigrationsTo,
+  validateDataset,
+  type ConflictStrategy,
+  type FolioDataset,
+  type MigrationLogEntry,
+  type MigrationProgress,
+  type ProgressFn,
+  type ValidationReport,
+} from '@/lib/data-migration'
 
 const migratedKey = (userId: string) => `folio_cloud_migrated_${userId}`
 

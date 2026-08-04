@@ -2,7 +2,7 @@
 
 ![Dashboard](screenshots/dashboard.png)
 
-**프로젝트의 기록, 한 곳에서.** · **v2.7.0**
+**프로젝트의 기록, 한 곳에서.** · **v2.8.0-wip**
 
 Folio는 개발자의 일지·문서·일정·프로세스를 하나로 묶는 워크스페이스입니다.
 Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정을 tracking하는 흐름을,
@@ -97,10 +97,11 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **23** | **2.5.0** | 플러그인/확장 (위젯 · 필드 · 마켓) | ✅ |
 | **24** | **2.6.0** | 고급 검색/필터 (Lunr · 저장검색 · 실시간) | ✅ |
 | **25** | **2.7.0** | 번역/다국어 (ko · en · ja) | ✅ |
+| **26** | **2.8.0-wip** | 데이터 마이그레이션 (버전 · SQLite · 롤백) | 🔄 |
 
+Phase 26 상세: P54 마이그레이션 — runner · rollback · sql.js · 충돌/검증 UI  
 Phase 25 상세: P53 i18n — 로더 · 언어 토글 · docs/ko|en|ja  
-Phase 24 상세: P52 고급 검색 — Lunr · 부울 · 프리셋 · debounce · 일괄/내보내기  
-이력: [VERSION.md](VERSION.md) · i18n: [docs/I18N.md](docs/I18N.md) · 검색: [docs/SEARCH.md](docs/SEARCH.md)
+이력: [VERSION.md](VERSION.md) · 마이그레이션: [docs/MIGRATION-TOOLS.md](docs/MIGRATION-TOOLS.md) · i18n: [docs/I18N.md](docs/I18N.md)
 
 ---
 
@@ -138,6 +139,7 @@ npm run lint && npm run typecheck && npm run test && npm run qa:smoke
 | **확장** | 플러그인 · 위젯 · 커스텀 필드 · 마켓 (P51) | ✅ 2.5.0 |
 | **검색** | Lunr 고급 검색 · 저장 필터 · 실시간 (P52) | ✅ 2.6.0 |
 | **다국어** | ko · en · ja i18n · 문서 locale (P53) | ✅ 2.7.0 |
+| **마이그레이션** | 버전 스크립트 · SQLite · 롤백 · 검증 (P54) | 🔄 2.8.0-wip |
 | **DX** | 성능 예산 · 기여/테스트 가이드 | ✅ |
 
 상세: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/PERFORMANCE.md](docs/PERFORMANCE.md) · [VERSION.md](VERSION.md)
@@ -388,6 +390,29 @@ npm run dev
 | **CSRF** | mutating `/api/*`에 `x-folio-csrf` 헤더 필요 (웹훅·health 제외) |
 | **스캔** | `npm run audit` · `npm run security:scan` |
 
+
+## 데이터 마이그레이션 사용법 (P54)
+
+사이드바 **마이그레이션**에서 스키마 버전 업그레이드·롤백·SQLite/JSON 입출력을 합니다. 상세: [docs/MIGRATION-TOOLS.md](docs/MIGRATION-TOOLS.md)
+
+### 버전 마이그레이션
+
+1. 사이드바 → **마이그레이션**
+2. 현재 스키마 버전 / 최신 버전 확인
+3. **최신으로 마이그레이션** — `src/migrations/` 스크립트 순차 적용
+4. **롤백** — 한 단계 down · **스냅샷 복원** — 직전 백업 복구
+5. 진행률 표시줄 · 전/후 checksum · 마크다운 리포트 다운로드
+
+### 내보내기 / 가져오기
+
+| 포맷 | 설명 |
+|------|------|
+| **JSON** | Folio 데이터셋 (journals/docs/tasks + schemaVersion) |
+| **SQLite** | `sql.js` 브라우저 덤프 (`.sqlite`) |
+| **충돌** | 병합(최신 우선) · 덮어쓰기 · 건너뛰기 |
+| **ZIP/CSV** | 기존 **전체 내보내기** 메뉴 유지 |
+
+가져오기 후 스키마가 낮으면 자동으로 최신까지 점진 마이그레이션합니다.
 
 ## 다국어 지원 사용법 (P53)
 
@@ -681,13 +706,14 @@ npm run runbook:backup
 - **v2.5** ✅ — 플러그인/확장 (위젯 · 커스텀 필드 · 마켓)
 - **v2.6** ✅ — 고급 검색/필터 (Lunr · 저장검색 · 실시간)
 - **v2.7** ✅ — 번역/다국어 (ko · en · ja)
+- **v2.8** 🔄 — 데이터 마이그레이션 (버전 · SQLite · 롤백)
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 25 완료** (v**2.7.0** 정식)
-- 진행 중: —
+- 현재 Phase: **Phase 26** (v**2.8.0-wip**)
+- 진행 중: **P54** 데이터 마이그레이션 도구
 - 완료: Phase 1~25 (2.7.0) · P53 번역/다국어
-- 다음: v2.x
+- 다음: Phase 26 마무리 · 2.8.0 정식
 - 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md))
 
 ---
@@ -701,4 +727,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · v2.7.0
+**Folio** — 프로젝트의 기록, 한 곳에서. · v2.8.0-wip

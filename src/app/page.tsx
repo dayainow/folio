@@ -22,6 +22,7 @@ import { WebVitalsReporter } from '@/components/web-vitals-reporter';
 import { PerfProfiler } from '@/lib/render-profiler';
 import { MobileNav } from '@/components/mobile-nav';
 import { FullExportButton } from '@/components/full-export-button';
+import { DataMigrationButton } from '@/components/data-migration-panel';
 import { McpSyncButton } from '@/components/mcp-sync-button';
 import { getActiveTeamId } from '@/lib/team';
 import { parseFolioDeepLink } from '@/lib/folio-links';
@@ -366,6 +367,7 @@ export default function Home() {
       </div>
       <div className="flex flex-wrap items-center gap-1.5">
         <FullExportButton />
+        <DataMigrationButton />
         <McpSyncButton />
       </div>
       <div className="flex flex-wrap items-center gap-1.5">
