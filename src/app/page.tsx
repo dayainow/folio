@@ -8,6 +8,8 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { GlobalSearch, type SearchNavigatePayload } from '@/components/global-search';
 import { AdvancedSearchButton } from '@/components/advanced-search';
+import { LanguageToggle } from '@/components/language-toggle';
+import { useI18n } from '@/components/i18n-provider';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { StorageModeToggle } from '@/components/storage-mode-toggle';
 import { CollabModeToggle } from '@/components/collab-mode-toggle';
@@ -130,6 +132,7 @@ type TabValue = 'journal' | 'docs' | 'board' | 'process';
 const TAB_ORDER: TabValue[] = ['journal', 'docs', 'board', 'process'];
 
 export default function Home() {
+  const { t } = useI18n();
   const [email, setEmail] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [authReady, setAuthReady] = useState(false);
@@ -394,7 +397,7 @@ export default function Home() {
                 className="h-8 px-2 text-[11px]"
                 onClick={() => void handleSignOut()}
               >
-                로그아웃
+                {t('common.logout')}
               </Button>
             </div>
             {userId ? <SecuritySettingsButton userId={userId} /> : null}
@@ -407,7 +410,7 @@ export default function Home() {
               'h-8 w-full text-xs',
             )}
           >
-            로그인
+            {t('common.login')}
           </Link>
         )
       ) : null}
@@ -429,7 +432,7 @@ export default function Home() {
       <PerfProfiler id="FolioHome">
     <div className={cn('flex min-h-screen flex-col bg-background', mobileFs && 'folio-fs-root')}>
       <a href="#main-content" className="skip-link">
-        본문으로 건너뛰기
+        {t('nav.skipToContent')}
       </a>
 
       {/* 최소 헤더: 로고 + 탭 + 검색 */}
@@ -454,14 +457,14 @@ export default function Home() {
             </span>
           </div>
 
-          <nav aria-label="주요 패널" className="hidden min-w-0 flex-1 md:block">
+          <nav aria-label={t('nav.main')} className="hidden min-w-0 flex-1 md:block">
             <ul className="flex items-center gap-0.5">
               {(
                 [
-                  { value: 'journal' as const, label: '일지' },
-                  { value: 'docs' as const, label: '문서' },
-                  { value: 'board' as const, label: '일정' },
-                  { value: 'process' as const, label: '프로세스', icon: true },
+                  { value: 'journal' as const, labelKey: 'nav.journal' },
+                  { value: 'docs' as const, labelKey: 'nav.docs' },
+                  { value: 'board' as const, labelKey: 'nav.board' },
+                  { value: 'process' as const, labelKey: 'nav.process', icon: true },
                 ] as const
               ).map((item) => (
                 <li key={item.value}>
@@ -477,7 +480,7 @@ export default function Home() {
                     )}
                   >
                     {'icon' in item && item.icon ? <Activity className="h-3 w-3" /> : null}
-                    {item.label}
+                    {t(item.labelKey)}
                   </button>
                 </li>
               ))}
@@ -485,16 +488,17 @@ export default function Home() {
           </nav>
 
           <div className="ml-auto flex items-center gap-1">
+            <LanguageToggle />
             <Link
               href="/guide"
               className={cn(
                 buttonVariants({ size: 'sm', variant: 'ghost' }),
                 'h-8 gap-1 px-2 text-xs text-muted-foreground sm:px-2.5',
               )}
-              aria-label="가이드"
+              aria-label={t('nav.guide')}
             >
               <BookOpen className="h-3.5 w-3.5" aria-hidden />
-              <span className="hidden sm:inline">가이드</span>
+              <span className="hidden sm:inline">{t('nav.guide')}</span>
             </Link>
             <GlobalSearch variant="icon" onNavigate={handleSearchNavigate} />
             <AdvancedSearchButton onNavigate={handleSearchNavigate} />
@@ -504,7 +508,7 @@ export default function Home() {
               variant="ghost"
               size="icon"
               className="h-9 w-9"
-              aria-label="실시간 협업"
+              aria-label={t('settings.collabRealtime')}
               aria-expanded={collabPanelOpen}
               onClick={() => setCollabPanelOpen(true)}
             >
@@ -515,7 +519,7 @@ export default function Home() {
               variant="ghost"
               size="icon"
               className="h-12 w-12 min-h-[48px] min-w-[48px] md:h-9 md:w-9 md:min-h-0 md:min-w-0 lg:hidden"
-              aria-label={mobileFs ? '풀스크린 종료' : '풀스크린'}
+              aria-label={mobileFs ? t('settings.fullscreenExit') : t('settings.fullscreen')}
               aria-pressed={mobileFs}
               onClick={() => setMobileFullscreen(!mobileFs)}
             >
@@ -526,7 +530,7 @@ export default function Home() {
               variant="ghost"
               size="icon"
               className="h-12 w-12 min-h-[48px] min-w-[48px] md:h-9 md:w-9 md:min-h-0 md:min-w-0 lg:hidden"
-              aria-label="요약 패널 열기"
+              aria-label={t('nav.summaryOpen')}
               aria-expanded={mobileSidebarOpen}
               onClick={() => setMobileSidebarOpen(true)}
             >
@@ -590,13 +594,13 @@ export default function Home() {
                       value="journal-write"
                       className="h-7 rounded-md px-2.5 text-[11px] data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800"
                     >
-                      일지
+                      {t('nav.journal')}
                     </TabsTrigger>
                     <TabsTrigger
                       value="journal-stats"
                       className="h-7 rounded-md px-2.5 text-[11px] data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800"
                     >
-                      통계
+                      {t('nav.stats')}
                     </TabsTrigger>
                   </TabsList>
                   <TabsContent value="journal-write" className="mt-0">
@@ -626,13 +630,13 @@ export default function Home() {
                       value="board-kanban"
                       className="h-7 rounded-md px-2.5 text-[11px] data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800"
                     >
-                      일정
+                      {t('nav.board')}
                     </TabsTrigger>
                     <TabsTrigger
                       value="board-analytics"
                       className="h-7 rounded-md px-2.5 text-[11px] data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800"
                     >
-                      분석
+                      {t('nav.analytics')}
                     </TabsTrigger>
                   </TabsList>
                   <TabsContent value="board-kanban" className="mt-0">
@@ -664,22 +668,22 @@ export default function Home() {
 
       {/* 모바일: 하단 시트 */}
       {mobileSidebarOpen && (
-        <div className="fixed inset-0 z-[60] lg:hidden" role="dialog" aria-modal aria-label="요약 패널">
+        <div className="fixed inset-0 z-[60] lg:hidden" role="dialog" aria-modal aria-label={t('nav.summary')}>
           <button
             type="button"
             className="absolute inset-0 bg-black/40"
-            aria-label="닫기"
+            aria-label={t('common.close')}
             onClick={() => setMobileSidebarOpen(false)}
           />
           <div className="absolute inset-x-0 bottom-0 max-h-[75vh] overflow-y-auto rounded-t-2xl border border-gray-100 bg-background p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-xl dark:border-gray-800">
             <div className="mb-3 flex items-center justify-between">
-              <span className="text-sm font-semibold">요약</span>
+              <span className="text-sm font-semibold">{t('nav.summary')}</span>
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
                 className="h-9 w-9"
-                aria-label="패널 닫기"
+                aria-label={t('common.close')}
                 onClick={() => setMobileSidebarOpen(false)}
               >
                 <X className="h-4 w-4" />
@@ -715,10 +719,10 @@ export default function Home() {
           variant="secondary"
           className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] right-3 z-[60] h-12 min-h-[48px] gap-1.5 rounded-full px-4 shadow-lg md:hidden"
           onClick={() => setMobileFullscreen(false)}
-          aria-label="풀스크린 종료"
+          aria-label={t('settings.fullscreenExit')}
         >
           <Minimize2 className="h-4 w-4" />
-          종료
+          {t('common.close')}
         </Button>
       )}
     </div>

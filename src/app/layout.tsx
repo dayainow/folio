@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { AppProviders } from "@/components/app-providers";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -45,6 +46,8 @@ export const viewport = {
 
 const themeInitScript = `(function(){try{if(localStorage.getItem('folio_theme')==='dark'){document.documentElement.classList.add('dark');}}catch(e){}})();`;
 
+const localeInitScript = `(function(){try{var k='folio_locale';var v=localStorage.getItem(k);if(!v){var n=(navigator.language||'').toLowerCase();v=n.indexOf('ja')===0?'ja':n.indexOf('en')===0?'en':'ko';}if(v==='ko'||v==='en'||v==='ja'){document.documentElement.lang=v;document.cookie=k+'='+v+';path=/;max-age=31536000;SameSite=Lax';}}catch(e){}})();`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -58,8 +61,11 @@ export default function RootLayout({
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <script dangerouslySetInnerHTML={{ __html: localeInitScript }} />
       </head>
-      <body className="min-h-full flex flex-col bg-background text-foreground">{children}</body>
+      <body className="min-h-full flex flex-col bg-background text-foreground">
+        <AppProviders>{children}</AppProviders>
+      </body>
     </html>
   );
 }

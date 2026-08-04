@@ -1,0 +1,93 @@
+{
+  "lang": {
+    "label": "Language",
+    "switch": "Switch language",
+    "ko": "한국어",
+    "en": "English",
+    "ja": "日本語"
+  },
+  "nav": {
+    "main": "Main panels",
+    "journal": "Journal",
+    "docs": "Docs",
+    "board": "Board",
+    "process": "Process",
+    "guide": "Guide",
+    "skipToContent": "Skip to content",
+    "summary": "Summary",
+    "summaryOpen": "Open summary panel",
+    "stats": "Stats",
+    "analytics": "Analytics",
+    "mobileMain": "Mobile main panels"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "delete": "Delete",
+    "loading": "Loading…",
+    "retry": "Retry",
+    "refresh": "Refresh",
+    "login": "Sign in",
+    "logout": "Sign out",
+    "write": "Write",
+    "writeAria": "Write",
+    "new": "Create new",
+    "quickSave": "Quick save",
+    "export": "Export",
+    "search": "Search",
+    "empty": "Nothing here",
+    "confirm": "Confirm",
+    "panelLoading": "Loading {label}…"
+  },
+  "search": {
+    "open": "Open search (⌘K)",
+    "placeholder": "Search…",
+    "aria": "Global search",
+    "close": "Close search",
+    "searching": "Searching…",
+    "noResults": "No results",
+    "advanced": "Advanced",
+    "advancedAria": "Advanced search",
+    "advancedTitle": "Advanced search · Filters",
+    "presets": "Filter presets",
+    "history": "History",
+    "clearHistory": "Clear history",
+    "suggestions": "Suggestions",
+    "savePreset": "Save",
+    "resultsCount": "{count} results",
+    "enterQuery": "Enter a query or filters",
+    "sortRelevance": "Relevance",
+    "sortDate": "Date",
+    "sortPriority": "Priority"
+  },
+  "settings": {
+    "themeLight": "Light mode",
+    "themeDark": "Dark mode",
+    "security": "Security",
+    "plugins": "Plugins",
+    "collabRealtime": "Live collaboration",
+    "fullscreen": "Fullscreen",
+    "fullscreenExit": "Exit fullscreen",
+    "notifications": "Notifications",
+    "notificationsEmpty": "No notifications."
+  },
+  "errors": {
+    "generic": "Something went wrong",
+    "network": "Network error",
+    "unauthorized": "Authentication required",
+    "notFound": "Not found",
+    "saveFailed": "Failed to save",
+    "loadFailed": "Failed to load"
+  },
+  "guide": {
+    "title": "Guide · Folio",
+    "description": "Folio onboarding, features, and troubleshooting",
+    "onboarding": "Onboarding",
+    "features": "Features",
+    "troubleshooting": "Troubleshooting"
+  },
+  "docs": {
+    "localeNote": "This document is the selected language version."
+  }
+}

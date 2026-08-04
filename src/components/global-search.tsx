@@ -14,6 +14,7 @@ import { Search, BookOpen, FileText, Kanban, Loader2, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useI18n } from '@/components/i18n-provider';
 import {
   searchAll,
   type DocSearchHit,
@@ -101,6 +102,7 @@ function SectionLabel({ children }: { children: ReactNode }) {
 }
 
 export function GlobalSearch({ onNavigate, variant = 'default' }: GlobalSearchProps) {
+  const { t } = useI18n();
   const [expanded, setExpanded] = useState(variant !== 'icon');
   const inputRef = useRef<HTMLInputElement>(null);
   const panelId = useId();
@@ -243,21 +245,21 @@ export function GlobalSearch({ onNavigate, variant = 'default' }: GlobalSearchPr
     };
     push(
       'journal',
-      '일지',
+      t('nav.journal'),
       results.journals.map(hit => ({ source: 'journal' as const, hit })),
     );
     push(
       'docs',
-      '문서',
+      t('nav.docs'),
       results.docs.map(hit => ({ source: 'docs' as const, hit })),
     );
     push(
       'board',
-      '일정',
+      t('nav.board'),
       results.tasks.map(hit => ({ source: 'board' as const, hit })),
     );
     return groups;
-  }, [results]);
+  }, [results, t]);
 
   if (variant === 'icon' && !expanded) {
     return (
@@ -267,7 +269,7 @@ export function GlobalSearch({ onNavigate, variant = 'default' }: GlobalSearchPr
           variant="ghost"
           size="icon"
           className="h-9 w-9"
-          aria-label="통합 검색 열기 (⌘K)"
+          aria-label={t('search.open')}
           onClick={() => {
             setExpanded(true);
             window.setTimeout(() => inputRef.current?.focus(), 0);
@@ -319,9 +321,9 @@ export function GlobalSearch({ onNavigate, variant = 'default' }: GlobalSearchPr
             }
             onInputKeyDown(e);
           }}
-          placeholder="검색…"
+          placeholder={t('search.placeholder')}
           className="pl-9 pr-16 h-9 min-h-[36px] rounded-xl border-gray-200 bg-gray-50/80 focus-visible:bg-white"
-          aria-label="통합 검색"
+          aria-label={t('search.aria')}
           aria-expanded={showPanel}
           aria-controls={`${panelId}-list`}
           aria-autocomplete="list"
@@ -344,10 +346,10 @@ export function GlobalSearch({ onNavigate, variant = 'default' }: GlobalSearchPr
             {loading ? (
               <div className="flex items-center gap-2 px-4 py-6 text-sm text-gray-400">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                검색 중…
+                {t('search.searching')}
               </div>
             ) : totalCount === 0 ? (
-              <div className="px-4 py-6 text-sm text-gray-400 text-center">결과가 없습니다</div>
+              <div className="px-4 py-6 text-sm text-gray-400 text-center">{t('search.noResults')}</div>
             ) : (
               <ScrollArea className="max-h-[min(420px,60vh)]">
                 <div className="py-1">
@@ -417,7 +419,7 @@ export function GlobalSearch({ onNavigate, variant = 'default' }: GlobalSearchPr
             className="md:hidden fixed inset-0 z-[70] flex flex-col bg-background"
             role="dialog"
             aria-modal="true"
-            aria-label="통합 검색"
+            aria-label={t('search.aria')}
           >
             <div className="flex items-center gap-2 border-b border-gray-100 dark:border-gray-800 px-3 py-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
               <div className="relative flex-1">
@@ -434,9 +436,9 @@ export function GlobalSearch({ onNavigate, variant = 'default' }: GlobalSearchPr
                     }
                   }}
                   onKeyDown={onInputKeyDown}
-                  placeholder="검색…"
+                  placeholder={t('search.placeholder')}
                   className="pl-9 h-11 min-h-[44px] rounded-xl"
-                  aria-label="통합 검색"
+                  aria-label={t('search.aria')}
                   autoFocus
                 />
               </div>
@@ -444,7 +446,7 @@ export function GlobalSearch({ onNavigate, variant = 'default' }: GlobalSearchPr
                 type="button"
                 variant="ghost"
                 className="h-11 w-11 min-h-[44px] min-w-[44px] shrink-0"
-                aria-label="검색 닫기"
+                aria-label={t('search.close')}
                 onClick={() => {
                   setOpen(false);
                   setQuery('');
@@ -458,10 +460,10 @@ export function GlobalSearch({ onNavigate, variant = 'default' }: GlobalSearchPr
               {loading ? (
                 <div className="flex items-center gap-2 px-4 py-8 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  검색 중…
+                  {t('search.searching')}
                 </div>
               ) : totalCount === 0 ? (
-                <div className="px-4 py-8 text-sm text-muted-foreground text-center">결과가 없습니다</div>
+                <div className="px-4 py-8 text-sm text-muted-foreground text-center">{t('search.noResults')}</div>
               ) : (
                 <div className="py-2 pb-24">
                   {resultGroups.map(group => (

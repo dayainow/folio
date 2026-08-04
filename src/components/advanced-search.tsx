@@ -54,6 +54,7 @@ import { loadDocsWithFallback } from '@/lib/docs'
 import { loadJournalsWithFallback } from '@/lib/journal'
 import { loadTasksWithFallback } from '@/lib/board'
 import { cn } from '@/lib/utils'
+import { useI18n } from '@/components/i18n-provider'
 import type { SearchSource } from '@/lib/search'
 import type { Task } from '@/lib/board'
 
@@ -64,6 +65,7 @@ export function AdvancedSearchButton({
 }: {
   onNavigate: (payload: SearchNavigatePayload) => void
 }) {
+  const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const panelId = useId()
   return (
@@ -78,7 +80,7 @@ export function AdvancedSearchButton({
         onClick={() => setOpen(true)}
       >
         <SlidersHorizontal className="h-3.5 w-3.5 text-teal-600" />
-        고급검색
+        {t('search.advanced')}
       </Button>
       {open ? (
         <AdvancedSearchPanel
@@ -130,6 +132,7 @@ export function AdvancedSearchPanel({
   onClose: () => void
   onNavigate: (payload: SearchNavigatePayload) => void
 }) {
+  const { t } = useI18n()
   const [query, setQuery] = useState('')
   const [filters, setFilters] = useState<AdvancedSearchFilters>(() => defaultFilters())
   const [result, setResult] = useState<AdvancedSearchResult | null>(null)
@@ -287,13 +290,13 @@ export function AdvancedSearchPanel({
         id={id}
         role="dialog"
         aria-modal="true"
-        aria-label="고급 검색"
+        aria-label={t('search.advancedAria')}
         className="flex max-h-[94vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-xl"
       >
         <header className="flex items-center gap-2 border-b border-border px-4 py-3">
           <Filter className="h-4 w-4 text-teal-600" />
           <div>
-            <h2 className="text-sm font-semibold">고급 검색 · 필터</h2>
+            <h2 className="text-sm font-semibold">{t('search.advancedTitle')}</h2>
             <p className="text-[11px] text-muted-foreground">
               AND/OR/NOT · &quot;구문&quot; · field: · * · /regex/ · P52
             </p>
@@ -313,7 +316,7 @@ export function AdvancedSearchPanel({
           {/* 사이드: 프리셋 · 히스토리 */}
           <aside className="space-y-3 overflow-y-auto border-b border-border p-3 md:border-b-0 md:border-r">
             <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-              필터 프리셋
+              {t('search.presets')}
             </p>
             <ul className="space-y-1">
               {saved.map((s) => (
@@ -344,7 +347,7 @@ export function AdvancedSearchPanel({
             </ul>
 
             <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-              <History className="size-3" /> 히스토리
+              <History className="size-3" /> {t('search.history')}
             </p>
             <ul className="space-y-0.5">
               {history.slice(0, 8).map((h) => (
@@ -370,12 +373,12 @@ export function AdvancedSearchPanel({
                   setHistory([])
                 }}
               >
-                히스토리 비우기
+                {t('search.clearHistory')}
               </Button>
             ) : null}
 
             <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-              추천
+              {t('search.suggestions')}
             </p>
             <div className="flex flex-wrap gap-1">
               {suggestions.map((s) => (
@@ -596,7 +599,7 @@ export function AdvancedSearchPanel({
 
             <div className="min-h-0 flex-1 overflow-y-auto p-3">
               <p className="mb-2 text-[11px] text-muted-foreground">
-                {result ? `결과 ${result.total}건` : '검색어 또는 필터를 입력하세요'}
+                {result ? t('search.resultsCount', { count: result.total }) : t('search.enterQuery')}
                 {result?.parsedQuery ? ` · lunr: ${result.parsedQuery}` : ''}
               </p>
 

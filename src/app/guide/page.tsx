@@ -1,32 +1,31 @@
-import { readFile } from 'node:fs/promises'
-import path from 'node:path'
+import { cookies } from 'next/headers'
 import type { Metadata } from 'next'
 import { GuideView } from '@/components/guide-view'
+import { loadGuideDocs, resolveDocsLocale } from '@/lib/docs-locale'
+import { translate } from '@/lib/i18n'
 
-export const metadata: Metadata = {
-  title: '가이드 · Folio',
-  description: 'Folio 온보딩 · 기능 · 문제 해결 가이드',
-}
-
-async function loadGuideMarkdown(name: string): Promise<string> {
-  const filePath = path.join(process.cwd(), 'docs', name)
-  return readFile(filePath, 'utf8')
+export async function generateMetadata(): Promise<Metadata> {
+  const cookieStore = await cookies()
+  const locale = resolveDocsLocale(cookieStore.get('folio_locale')?.value)
+  return {
+    title: translate('guide.title', undefined, locale),
+    description: translate('guide.description', undefined, locale),
+  }
 }
 
 export default async function GuidePage() {
-  const [onboarding, features, troubleshooting] = await Promise.all([
-    loadGuideMarkdown('ONBOARDING.md'),
-    loadGuideMarkdown('FEATURES.md'),
-    loadGuideMarkdown('TROUBLESHOOTING.md'),
-  ])
+  const cookieStore = await cookies()
+  const locale = resolveDocsLocale(cookieStore.get('folio_locale')?.value)
+  const docs = await loadGuideDocs(locale)
 
   return (
     <GuideView
       docs={{
-        onboarding,
-        features,
-        troubleshooting,
+        onboarding: docs.onboarding,
+        features: docs.features,
+        troubleshooting: docs.troubleshooting,
       }}
+      locale={locale}
     />
   )
 }

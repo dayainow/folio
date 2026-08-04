@@ -5,14 +5,19 @@
  */
 import { BookOpen, FileText, Kanban, Activity, PenLine, Save, Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useI18n } from '@/components/i18n-provider'
 
 export type MobileTab = 'journal' | 'docs' | 'board' | 'process'
 
-const SIDE_ITEMS: Array<{ value: MobileTab; label: string; icon: typeof BookOpen }> = [
-  { value: 'journal', label: '일지', icon: BookOpen },
-  { value: 'docs', label: '문서', icon: FileText },
-  { value: 'board', label: '일정', icon: Kanban },
-  { value: 'process', label: '프로세스', icon: Activity },
+const SIDE_ITEMS: Array<{
+  value: MobileTab
+  labelKey: string
+  icon: typeof BookOpen
+}> = [
+  { value: 'journal', labelKey: 'nav.journal', icon: BookOpen },
+  { value: 'docs', labelKey: 'nav.docs', icon: FileText },
+  { value: 'board', labelKey: 'nav.board', icon: Kanban },
+  { value: 'process', labelKey: 'nav.process', icon: Activity },
 ]
 
 /** P42/P44 — 하단 네비 + 중앙 FAB 클러스터 */
@@ -35,6 +40,7 @@ export function MobileNav({
   /** 풀스크린 시 숨김 */
   hidden?: boolean
 }) {
+  const { t } = useI18n()
   const left = SIDE_ITEMS.slice(0, 2)
   const right = SIDE_ITEMS.slice(2)
 
@@ -42,7 +48,7 @@ export function MobileNav({
 
   return (
     <nav
-      aria-label="모바일 주요 패널"
+      aria-label={t('nav.mobileMain')}
       className="md:hidden fixed bottom-0 inset-x-0 z-50 border-t border-gray-100 dark:border-gray-800 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 pb-[env(safe-area-inset-bottom)]"
     >
       <ul className="mx-auto grid h-[4.25rem] max-w-6xl grid-cols-5 items-end px-1">
@@ -61,7 +67,7 @@ export function MobileNav({
                 )}
               >
                 <Icon className={cn('h-5 w-5', active && 'stroke-[2.25]')} aria-hidden />
-                <span>{item.label}</span>
+                <span>{t(item.labelKey)}</span>
               </button>
             </li>
           )
@@ -73,7 +79,7 @@ export function MobileNav({
               <button
                 type="button"
                 onClick={onSave}
-                aria-label="빠른 저장"
+                aria-label={t('common.quickSave')}
                 className="flex h-12 w-12 min-h-[48px] min-w-[48px] items-center justify-center rounded-full border border-gray-200 bg-background text-foreground shadow-md dark:border-gray-700 active:scale-95"
               >
                 <Save className="h-5 w-5" aria-hidden />
@@ -85,17 +91,17 @@ export function MobileNav({
                 if (onWrite) onWrite()
                 else onChange('journal')
               }}
-              aria-label="글쓰기"
+              aria-label={t('common.writeAria')}
               className="flex h-14 w-14 min-h-[48px] min-w-[48px] flex-col items-center justify-center rounded-full bg-foreground text-background shadow-lg ring-4 ring-background transition-transform active:scale-95"
             >
               <PenLine className="h-5 w-5" aria-hidden />
-              <span className="text-[9px] font-semibold leading-none">쓰기</span>
+              <span className="text-[9px] font-semibold leading-none">{t('common.write')}</span>
             </button>
             {onNew && (
               <button
                 type="button"
                 onClick={onNew}
-                aria-label="새로 만들기"
+                aria-label={t('common.new')}
                 className="flex h-12 w-12 min-h-[48px] min-w-[48px] items-center justify-center rounded-full border border-gray-200 bg-background text-foreground shadow-md dark:border-gray-700 active:scale-95"
               >
                 <Plus className="h-5 w-5" aria-hidden />
@@ -119,7 +125,7 @@ export function MobileNav({
                 )}
               >
                 <Icon className={cn('h-5 w-5', active && 'stroke-[2.25]')} aria-hidden />
-                <span>{item.label}</span>
+                <span>{t(item.labelKey)}</span>
               </button>
             </li>
           )

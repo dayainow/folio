@@ -1,0 +1,93 @@
+{
+  "lang": {
+    "label": "言語",
+    "switch": "言語を切り替える",
+    "ko": "한국어",
+    "en": "English",
+    "ja": "日本語"
+  },
+  "nav": {
+    "main": "メインパネル",
+    "journal": "日誌",
+    "docs": "ドキュメント",
+    "board": "ボード",
+    "process": "プロセス",
+    "guide": "ガイド",
+    "skipToContent": "本文へスキップ",
+    "summary": "要約",
+    "summaryOpen": "要約パネルを開く",
+    "stats": "統計",
+    "analytics": "分析",
+    "mobileMain": "モバイル主要パネル"
+  },
+  "common": {
+    "save": "保存",
+    "cancel": "キャンセル",
+    "close": "閉じる",
+    "delete": "削除",
+    "loading": "読み込み中…",
+    "retry": "再試行",
+    "refresh": "更新",
+    "login": "ログイン",
+    "logout": "ログアウト",
+    "write": "書く",
+    "writeAria": "書く",
+    "new": "新規作成",
+    "quickSave": "クイック保存",
+    "export": "エクスポート",
+    "search": "検索",
+    "empty": "項目がありません",
+    "confirm": "確認",
+    "panelLoading": "{label}を読み込み中…"
+  },
+  "search": {
+    "open": "検索を開く (⌘K)",
+    "placeholder": "検索…",
+    "aria": "統合検索",
+    "close": "検索を閉じる",
+    "searching": "検索中…",
+    "noResults": "結果がありません",
+    "advanced": "高度な検索",
+    "advancedAria": "高度な検索",
+    "advancedTitle": "高度な検索 · フィルター",
+    "presets": "フィルタープリセット",
+    "history": "履歴",
+    "clearHistory": "履歴を消去",
+    "suggestions": "おすすめ",
+    "savePreset": "保存",
+    "resultsCount": "結果 {count}件",
+    "enterQuery": "検索語またはフィルターを入力",
+    "sortRelevance": "関連度",
+    "sortDate": "日付",
+    "sortPriority": "優先度"
+  },
+  "settings": {
+    "themeLight": "ライトモード",
+    "themeDark": "ダークモード",
+    "security": "セキュリティ",
+    "plugins": "プラグイン",
+    "collabRealtime": "リアルタイム共同編集",
+    "fullscreen": "フルスクリーン",
+    "fullscreenExit": "フルスクリーン終了",
+    "notifications": "通知",
+    "notificationsEmpty": "通知はありません。"
+  },
+  "errors": {
+    "generic": "エラーが発生しました",
+    "network": "ネットワークエラー",
+    "unauthorized": "認証が必要です",
+    "notFound": "見つかりません",
+    "saveFailed": "保存に失敗しました",
+    "loadFailed": "読み込みに失敗しました"
+  },
+  "guide": {
+    "title": "ガイド · Folio",
+    "description": "Folio オンボーディング · 機能 · トラブルシューティング",
+    "onboarding": "オンボーディング",
+    "features": "機能",
+    "troubleshooting": "トラブルシューティング"
+  },
+  "docs": {
+    "localeNote": "このドキュメントは選択した言語版です。"
+  }
+}

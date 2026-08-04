@@ -1,0 +1,93 @@
+{
+  "lang": {
+    "label": "언어",
+    "switch": "언어 전환",
+    "ko": "한국어",
+    "en": "English",
+    "ja": "日本語"
+  },
+  "nav": {
+    "main": "주요 패널",
+    "journal": "일지",
+    "docs": "문서",
+    "board": "일정",
+    "process": "프로세스",
+    "guide": "가이드",
+    "skipToContent": "본문으로 건너뛰기",
+    "summary": "요약",
+    "summaryOpen": "요약 패널 열기",
+    "stats": "통계",
+    "analytics": "분석",
+    "mobileMain": "모바일 주요 패널"
+  },
+  "common": {
+    "save": "저장",
+    "cancel": "취소",
+    "close": "닫기",
+    "delete": "삭제",
+    "loading": "로딩 중…",
+    "retry": "재시도",
+    "refresh": "새로고침",
+    "login": "로그인",
+    "logout": "로그아웃",
+    "write": "쓰기",
+    "writeAria": "글쓰기",
+    "new": "새로 만들기",
+    "quickSave": "빠른 저장",
+    "export": "내보내기",
+    "search": "검색",
+    "empty": "항목이 없습니다",
+    "confirm": "확인",
+    "panelLoading": "{label} 로딩 중…"
+  },
+  "search": {
+    "open": "통합 검색 열기 (⌘K)",
+    "placeholder": "검색…",
+    "aria": "통합 검색",
+    "close": "검색 닫기",
+    "searching": "검색 중…",
+    "noResults": "결과가 없습니다",
+    "advanced": "고급검색",
+    "advancedAria": "고급 검색",
+    "advancedTitle": "고급 검색 · 필터",
+    "presets": "필터 프리셋",
+    "history": "히스토리",
+    "clearHistory": "히스토리 비우기",
+    "suggestions": "추천",
+    "savePreset": "저장",
+    "resultsCount": "결과 {count}건",
+    "enterQuery": "검색어 또는 필터를 입력하세요",
+    "sortRelevance": "관련성",
+    "sortDate": "날짜",
+    "sortPriority": "우선순위"
+  },
+  "settings": {
+    "themeLight": "라이트 모드",
+    "themeDark": "다크 모드",
+    "security": "보안",
+    "plugins": "플러그인",
+    "collabRealtime": "실시간 협업",
+    "fullscreen": "풀스크린",
+    "fullscreenExit": "풀스크린 종료",
+    "notifications": "알림",
+    "notificationsEmpty": "알림이 없습니다."
+  },
+  "errors": {
+    "generic": "오류가 발생했습니다",
+    "network": "네트워크 오류",
+    "unauthorized": "인증이 필요합니다",
+    "notFound": "찾을 수 없습니다",
+    "saveFailed": "저장에 실패했습니다",
+    "loadFailed": "불러오기에 실패했습니다"
+  },
+  "guide": {
+    "title": "가이드 · Folio",
+    "description": "Folio 온보딩 · 기능 · 문제 해결 가이드",
+    "onboarding": "온보딩",
+    "features": "기능",
+    "troubleshooting": "문제 해결"
+  },
+  "docs": {
+    "localeNote": "이 문서는 선택한 언어 버전입니다."
+  }
+}

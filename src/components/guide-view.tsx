@@ -10,8 +10,11 @@ import remarkGfm from 'remark-gfm'
 import { BookOpen, Menu, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { LanguageToggle } from '@/components/language-toggle'
+import { useI18n } from '@/components/i18n-provider'
 import { cn } from '@/lib/utils'
 import { extractGuideHeadings, slugifyHeading } from '@/lib/guide-markdown'
+import type { Locale } from '@/lib/i18n'
 
 export type GuideDocs = {
   onboarding: string
@@ -21,10 +24,10 @@ export type GuideDocs = {
 
 type TabKey = 'onboarding' | 'features' | 'troubleshooting'
 
-const TABS: { key: TabKey; label: string }[] = [
-  { key: 'onboarding', label: '시작하기' },
-  { key: 'features', label: '기능' },
-  { key: 'troubleshooting', label: '문제해결' },
+const TAB_KEYS: { key: TabKey; labelKey: string }[] = [
+  { key: 'onboarding', labelKey: 'guide.onboarding' },
+  { key: 'features', labelKey: 'guide.features' },
+  { key: 'troubleshooting', labelKey: 'guide.troubleshooting' },
 ]
 
 const proseClass = [
@@ -65,12 +68,38 @@ function flattenText(node: ReactNode): string {
   return ''
 }
 
-export function GuideView({ docs }: { docs: GuideDocs }) {
+export function GuideView({ docs }: { docs: GuideDocs; locale?: Locale }) {
+  const { t, locale } = useI18n()
+  const [liveDocs, setLiveDocs] = useState(docs)
+  const tabs = TAB_KEYS.map((tabItem) => ({
+    key: tabItem.key,
+    label: t(tabItem.labelKey),
+  }))
   const [tab, setTab] = useState<TabKey>('onboarding')
   const [mobileNav, setMobileNav] = useState(false)
   const [activeId, setActiveId] = useState<string | null>(null)
 
-  const markdown = docs[tab]
+  useEffect(() => {
+    let cancelled = false
+    const handle = window.setTimeout(() => {
+      ;(async () => {
+        try {
+          const res = await fetch(`/api/guide-docs?locale=${locale}`)
+          if (!res.ok || cancelled) return
+          const next = (await res.json()) as GuideDocs
+          if (!cancelled) setLiveDocs(next)
+        } catch {
+          /* keep previous */
+        }
+      })()
+    }, 0)
+    return () => {
+      cancelled = true
+      window.clearTimeout(handle)
+    }
+  }, [locale])
+
+  const markdown = liveDocs[tab]
   const headings = useMemo(() => extractGuideHeadings(markdown), [markdown])
   const highlightedId =
     activeId && headings.some((h) => h.id === activeId) ? activeId : (headings[0]?.id ?? null)
@@ -143,7 +172,7 @@ export function GuideView({ docs }: { docs: GuideDocs }) {
               className="absolute -right-1.5 top-0.5 h-1 w-1 rotate-45 rounded-[1px] bg-foreground"
             />
           </Link>
-          <span className="hidden text-xs text-muted-foreground sm:inline">가이드</span>
+          <span className="hidden text-xs text-muted-foreground sm:inline">{t('nav.guide')}</span>
 
           <div className="ml-auto flex items-center gap-1">
             <Button
@@ -151,18 +180,19 @@ export function GuideView({ docs }: { docs: GuideDocs }) {
               variant="ghost"
               size="icon"
               className="h-9 w-9 lg:hidden"
-              aria-label="목차 열기"
+              aria-label={t('nav.guide')}
               aria-expanded={mobileNav}
               onClick={() => setMobileNav(true)}
             >
               <Menu className="h-4 w-4" />
             </Button>
+            <LanguageToggle />
             <ThemeToggle />
             <Link
               href="/"
               className="inline-flex h-8 items-center rounded-lg px-2.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
             >
-              앱으로
+              Folio
             </Link>
           </div>
         </div>
@@ -182,24 +212,24 @@ export function GuideView({ docs }: { docs: GuideDocs }) {
         <main id="guide-content" className="min-w-0 flex-1 px-4 py-6 sm:px-6 sm:py-8">
           <div
             role="tablist"
-            aria-label="가이드 섹션"
+            aria-label={t('nav.guide')}
             className="mb-6 flex flex-wrap gap-1 rounded-xl bg-muted/40 p-1"
           >
-            {TABS.map((t) => (
+            {tabs.map((item) => (
               <button
-                key={t.key}
+                key={item.key}
                 type="button"
                 role="tab"
-                aria-selected={tab === t.key}
-                onClick={() => selectTab(t.key)}
+                aria-selected={tab === item.key}
+                onClick={() => selectTab(item.key)}
                 className={cn(
                   'h-8 rounded-lg px-3 text-xs transition-colors',
-                  tab === t.key
+                  tab === item.key
                     ? 'bg-background font-medium text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground',
                 )}
               >
-                {t.label}
+                {item.label}
               </button>
             ))}
           </div>
@@ -276,24 +306,24 @@ export function GuideView({ docs }: { docs: GuideDocs }) {
                 variant="ghost"
                 size="icon"
                 className="h-9 w-9"
-                aria-label="닫기"
+                aria-label={t('common.close')}
                 onClick={() => setMobileNav(false)}
               >
                 <X className="h-4 w-4" />
               </Button>
             </div>
             <div className="mb-4 flex flex-wrap gap-1">
-              {TABS.map((t) => (
+              {tabs.map((item) => (
                 <button
-                  key={t.key}
+                  key={item.key}
                   type="button"
-                  onClick={() => selectTab(t.key)}
+                  onClick={() => selectTab(item.key)}
                   className={cn(
                     'h-8 rounded-lg px-2.5 text-xs',
-                    tab === t.key ? 'bg-muted font-medium' : 'text-muted-foreground',
+                    tab === item.key ? 'bg-muted font-medium' : 'text-muted-foreground',
                   )}
                 >
-                  {t.label}
+                  {item.label}
                 </button>
               ))}
             </div>
