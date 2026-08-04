@@ -2,7 +2,7 @@
 
 ![Dashboard](screenshots/dashboard.png)
 
-**프로젝트의 기록, 한 곳에서.** · **v2.7.0-wip**
+**프로젝트의 기록, 한 곳에서.** · **v2.7.0**
 
 Folio는 개발자의 일지·문서·일정·프로세스를 하나로 묶는 워크스페이스입니다.
 Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정을 tracking하는 흐름을,
@@ -96,11 +96,10 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **22** | **2.4.0** | 성능 관측 · 자동 최적화 (Web Vitals · LHCI) | ✅ |
 | **23** | **2.5.0** | 플러그인/확장 (위젯 · 필드 · 마켓) | ✅ |
 | **24** | **2.6.0** | 고급 검색/필터 (Lunr · 저장검색 · 실시간) | ✅ |
-| **25** | **2.7.0-wip** | 번역/다국어 (ko · en · ja) | 🔄 |
+| **25** | **2.7.0** | 번역/다국어 (ko · en · ja) | ✅ |
 
 Phase 25 상세: P53 i18n — 로더 · 언어 토글 · docs/ko|en|ja  
 Phase 24 상세: P52 고급 검색 — Lunr · 부울 · 프리셋 · debounce · 일괄/내보내기  
-Phase 23 상세: P51 플러그인 — registry · sandbox · marketplace · custom fields  
 이력: [VERSION.md](VERSION.md) · i18n: [docs/I18N.md](docs/I18N.md) · 검색: [docs/SEARCH.md](docs/SEARCH.md)
 
 ---
@@ -138,7 +137,7 @@ npm run lint && npm run typecheck && npm run test && npm run qa:smoke
 | **성능** | Web Vitals · 대시보드 · LHCI · 번들 예산 (P50) | ✅ 2.4.0 |
 | **확장** | 플러그인 · 위젯 · 커스텀 필드 · 마켓 (P51) | ✅ 2.5.0 |
 | **검색** | Lunr 고급 검색 · 저장 필터 · 실시간 (P52) | ✅ 2.6.0 |
-| **다국어** | ko · en · ja i18n · 문서 locale (P53) | 🔄 2.7.0-wip |
+| **다국어** | ko · en · ja i18n · 문서 locale (P53) | ✅ 2.7.0 |
 | **DX** | 성능 예산 · 기여/테스트 가이드 | ✅ |
 
 상세: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/PERFORMANCE.md](docs/PERFORMANCE.md) · [VERSION.md](VERSION.md)
@@ -390,24 +389,31 @@ npm run dev
 | **스캔** | `npm run audit` · `npm run security:scan` |
 
 
-## 번역 / 다국어 사용법 (P53)
+## 다국어 지원 사용법 (P53)
 
 헤더 언어 토글(**ko / en / ja**)로 UI·가이드 문서를 전환합니다. 상세: [docs/I18N.md](docs/I18N.md)
 
 ### 언어 전환
 
-1. 헤더 우측 **언어** 버튼 또는 `ko`/`en`/`ja` 칩
-2. 브라우저 언어 자동 감지 (저장값 없을 때) · 기본 **한국어**
-3. 선택값은 `folio_locale` (localStorage + 쿠키)에 저장
+1. 헤더 우측 **언어** 버튼 또는 `ko` / `en` / `ja` 칩 클릭
+2. 저장값이 없으면 브라우저 언어 자동 감지 · 기본 **한국어(ko)**
+3. 선택값은 `folio_locale` (localStorage + 쿠키)에 저장 · `<html lang>` 동기화
 
-### UI · 문서
+### UI 카탈로그
 
 | 항목 | 설명 |
 |------|------|
-| **카탈로그** | `src/locales/{ko,en,ja}.json` |
-| **API** | `t('nav.journal')` · `useI18n()` · `src/lib/i18n.ts` |
-| **가이드** | `/guide` · `docs/{locale}/` · `/api/guide-docs` |
-| **폴백** | 키 없으면 한국어 → 키 문자열 |
+| **파일** | `src/locales/ko.json` · `en.json` · `ja.json` |
+| **코어** | `src/lib/i18n.ts` — `t()` · `resolveLocale()` · `setLocale()` |
+| **React** | `I18nProvider` · `useI18n()` · `LanguageToggle` |
+| **폴백** | 현재 언어 → 한국어 → 키 문자열 |
+
+### 문서 locale
+
+1. `/guide` — 쿠키 `folio_locale` 기준 마크다운 로드
+2. 경로: `docs/{ko,en,ja}/` (ONBOARDING · FEATURES · TROUBLESHOOTING 등)
+3. 언어 전환 시 `/api/guide-docs?locale=` 로 즉시 갱신
+4. 없으면 `docs/ko/` → 루트 `docs/` 순으로 폴백
 
 ## 고급 검색 / 필터 사용법 (P52)
 
@@ -674,14 +680,14 @@ npm run runbook:backup
 - **v2.4** ✅ — 성능 관측 · 자동 최적화 (Web Vitals · LHCI)
 - **v2.5** ✅ — 플러그인/확장 (위젯 · 커스텀 필드 · 마켓)
 - **v2.6** ✅ — 고급 검색/필터 (Lunr · 저장검색 · 실시간)
-- **v2.7** 🔄 — 번역/다국어 (ko · en · ja)
+- **v2.7** ✅ — 번역/다국어 (ko · en · ja)
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 25** (v**2.7.0-wip**)
-- 진행 중: **P53** 번역/다국어 지원
-- 완료: Phase 1~24 (2.6.0) · P52 고급 검색/필터
-- 다음: Phase 25 마무리 · 2.7.0 정식
+- 현재 Phase: **Phase 25 완료** (v**2.7.0** 정식)
+- 진행 중: —
+- 완료: Phase 1~25 (2.7.0) · P53 번역/다국어
+- 다음: v2.x
 - 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md))
 
 ---
@@ -695,4 +701,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · v2.7.0-wip
+**Folio** — 프로젝트의 기록, 한 곳에서. · v2.7.0
