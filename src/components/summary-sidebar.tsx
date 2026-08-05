@@ -42,20 +42,25 @@ export function SummarySidebar({
         <Separator />
         <Button
           type="button"
-          variant="outline"
-          className="min-h-11 w-full justify-between gap-2 px-3 text-xs font-medium"
+          variant="secondary"
+          className="w-full justify-between px-3"
           aria-expanded={open}
+          aria-label={open ? '추가 위젯 접기' : '추가 위젯 더보기'}
           onClick={() => setOpen((v) => !v)}
         >
           <span>{open ? '접기' : '더보기'}</span>
-          {open ? <ChevronUp className="h-4 w-4 shrink-0" /> : <ChevronDown className="h-4 w-4 shrink-0" />}
+          {open ? (
+            <ChevronUp className="h-4 w-4 shrink-0" aria-hidden />
+          ) : (
+            <ChevronDown className="h-4 w-4 shrink-0" aria-hidden />
+          )}
         </Button>
 
         {open && (
           <div className="space-y-4 pb-2">
             <ExtraSummaryWidgets onBookmarkNavigate={onBookmarkNavigate} />
             {moreContent && (
-              <div className="space-y-3 border-t border-gray-100 pt-4 dark:border-gray-800">
+              <div className="space-y-3 border-t border-slate-100 pt-4 dark:border-slate-800">
                 <p className="px-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                   도구 · 시스템
                 </p>

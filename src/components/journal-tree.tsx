@@ -307,9 +307,9 @@ export function JournalTree({
       <div key={node.id} className="select-none">
         <div
           className={cn(
-            'group flex items-center gap-1 rounded-md px-1 py-0.5 text-sm',
+            'group flex items-center gap-2 rounded-lg px-1 py-0.5 text-sm',
             isActiveFolder && isFolder && 'bg-accent/60',
-            isActiveJournal && 'bg-primary/10 text-primary',
+            isActiveJournal && 'bg-slate-900/10 text-slate-900 dark:bg-slate-100/10 dark:text-slate-100',
             node.highlight && 'ring-1 ring-amber-400/70',
           )}
           style={{ paddingLeft: 4 + depth * 12 }}
@@ -329,16 +329,16 @@ export function JournalTree({
           {isFolder ? (
             <button
               type="button"
-              className="inline-flex h-5 w-5 items-center justify-center text-muted-foreground"
+              className="inline-flex size-11 min-h-11 min-w-11 items-center justify-center rounded-lg text-muted-foreground shadow-sm hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 dark:hover:bg-slate-800 dark:focus-visible:ring-slate-100"
               onClick={() => toggleCollapse(node.id)}
               aria-label={isOpen ? '접기' : '펼치기'}
             >
-              {isOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+              {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
             </button>
           ) : (
             <input
               type="checkbox"
-              className="mx-0.5 h-3.5 w-3.5"
+              className="mx-1 size-4 min-h-4 min-w-4"
               checked={selected.has(node.journalDate!)}
               onChange={() => {}}
               onClick={(e) => onCheckClick(node.journalDate!, e)}
@@ -374,7 +374,7 @@ export function JournalTree({
             <button
               type="button"
               className={cn(
-                'min-w-0 flex-1 truncate text-left text-xs',
+                'min-h-11 min-w-0 flex-1 truncate rounded-lg px-2 text-left text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 dark:focus-visible:ring-slate-100',
                 isFolder ? 'font-medium' : 'text-muted-foreground',
               )}
               draggable={!isFolder}
@@ -391,6 +391,7 @@ export function JournalTree({
                   if (node.folderId) onSelectFolder?.(node.folderId)
                 }
               }}
+              aria-label={isFolder ? `폴더 ${node.label}` : `일지 ${node.label}`}
             >
               {node.label}
             </button>
@@ -425,52 +426,52 @@ export function JournalTree({
         className,
       )}
     >
-      <div className="flex items-center justify-between gap-1 border-b border-gray-50 px-2 py-1.5 dark:border-gray-800">
+      <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-2 py-2 dark:border-slate-800">
         <span className="text-xs font-semibold tracking-tight">일지 트리</span>
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center gap-2">
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            className="h-7 w-7"
-            title="새 폴더"
+            aria-label="새 폴더"
             onClick={() => handleNewFolder(null)}
           >
-            <FolderPlus className="h-3.5 w-3.5" />
+            <FolderPlus className="h-4 w-4" />
           </Button>
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            className="h-7 w-7"
-            title="더보기"
+            aria-label="더보기"
             onClick={(e) => openCtx(e, null, null)}
           >
-            <MoreHorizontal className="h-3.5 w-3.5" />
+            <MoreHorizontal className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
-      <div className="space-y-1.5 border-b border-gray-50 px-2 py-1.5 dark:border-gray-800">
+      <div className="space-y-2 border-b border-slate-100 px-2 py-2 dark:border-slate-800">
         <Input
           value={localFilter || searchQuery}
           onChange={(e) => setLocalFilter(e.target.value)}
           placeholder="트리 검색…"
-          className="h-7 text-xs"
+          className="h-11 min-h-11 rounded-lg text-xs shadow-sm"
           aria-label="트리 검색"
         />
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap gap-2">
           {(['all', 'draft', 'published', 'archived'] as const).map((s) => (
             <button
               key={s}
               type="button"
               className={cn(
-                'rounded px-1.5 py-0.5 text-[10px]',
+                'min-h-11 rounded-lg px-3 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 dark:focus-visible:ring-slate-100',
                 statusFilter === s
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground',
+                  ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
+                  : 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-slate-100',
               )}
               onClick={() => setStatusFilter(s)}
+              aria-label={`상태 필터 ${s === 'all' ? '전체' : s}`}
+              aria-pressed={statusFilter === s}
             >
               {s === 'all' ? '전체' : s}
             </button>
@@ -481,8 +482,9 @@ export function JournalTree({
             폴더 필터 · {folderDates.length}건
             <button
               type="button"
-              className="ml-1 underline"
+              className="ml-2 min-h-11 rounded-lg px-2 underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
               onClick={() => onSelectFolder?.(null)}
+              aria-label="폴더 필터 해제"
             >
               해제
             </button>
@@ -491,37 +493,31 @@ export function JournalTree({
       </div>
 
       {selectedList.length > 0 && (
-        <div className="flex flex-wrap gap-1 border-b border-gray-50 px-2 py-1.5 dark:border-gray-800">
+        <div className="flex flex-wrap gap-2 border-b border-slate-100 px-2 py-2 dark:border-slate-800">
           <span className="w-full text-[10px] text-muted-foreground">{selectedList.length}개 선택</span>
-          <Button type="button" variant="outline" size="sm" className="h-6 px-1.5 text-[10px]" onClick={bulkMove}>
+          <Button type="button" variant="outline" size="sm" onClick={bulkMove} aria-label="선택 항목 이동">
             이동
           </Button>
-          <Button type="button" variant="outline" size="sm" className="h-6 px-1.5 text-[10px]" onClick={bulkTag}>
-            <Tag className="mr-0.5 h-3 w-3" />
+          <Button type="button" variant="outline" size="sm" onClick={bulkTag} aria-label="선택 항목 태그">
+            <Tag className="h-4 w-4" />
             태그
           </Button>
           <Button
             type="button"
             variant="outline"
             size="sm"
-            className="h-6 px-1.5 text-[10px]"
             onClick={() => bulkStatus('archived')}
+            aria-label="선택 항목 보관"
           >
-            <Archive className="mr-0.5 h-3 w-3" />
+            <Archive className="h-4 w-4" />
             보관
           </Button>
-          <Button type="button" variant="outline" size="sm" className="h-6 px-1.5 text-[10px]" onClick={bulkExport}>
-            <Download className="mr-0.5 h-3 w-3" />
+          <Button type="button" variant="outline" size="sm" onClick={bulkExport} aria-label="선택 항목 내보내기">
+            <Download className="h-4 w-4" />
             내보내기
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="h-6 px-1.5 text-[10px] text-destructive"
-            onClick={bulkDelete}
-          >
-            <Trash2 className="mr-0.5 h-3 w-3" />
+          <Button type="button" variant="destructive" size="sm" onClick={bulkDelete} aria-label="선택 항목 삭제">
+            <Trash2 className="h-4 w-4" />
             삭제
           </Button>
         </div>
@@ -533,17 +529,19 @@ export function JournalTree({
 
       {ctx && (
         <div
-          className="fixed z-50 min-w-[10rem] rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+          className="fixed z-50 min-w-[10rem] rounded-lg border border-slate-200 bg-popover p-1 text-popover-foreground shadow-sm dark:border-slate-700"
           style={{ left: ctx.x, top: ctx.y }}
           onClick={(e) => e.stopPropagation()}
           role="menu"
         >
           <button
             type="button"
-            className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-accent"
+            className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 text-xs hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 dark:hover:bg-slate-800"
             onClick={() => handleNewFolder(ctx.folderId && !ctx.journalDate ? ctx.folderId : null)}
+            role="menuitem"
+            aria-label="새 폴더"
           >
-            <FolderPlus className="h-3.5 w-3.5" /> 새 폴더
+            <FolderPlus className="h-4 w-4" /> 새 폴더
           </button>
           {ctx.folderId &&
             !ctx.journalDate &&
@@ -552,34 +550,40 @@ export function JournalTree({
               <>
                 <button
                   type="button"
-                  className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-accent"
+                  className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 text-xs hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 dark:hover:bg-slate-800"
                   onClick={() => {
                     const f = loadJournalTree().folders.find((x) => x.id === ctx.folderId)
                     if (f) startRename(f.id, f.name)
                   }}
+                  role="menuitem"
+                  aria-label="폴더 이름변경"
                 >
-                  <Pencil className="h-3.5 w-3.5" /> 이름변경
+                  <Pencil className="h-4 w-4" /> 이름변경
                 </button>
                 <button
                   type="button"
-                  className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs text-destructive hover:bg-accent"
+                  className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 text-xs text-red-600 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 dark:hover:bg-red-950/40"
                   onClick={() => handleDeleteFolder(ctx.folderId!)}
+                  role="menuitem"
+                  aria-label="폴더 삭제"
                 >
-                  <Trash2 className="h-3.5 w-3.5" /> 삭제
+                  <Trash2 className="h-4 w-4" /> 삭제
                 </button>
               </>
             )}
           {ctx.journalDate && (
             <button
               type="button"
-              className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-accent"
+              className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 text-xs hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 dark:hover:bg-slate-800"
               onClick={() => {
                 setSelected(new Set([ctx.journalDate!]))
                 bulkMove()
                 closeCtx()
               }}
+              role="menuitem"
+              aria-label="일지 이동"
             >
-              이동…
+              이동
             </button>
           )}
         </div>

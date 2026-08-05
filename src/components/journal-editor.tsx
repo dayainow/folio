@@ -42,11 +42,6 @@ const ImageAttachButton = dynamic(
   { ssr: false, loading: () => null },
 )
 
-const chromeBtn =
-  'min-h-11 gap-1.5 border-gray-200 bg-white hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-gray-400 dark:border-gray-700 dark:bg-gray-950 dark:hover:bg-gray-900'
-const navBtn =
-  'h-11 w-11 min-h-11 min-w-11 hover:bg-gray-200/70 focus-visible:ring-2 focus-visible:ring-gray-400 dark:hover:bg-gray-800'
-
 export type JournalSaveState = 'idle' | 'saving' | 'saved' | 'error'
 
 export type JournalEditorProps = {
@@ -136,7 +131,7 @@ export function JournalEditor({
       >
         <div
           ref={dateSwipeRef}
-          className="flex items-center gap-1.5 touch-pan-y"
+          className="flex items-center gap-2 touch-pan-y"
           title="좌우로 쓸어 날짜 이동"
         >
           <Button
@@ -144,13 +139,12 @@ export function JournalEditor({
             variant="ghost"
             size="icon"
             onClick={onPrevDay}
-            className={navBtn}
             aria-label="이전 날짜"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <div className="flex min-w-[7.5rem] items-center justify-center gap-1.5 rounded-lg px-2 py-1.5">
-            <Calendar className="h-4 w-4 text-gray-400" aria-hidden />
+          <div className="flex min-w-[7.5rem] items-center justify-center gap-2 rounded-lg px-2 py-1.5">
+            <Calendar className="h-4 w-4 text-slate-400" aria-hidden />
             <span className="text-sm font-medium tabular-nums" aria-live="polite">
               {date}
             </span>
@@ -160,7 +154,6 @@ export function JournalEditor({
             variant="ghost"
             size="icon"
             onClick={onNextDay}
-            className={navBtn}
             aria-label="다음 날짜"
           >
             <ChevronRight className="h-4 w-4" />
@@ -176,25 +169,20 @@ export function JournalEditor({
             className="hidden"
             onChange={onImportChange}
           />
-          <ExportMenu
-            label="내보내기"
-            size="default"
-            items={exportItems}
-            extra={exportExtra}
-            className={cn(chromeBtn, 'h-11 px-3')}
-          />
+          <ExportMenu label="내보내기" size="default" items={exportItems} extra={exportExtra} />
           <Button
             type="button"
             variant="outline"
             disabled={importing}
             onClick={() => fileInputRef.current?.click()}
-            className={cn(chromeBtn, 'h-11 px-3')}
+            aria-label={importing ? 'Obsidian 가져오는 중' : 'Obsidian 가져오기'}
           >
             <Upload className="h-4 w-4" aria-hidden />
             {importing ? '가져오는 중…' : 'Obsidian 가져오기'}
           </Button>
           <Button
             type="button"
+            variant="default"
             disabled={saveState === 'saving'}
             onClick={onSave}
             aria-busy={saveState === 'saving'}
@@ -207,9 +195,6 @@ export function JournalEditor({
                     ? '저장 실패'
                     : '일지 저장'
             }
-            className={cn(
-              'h-11 min-h-11 min-w-[5.5rem] gap-2 bg-gray-900 px-4 text-sm font-medium text-white hover:bg-gray-800 focus-visible:ring-2 focus-visible:ring-gray-500 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white',
-            )}
           >
             {saveState === 'saving' ? (
               <>
@@ -252,7 +237,7 @@ export function JournalEditor({
             type="button"
             size="sm"
             variant="outline"
-            className="h-8 text-xs focus-visible:ring-2"
+            aria-label="저장 다시 시도"
             onClick={onSave}
           >
             다시 시도
@@ -281,7 +266,7 @@ export function JournalEditor({
       <div className={cn('bg-white dark:bg-card', writingFirst ? 'shrink-0 px-3 pt-2 sm:px-4' : 'p-4')}>
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <PresenceBar roomId={`journal:${date}`} tab="journal" user={collabUser} />
-          <div className="flex flex-wrap items-center gap-1">
+          <div className="flex flex-wrap items-center gap-2">
             <VoiceInputButton
               onTranscript={(text) =>
                 onDraftChange(draft.trim() ? `${draft.replace(/\s*$/, '')}\n${text}` : text)
@@ -384,7 +369,8 @@ export function JournalEditor({
                         onAddTags([tag])
                         onTagDraftClear()
                       }}
-                      className="rounded-lg bg-gray-100 px-2 py-1 text-xs text-gray-600 transition-colors hover:bg-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                      aria-label={`${tag} 태그 추가`}
+                      className="min-h-11 rounded-lg bg-slate-100 px-3 py-2 text-xs text-slate-900 shadow-sm transition-colors hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 dark:focus-visible:ring-slate-100"
                     >
                       #{tag}
                     </button>
