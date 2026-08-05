@@ -2,7 +2,7 @@
 
 ![Dashboard](screenshots/dashboard.png)
 
-**프로젝트의 기록, 한 곳에서.** · **v2.8.0-wip**
+**프로젝트의 기록, 한 곳에서.** · **v2.8.0**
 
 Folio는 개발자의 일지·문서·일정·프로세스를 하나로 묶는 워크스페이스입니다.
 Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정을 tracking하는 흐름을,
@@ -68,7 +68,7 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 
 ---
 
-## Phase 1~20 완료
+## Phase 1~26 완료
 
 | Phase | 버전 | 요약 | 상태 |
 |-------|------|------|------|
@@ -97,9 +97,9 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **23** | **2.5.0** | 플러그인/확장 (위젯 · 필드 · 마켓) | ✅ |
 | **24** | **2.6.0** | 고급 검색/필터 (Lunr · 저장검색 · 실시간) | ✅ |
 | **25** | **2.7.0** | 번역/다국어 (ko · en · ja) | ✅ |
-| **26** | **2.8.0-wip** | 데이터 마이그레이션 (버전 · SQLite · 롤백) | 🔄 |
+| **26** | **2.8.0** | 데이터 마이그레이션 (버전 · SQLite · 롤백) | ✅ |
 
-Phase 26 상세: P54 마이그레이션 — runner · rollback · sql.js · 충돌/검증 UI  
+Phase 26 상세: **P54** 마이그레이션 — runner · rollback · sql.js · 충돌/검증 UI · `37dea98`  
 Phase 25 상세: P53 i18n — 로더 · 언어 토글 · docs/ko|en|ja  
 이력: [VERSION.md](VERSION.md) · 마이그레이션: [docs/MIGRATION-TOOLS.md](docs/MIGRATION-TOOLS.md) · i18n: [docs/I18N.md](docs/I18N.md)
 
@@ -139,7 +139,7 @@ npm run lint && npm run typecheck && npm run test && npm run qa:smoke
 | **확장** | 플러그인 · 위젯 · 커스텀 필드 · 마켓 (P51) | ✅ 2.5.0 |
 | **검색** | Lunr 고급 검색 · 저장 필터 · 실시간 (P52) | ✅ 2.6.0 |
 | **다국어** | ko · en · ja i18n · 문서 locale (P53) | ✅ 2.7.0 |
-| **마이그레이션** | 버전 스크립트 · SQLite · 롤백 · 검증 (P54) | 🔄 2.8.0-wip |
+| **마이그레이션** | 버전 스크립트 · SQLite · 롤백 · 검증 (P54) | ✅ 2.8.0 |
 | **DX** | 성능 예산 · 기여/테스트 가이드 | ✅ |
 
 상세: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/PERFORMANCE.md](docs/PERFORMANCE.md) · [VERSION.md](VERSION.md)
@@ -391,9 +391,10 @@ npm run dev
 | **스캔** | `npm run audit` · `npm run security:scan` |
 
 
-## 데이터 마이그레이션 사용법 (P54)
+## 데이터 마이그레이션 사용법
 
-사이드바 **마이그레이션**에서 스키마 버전 업그레이드·롤백·SQLite/JSON 입출력을 합니다. 상세: [docs/MIGRATION-TOOLS.md](docs/MIGRATION-TOOLS.md)
+사이드바 **마이그레이션**에서 스키마 버전 업그레이드·롤백·SQLite/JSON 입출력을 합니다.  
+상세: [docs/MIGRATION-TOOLS.md](docs/MIGRATION-TOOLS.md) · 1.x→2.0: [docs/MIGRATION.md](docs/MIGRATION.md)
 
 ### 버전 마이그레이션
 
@@ -413,6 +414,14 @@ npm run dev
 | **ZIP/CSV** | 기존 **전체 내보내기** 메뉴 유지 |
 
 가져오기 후 스키마가 낮으면 자동으로 최신까지 점진 마이그레이션합니다.
+
+### CLI · 백업 권장
+
+```bash
+npm run runbook:backup   # 배포·마이그레이션 전
+```
+
+대량 데이터·클라우드 모드에서는 마이그레이션 전에 반드시 백업하세요.
 
 ## 다국어 지원 사용법 (P53)
 
@@ -706,14 +715,14 @@ npm run runbook:backup
 - **v2.5** ✅ — 플러그인/확장 (위젯 · 커스텀 필드 · 마켓)
 - **v2.6** ✅ — 고급 검색/필터 (Lunr · 저장검색 · 실시간)
 - **v2.7** ✅ — 번역/다국어 (ko · en · ja)
-- **v2.8** 🔄 — 데이터 마이그레이션 (버전 · SQLite · 롤백)
+- **v2.8** ✅ — 데이터 마이그레이션 (버전 · SQLite · 롤백)
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 26** (v**2.8.0-wip**)
-- 진행 중: **P54** 데이터 마이그레이션 도구
-- 완료: Phase 1~25 (2.7.0) · P53 번역/다국어
-- 다음: Phase 26 마무리 · 2.8.0 정식
+- 현재 Phase: **Phase 26 완료** (v**2.8.0** 정식)
+- 진행 중: —
+- 완료: Phase 1~26 (2.8.0) · P54 데이터 마이그레이션 도구
+- 다음: v2.x 로드맵
 - 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md))
 
 ---
@@ -727,4 +736,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · v2.8.0-wip
+**Folio** — 프로젝트의 기록, 한 곳에서. · v2.8.0
