@@ -1,8 +1,9 @@
 'use client'
 
 /**
- * P50 — next/image 래퍼 (자동 최적화 · 외부/data URL 폴백)
+ * P50/P57 — next/image 래퍼 (lazy · async · 페이드인)
  */
+import { useState } from 'react'
 import Image, { type ImageProps } from 'next/image'
 import { cn } from '@/lib/utils'
 
@@ -34,10 +35,16 @@ export function OptimizedImage({
   height = 450,
   ...rest
 }: OptimizedImageProps) {
+  const [loaded, setLoaded] = useState(false)
   if (!src) return null
 
+  const fade = cn(
+    'h-auto max-w-full rounded-lg transition-opacity duration-300',
+    loaded ? 'opacity-100' : 'opacity-0',
+    className,
+  )
+
   if (!isOptimizableSrc(src) || src.startsWith('http')) {
-    // 마크다운 외부 URL은 remotePatterns 없이 img (lazy)
     return (
       // eslint-disable-next-line @next/next/no-img-element -- 외부/data URL
       <img
@@ -45,7 +52,9 @@ export function OptimizedImage({
         alt={alt}
         loading="lazy"
         decoding="async"
-        className={cn('h-auto max-w-full rounded-lg', className)}
+        fetchPriority="low"
+        className={fade}
+        onLoad={() => setLoaded(true)}
       />
     )
   }
@@ -56,8 +65,11 @@ export function OptimizedImage({
       alt={alt}
       width={typeof width === 'number' ? width : 800}
       height={typeof height === 'number' ? height : 450}
-      className={cn('h-auto max-w-full rounded-lg', className)}
-      sizes="(max-width: 768px) 100vw, 800px"
+      className={fade}
+      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 800px"
+      loading="lazy"
+      decoding="async"
+      onLoad={() => setLoaded(true)}
       {...rest}
     />
   )

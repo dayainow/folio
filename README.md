@@ -2,7 +2,7 @@
 
 ![Dashboard](screenshots/dashboard.png)
 
-**프로젝트의 기록, 한 곳에서.** · **v3.0.0**
+**프로젝트의 기록, 한 곳에서.** · **v3.1.0-wip**
 
 Folio는 개발자의 일지·문서·일정·프로세스를 하나로 묶는 워크스페이스입니다.
 Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정을 tracking하는 흐름을,
@@ -68,7 +68,7 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 
 ---
 
-## Phase 1~28 완료
+## Phase 1~29
 
 | Phase | 버전 | 요약 | 상태 |
 |-------|------|------|------|
@@ -100,9 +100,10 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **26** | **2.8.0** | 데이터 마이그레이션 (버전 · SQLite · 롤백) | ✅ |
 | **27** | **2.9.0-wip** | 접근성/품질 강화 (WCAG · E2E · 온보딩 · 고대비) | ✅ |
 | **28** | **3.0.0** | 실무 편의성 (Quick Capture · 템플릿 · 시간추적 · 북마크) | ✅ |
+| **29** | **3.1.0-wip** | 모바일 네이티브 앱 (PWA · 제스처 · 오프라인 · 탭바) | 🔄 |
 
+Phase 29 상세: **P57** PWA 설치 · 오프라인 우선 · Background Sync · 스와이프/햅틱 · 풀스크린  
 Phase 28 상세: **P56** Quick Capture · 템플릿 · Time Tracking · 북마크 · 단축키 · `dc0817f`  
-Phase 27 상세: **P55** 접근성/품질 — WCAG AA · Playwright · coverage · 온보딩/팁 · 고대비 · `782ae7b`  
 이력: [VERSION.md](VERSION.md) · a11y: [docs/A11Y.md](docs/A11Y.md) · 마이그레이션: [docs/MIGRATION-TOOLS.md](docs/MIGRATION-TOOLS.md)
 
 ---
@@ -147,6 +148,7 @@ npm run bundle:size     # 번들 사이즈 · 성능 예산
 | **마이그레이션** | 버전 스크립트 · SQLite · 롤백 · 검증 (P54) | ✅ 2.8.0 |
 | **접근성/품질** | WCAG AA · Playwright · 온보딩 · 고대비 (P55) | ✅ 2.9.0-wip |
 | **실무 편의** | Quick Capture · 템플릿 · 시간추적 · 북마크 (P56) | ✅ 3.0.0 |
+| **모바일 네이티브** | PWA · 제스처 · 오프라인 · 탭바 (P57) | 🔄 3.1.0-wip |
 | **DX** | 성능 예산 · 기여/테스트 가이드 | ✅ |
 
 상세: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/PERFORMANCE.md](docs/PERFORMANCE.md) · [VERSION.md](VERSION.md)
@@ -770,13 +772,14 @@ npm run runbook:backup
 - **v2.8** ✅ — 데이터 마이그레이션 (버전 · SQLite · 롤백)
 - **v2.9** ✅ — 접근성/품질 강화 (WCAG · E2E · 온보딩 · 고대비) · 2.9.0-wip
 - **v3.0** ✅ — 실무 편의성 (Quick Capture · 템플릿 · 시간추적 · 북마크)
+- **v3.1** 🔄 — 모바일 네이티브 앱 (PWA · 제스처 · 오프라인) · **3.1.0-wip**
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 28 완료** (v**3.0.0** 정식)
-- 진행 중: —
-- 완료: Phase 1~28 (3.0.0) · P56 실무 편의성 강화
-- 다음: v3.x 로드맵
+- 현재 Phase: **Phase 29 진행 중** (v**3.1.0-wip**)
+- 진행 중: **P57** 모바일 네이티브 앱
+- 완료: Phase 1~28 (3.0.0) · P56 실무 편의성
+- 다음: Phase 29 완료 · 3.1.0 정식
 - 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md))
 
 ---
@@ -790,4 +793,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · v3.0.0
+**Folio** — 프로젝트의 기록, 한 곳에서. · v3.1.0-wip

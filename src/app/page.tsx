@@ -35,6 +35,7 @@ import {
   subscribeMobileFullscreen,
 } from '@/lib/mobile-actions';
 import { Activity, BookOpen, Maximize2, Minimize2, PanelRight, Users, X } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const PanelFallback = ({ label }: { label: string }) => (
   <div className="min-h-[12rem] py-8 text-center text-sm text-muted-foreground" role="status" aria-live="polite">
@@ -186,7 +187,47 @@ export default function Home() {
     return () => window.removeEventListener('online', onOnline);
   }, []);
 
-  // P42 — Background Sync → 클라이언트 flush
+  // P57 — Background Sync 등록 + 오프라인 시 IndexedDB → localStorage 하이드레이트
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const { ensureBackgroundSync, hydrateFromIndexedDb } = await import('@/lib/offline-sync');
+      await ensureBackgroundSync();
+      if (cancelled || navigator.onLine) return;
+      const { getLocalJson, setLocalJson, flushLocalJson } = await import('@/lib/local-cache');
+      const pairs: Array<{ type: 'journal' | 'docs' | 'board'; key: string; empty: (v: unknown) => boolean }> = [
+        {
+          type: 'journal',
+          key: 'workspace_journals',
+          empty: (v) => !v || (typeof v === 'object' && Object.keys(v as object).length === 0),
+        },
+        {
+          type: 'docs',
+          key: 'workspace_docs',
+          empty: (v) => !Array.isArray(v) || v.length === 0,
+        },
+        {
+          type: 'board',
+          key: 'workspace_tasks',
+          empty: (v) => !Array.isArray(v) || v.length === 0,
+        },
+      ];
+      for (const p of pairs) {
+        const current = getLocalJson(p.key, p.type === 'journal' ? {} : []);
+        if (!p.empty(current)) continue;
+        const snap = await hydrateFromIndexedDb(p.type);
+        if (snap != null && !p.empty(snap)) {
+          setLocalJson(p.key, snap);
+          flushLocalJson(p.key);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // P42/P57 — Background Sync → 클라이언트 flush
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
     const onMsg = (event: MessageEvent) => {
@@ -238,6 +279,15 @@ export default function Home() {
   useSwipe(swipeRef, {
     axis: 'both',
     threshold: 64,
+    haptic: true,
+    onEdgeSwipeRight: () => {
+      if (mobileSidebarOpen) {
+        setMobileSidebarOpen(false);
+        return;
+      }
+      const idx = TAB_ORDER.indexOf(tab);
+      if (idx > 0) handleTabChange(TAB_ORDER[idx - 1]!);
+    },
     onSwipe: (dir) => {
       if (dir === 'left' || dir === 'right') {
         const idx = TAB_ORDER.indexOf(tab);
@@ -622,7 +672,7 @@ export default function Home() {
         >
           <PwaInstallPrompt />
 
-          <div ref={panelFocusRef}>
+          <div ref={panelFocusRef} className="folio-tab-panel" key={tab}>
             <div ref={swipeRef} className="touch-pan-y">
             <Tabs value={tab} onValueChange={handleTabChange} className="w-full">
               <TabsContent value="journal" className="mt-0">
@@ -698,9 +748,9 @@ export default function Home() {
 
         {/* 데스크톱 우측 사이드바 280px */}
         <aside className="hidden w-[280px] shrink-0 border-l border-gray-100 p-3 dark:border-gray-800 lg:block">
-          <div className="sticky top-14 max-h-[calc(100vh-3.5rem)] overflow-y-auto">
-            {sidebar}
-          </div>
+          <ScrollArea className="sticky top-14 h-[calc(100vh-3.5rem)]">
+            <div className="pr-3">{sidebar}</div>
+          </ScrollArea>
         </aside>
       </div>
 
@@ -713,8 +763,8 @@ export default function Home() {
             aria-label={t('common.close')}
             onClick={() => setMobileSidebarOpen(false)}
           />
-          <div className="absolute inset-x-0 bottom-0 max-h-[75vh] overflow-y-auto rounded-t-2xl border border-gray-100 bg-background p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-xl dark:border-gray-800">
-            <div className="mb-3 flex items-center justify-between">
+          <div className="absolute inset-x-0 bottom-0 flex max-h-[75vh] flex-col rounded-t-2xl border border-gray-100 bg-background shadow-xl dark:border-gray-800">
+            <div className="flex shrink-0 items-center justify-between border-b border-border/60 px-4 py-3">
               <span className="text-sm font-semibold">{t('nav.summary')}</span>
               <Button
                 type="button"
@@ -727,7 +777,9 @@ export default function Home() {
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            {sidebar}
+            <ScrollArea className="h-[min(60vh,calc(75vh-3.5rem))] px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+              <div className="pr-3">{sidebar}</div>
+            </ScrollArea>
           </div>
         </div>
       )}

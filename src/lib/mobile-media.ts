@@ -55,6 +55,9 @@ export async function compressImageFile(file: File): Promise<{ dataUrl: string; 
   }
 
   const alt = file.name.replace(/\.[^.]+$/, '').slice(0, 40) || 'image'
+  // 메모리 누수 방지 — 캔버스 해제
+  canvas.width = 0
+  canvas.height = 0
   return { dataUrl, alt }
 }
 

@@ -220,12 +220,13 @@ export async function saveWithFallback(
     throw err
   }
 
-  // IndexedDB 미러 (오프라인 복구용)
+  // IndexedDB 미러 (오프라인 복구용) — P57: 전체 스냅샷 우선
   if (typeof window !== 'undefined') {
     void import('@/lib/offline-sync').then(({ mirrorToIndexedDb, queueRemoteSync, isBrowserOffline }) => {
-      void mirrorToIndexedDb(type, data)
+      const snapshot = options.resolveRemoteData?.() ?? data
+      void mirrorToIndexedDb(type, snapshot)
       if (mode !== 'local' && isBrowserOffline()) {
-        void queueRemoteSync(type, options.resolveRemoteData?.() ?? data, `${type} offline`)
+        void queueRemoteSync(type, snapshot, `${type} offline`)
       }
     })
   }

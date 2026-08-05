@@ -15,6 +15,27 @@ html.folio-mobile-fs body {
   html.folio-mobile-fs .folio-fs-root header {
     display: none;
   }
+  /* P57 — 탭 전환 부드러운 페이드 */
+  .folio-tab-panel {
+    animation: folio-tab-in 180ms ease-out;
+  }
+}
+
+@keyframes folio-tab-in {
+  from {
+    opacity: 0.55;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .folio-tab-panel {
+    animation: none;
+  }
 }
 
 @theme inline {

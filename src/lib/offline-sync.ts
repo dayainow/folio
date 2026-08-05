@@ -10,6 +10,7 @@ import {
   countSyncQueue,
   enqueueSync,
   flushSyncQueue,
+  idbGet,
   idbSet,
   isBrowserOffline,
   type SyncQueueItem,
@@ -124,6 +125,48 @@ export async function mirrorToIndexedDb(type: StorageDataType, data: unknown): P
     await idbSet(`folio:${type}`, data)
   } catch {
     /* quota 등 무시 */
+  }
+}
+
+/** P57 — 오프라인 우선: IndexedDB 미러에서 부트스트랩 */
+export async function hydrateFromIndexedDb<T>(
+  type: StorageDataType,
+): Promise<T | undefined> {
+  try {
+    return await idbGet<T>(`folio:${type}`)
+  } catch {
+    return undefined
+  }
+}
+
+/** P57 — Background Sync / Periodic Sync 등록 */
+export async function ensureBackgroundSync(): Promise<boolean> {
+  if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return false
+  try {
+    const reg = await navigator.serviceWorker.ready
+    const syncManager = (
+      reg as ServiceWorkerRegistration & {
+        sync?: { register: (tag: string) => Promise<void> }
+        periodicSync?: {
+          register: (tag: string, opts: { minInterval: number }) => Promise<void>
+        }
+      }
+    )
+    if (syncManager.sync) {
+      await syncManager.sync.register('folio-sync-queue')
+    }
+    if (syncManager.periodicSync) {
+      try {
+        await syncManager.periodicSync.register('folio-periodic-sync', {
+          minInterval: 12 * 60 * 60 * 1000,
+        })
+      } catch {
+        /* 권한/미지원 */
+      }
+    }
+    return true
+  } catch {
+    return false
   }
 }
 

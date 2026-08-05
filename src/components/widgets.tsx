@@ -82,7 +82,7 @@ export function WidgetSidebar({
     <aside
       aria-label="요약 사이드바"
       className={cn(
-        'flex h-full w-full flex-col gap-3 overflow-y-auto',
+        'flex h-full w-full flex-col gap-3',
         className,
       )}
     >

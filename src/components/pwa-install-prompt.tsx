@@ -1,7 +1,10 @@
 'use client'
 
+/**
+ * P42/P57 — PWA 설치 안내 · 설치 완료 · 푸시 · 재안내
+ */
 import { useEffect, useRef, useState } from 'react'
-import { Download, Bell, BellOff, X, Share } from 'lucide-react'
+import { Download, Bell, BellOff, X, Share, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   getPushConsent,
@@ -11,6 +14,7 @@ import {
   unsubscribePush,
   type PushConsent,
 } from '@/lib/push-notifications'
+import { hapticSuccess } from '@/lib/haptics'
 import { cn } from '@/lib/utils'
 
 type BeforeInstallPromptEvent = Event & {
@@ -20,19 +24,22 @@ type BeforeInstallPromptEvent = Event & {
 
 const INSTALL_DISMISS_KEY = 'folio_pwa_install_dismissed'
 const INSTALL_DISMISS_AT_KEY = 'folio_pwa_install_dismissed_at'
-/** 닫은 뒤 7일 지나면 다시 안내 */
-const DISMISS_TTL_MS = 7 * 24 * 60 * 60 * 1000
+const INSTALLED_KEY = 'folio_pwa_installed'
+/** 닫은 뒤 3일 지나면 다시 안내 (P57 — 더 적극적) */
+const DISMISS_TTL_MS = 3 * 24 * 60 * 60 * 1000
 
 function isIosSafari(): boolean {
   if (typeof navigator === 'undefined') return false
   const ua = navigator.userAgent
-  const iOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  const iOS =
+    /iPad|iPhone|iPod/.test(ua) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
   const webkit = /WebKit/.test(ua)
   const criOS = /CriOS|FxiOS|EdgiOS/.test(ua)
   return iOS && webkit && !criOS
 }
 
-function isStandalone(): boolean {
+export function isStandalone(): boolean {
   if (typeof window === 'undefined') return false
   return (
     window.matchMedia('(display-mode: standalone)').matches ||
@@ -51,46 +58,91 @@ function isDismissFresh(): boolean {
   }
 }
 
-/** PWA 설치 안내 + 푸시 — P42: iOS 안내 · 지연 표시 · 모바일 sticky */
+/** 설정 등에서 설치 안내 다시 보기 */
+export function resetPwaInstallPrompt(): void {
+  try {
+    localStorage.removeItem(INSTALL_DISMISS_KEY)
+    localStorage.removeItem(INSTALL_DISMISS_AT_KEY)
+  } catch {
+    /* ignore */
+  }
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('folio-pwa-reset-prompt'))
+  }
+}
+
+/** PWA 설치 안내 + 푸시 — P57: appinstalled · 맞춤 카피 · 재안내 */
 export function PwaInstallPrompt() {
   const deferred = useRef<BeforeInstallPromptEvent | null>(null)
   const [ready, setReady] = useState(false)
   const [canInstall, setCanInstall] = useState(false)
   const [showIosHint, setShowIosHint] = useState(false)
   const [dismissed, setDismissed] = useState(true)
+  const [justInstalled, setJustInstalled] = useState(false)
   const [consent, setConsent] = useState<PushConsent>('unknown')
   const [pushBusy, setPushBusy] = useState(false)
   const [pushMsg, setPushMsg] = useState<string | null>(null)
 
   useEffect(() => {
-    const handle = window.setTimeout(() => {
+    const boot = () => {
       const dismissedFresh = isDismissFresh()
       setDismissed(dismissedFresh)
       setConsent(getPushConsent())
-      const ios = isIosSafari() && !isStandalone()
+      const standalone = isStandalone()
+      const ios = isIosSafari() && !standalone
       setShowIosHint(ios && !dismissedFresh)
       setReady(true)
-    }, 1200)
+      if (standalone) {
+        try {
+          localStorage.setItem(INSTALLED_KEY, '1')
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+    const handle = window.setTimeout(boot, 800)
 
     const onBip = (e: Event) => {
       e.preventDefault()
       deferred.current = e as BeforeInstallPromptEvent
       setCanInstall(true)
     }
+    const onInstalled = () => {
+      deferred.current = null
+      setCanInstall(false)
+      setJustInstalled(true)
+      hapticSuccess()
+      try {
+        localStorage.setItem(INSTALLED_KEY, '1')
+      } catch {
+        /* ignore */
+      }
+      window.setTimeout(() => setJustInstalled(false), 6000)
+    }
+    const onReset = () => {
+      setDismissed(false)
+      setShowIosHint(isIosSafari() && !isStandalone())
+    }
+
     window.addEventListener('beforeinstallprompt', onBip)
+    window.addEventListener('appinstalled', onInstalled)
+    window.addEventListener('folio-pwa-reset-prompt', onReset)
     const unsub = subscribePushConsent(setConsent)
 
     return () => {
       window.clearTimeout(handle)
       window.removeEventListener('beforeinstallprompt', onBip)
+      window.removeEventListener('appinstalled', onInstalled)
+      window.removeEventListener('folio-pwa-reset-prompt', onReset)
       unsub()
+      deferred.current = null
     }
   }, [])
 
   const showInstall = ready && ((canInstall && !dismissed) || showIosHint)
   const showPush = ready && consent === 'default'
 
-  if (!showInstall && !showPush) return null
+  if (!showInstall && !showPush && !justInstalled) return null
 
   const dismissInstall = () => {
     try {
@@ -116,11 +168,17 @@ export function PwaInstallPrompt() {
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-1">
+          {justInstalled && (
+            <p className="flex items-center gap-1.5 text-sm font-medium tracking-tight text-teal-700 dark:text-teal-400">
+              <CheckCircle2 className="h-4 w-4" aria-hidden />
+              Folio가 홈 화면에 추가되었습니다
+            </p>
+          )}
           {showInstall && canInstall && (
             <>
-              <p className="text-sm font-medium tracking-tight">홈 화면에 추가</p>
+              <p className="text-sm font-medium tracking-tight">앱처럼 빠르게 쓰기</p>
               <p className="text-[11px] text-muted-foreground">
-                Folio를 앱처럼 설치하면 오프라인에서도 일지·문서를 작성·동기화할 수 있습니다.
+                홈 화면에 설치하면 오프라인 일지·백그라운드 동기화·전체화면을 바로 쓸 수 있습니다.
               </p>
             </>
           )}
@@ -156,9 +214,13 @@ export function PwaInstallPrompt() {
                   const ev = deferred.current
                   if (!ev) return
                   await ev.prompt()
-                  await ev.userChoice
+                  const choice = await ev.userChoice
                   deferred.current = null
                   setCanInstall(false)
+                  if (choice.outcome === 'accepted') {
+                    setJustInstalled(true)
+                    hapticSuccess()
+                  }
                 })()
               }}
             >
@@ -205,14 +267,17 @@ export function PwaInstallPrompt() {
               알림 끄기
             </Button>
           )}
-          {showInstall && (
+          {(showInstall || justInstalled) && (
             <Button
               type="button"
               size="icon"
               variant="ghost"
               className="h-11 w-11 min-h-[44px] min-w-[44px]"
               aria-label="설치 안내 닫기"
-              onClick={dismissInstall}
+              onClick={() => {
+                dismissInstall()
+                setJustInstalled(false)
+              }}
             >
               <X className="h-4 w-4" />
             </Button>

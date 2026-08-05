@@ -1,9 +1,10 @@
 /**
- * P42/P44 — 터치 스와이프 (수평 탭/날짜 · 수직 사이드바)
+ * P42/P44/P57 — 터치 스와이프 (수평 탭/날짜 · 수직 사이드바 · 엣지)
  */
 'use client'
 
 import { useEffect, useRef, type RefObject } from 'react'
+import { hapticTap, isEdgeSwipeStart } from '@/lib/haptics'
 
 export type SwipeDirection = 'left' | 'right' | 'up' | 'down'
 
@@ -12,9 +13,14 @@ export type UseSwipeOptions = {
   /** 수평 스와이프 시 허용 수직 비율 */
   maxCrossRatio?: number
   onSwipe?: (dir: SwipeDirection) => void
+  /** P57 — 좌측 엣지에서만 오른쪽 스와이프 (뒤로가기 제스처) */
+  onEdgeSwipeRight?: () => void
+  edgeWidth?: number
   enabled?: boolean
   /** P44 — 감지 축 */
   axis?: 'horizontal' | 'vertical' | 'both'
+  /** P57 — 성공 시 햅틱 */
+  haptic?: boolean
 }
 
 /**
@@ -27,15 +33,23 @@ export function useSwipe(
     threshold = 56,
     maxCrossRatio = 0.65,
     onSwipe,
+    onEdgeSwipeRight,
+    edgeWidth = 28,
     enabled = true,
     axis = 'horizontal',
+    haptic: hapticOn = true,
   }: UseSwipeOptions,
 ) {
   const onSwipeRef = useRef(onSwipe)
+  const onEdgeRef = useRef(onEdgeSwipeRight)
 
   useEffect(() => {
     onSwipeRef.current = onSwipe
   }, [onSwipe])
+
+  useEffect(() => {
+    onEdgeRef.current = onEdgeSwipeRight
+  }, [onEdgeSwipeRight])
 
   useEffect(() => {
     const el = ref.current
@@ -43,6 +57,8 @@ export function useSwipe(
 
     let startX = 0
     let startY = 0
+    let startT = 0
+    let fromEdge = false
     let tracking = false
 
     const onStart = (e: TouchEvent) => {
@@ -50,6 +66,8 @@ export function useSwipe(
       const t = e.touches[0]!
       startX = t.clientX
       startY = t.clientY
+      startT = Date.now()
+      fromEdge = isEdgeSwipeStart(startX, edgeWidth)
       tracking = true
     }
 
@@ -62,18 +80,28 @@ export function useSwipe(
       const dy = t.clientY - startY
       const absX = Math.abs(dx)
       const absY = Math.abs(dy)
+      const dt = Math.max(1, Date.now() - startT)
+      const velocity = absX / dt
 
       const preferHorizontal = absX >= absY
       if (preferHorizontal) {
         if (axis === 'vertical') return
-        if (absX < threshold) return
+        const thr = velocity > 0.5 ? threshold * 0.7 : threshold
+        if (absX < thr) return
         if (absY > absX * maxCrossRatio) return
+        if (fromEdge && dx > 0 && onEdgeRef.current) {
+          if (hapticOn) hapticTap()
+          onEdgeRef.current()
+          return
+        }
+        if (hapticOn) hapticTap()
         onSwipeRef.current?.(dx < 0 ? 'left' : 'right')
         return
       }
       if (axis === 'horizontal') return
       if (absY < threshold) return
       if (absX > absY * maxCrossRatio) return
+      if (hapticOn) hapticTap()
       onSwipeRef.current?.(dy < 0 ? 'up' : 'down')
     }
 
@@ -89,5 +117,5 @@ export function useSwipe(
       el.removeEventListener('touchend', onEnd)
       el.removeEventListener('touchcancel', onCancel)
     }
-  }, [ref, threshold, maxCrossRatio, enabled, axis])
+  }, [ref, threshold, maxCrossRatio, enabled, axis, edgeWidth, hapticOn])
 }

@@ -71,22 +71,29 @@ self.addEventListener('notificationclick', (event) => {
 self.addEventListener('sync', (event) => {
   const syncEvent = event as Event & { tag: string; waitUntil: (p: Promise<unknown>) => void }
   if (syncEvent.tag !== SYNC_TAG) return
-  syncEvent.waitUntil(
-    (async () => {
-      const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
-      for (const client of clients) {
-        client.postMessage({ type: 'folio-background-sync', tag: SYNC_TAG })
-      }
-      if (clients.length === 0) {
-        await self.registration.showNotification('Folio 동기화', {
-          body: '네트워크가 복구되었습니다. Folio를 열어 오프라인 변경을 동기화하세요.',
-          icon: '/icons/icon-192.png',
-          data: { url: '/' },
-          tag: 'folio-sync',
-        })
-      }
-    })(),
-  )
+  syncEvent.waitUntil(notifyClientsToFlush())
 })
+
+/** P57 — Periodic Background Sync */
+self.addEventListener('periodicsync', (event) => {
+  const pe = event as Event & { tag: string; waitUntil: (p: Promise<unknown>) => void }
+  if (pe.tag !== 'folio-periodic-sync') return
+  pe.waitUntil(notifyClientsToFlush())
+})
+
+async function notifyClientsToFlush() {
+  const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+  for (const client of clients) {
+    client.postMessage({ type: 'folio-background-sync', tag: SYNC_TAG })
+  }
+  if (clients.length === 0) {
+    await self.registration.showNotification('Folio 동기화', {
+      body: '네트워크가 복구되었습니다. Folio를 열어 오프라인 변경을 동기화하세요.',
+      icon: '/icons/icon-192.png',
+      data: { url: '/' },
+      tag: 'folio-sync',
+    })
+  }
+}
 
 export {}
