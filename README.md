@@ -2,7 +2,7 @@
 
 ![Dashboard](screenshots/dashboard.png)
 
-**프로젝트의 기록, 한 곳에서.** · **v3.4.0-wip**
+**프로젝트의 기록, 한 곳에서.** · **v3.4.0**
 
 Folio는 개발자의 일지·문서·일정·프로세스를 하나로 묶는 워크스페이스입니다.
 Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정을 tracking하는 흐름을,
@@ -68,7 +68,7 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 
 ---
 
-## Phase 1~30
+## Phase 1~32
 
 | Phase | 버전 | 요약 | 상태 |
 |-------|------|------|------|
@@ -103,12 +103,12 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **29** | **3.1.0-wip** | 모바일 네이티브 앱 (PWA · 제스처 · 오프라인 · 탭바) | ✅ |
 | **30** | **3.2.0** | 일지 트리·캘린더·목록·통계 + UI/UX 개선 5건 | ✅ |
 | **31** | **3.3.0** | 문서 버전 관리 (스냅샷 · Diff · 복원/체크아웃) | ✅ |
-| **32** | **3.4.0-wip** | 내보내기/공유 고도화 (PDF · HTML · 공유 링크 · 임베드 · 클라우드) | 🔄 |
+| **32** | **3.4.0** | 내보내기/공유 고도화 (PDF · HTML · 공유 링크 · 임베드 · 클라우드) | ✅ |
 
-Phase 32 상세: **P60** PDF/HTML/MD · 공유 링크(암호·만료·추적) · iframe 임베드 · Storage 백업 — [docs/EXPORT-SHARE.md](docs/EXPORT-SHARE.md)  
+Phase 32 상세: **P60** PDF/HTML/MD · 공유 링크(암호·만료·추적) · iframe 임베드 · Storage 백업 — `7acbd2c` · [docs/EXPORT-SHARE.md](docs/EXPORT-SHARE.md)  
 Phase 31 상세: **P59** 문서 스냅샷 · Diff · 복원/체크아웃 · 5분 자동 · `8abaf92`  
 Phase 30 상세: **P58** 폴더/트리 · 캘린더 · 목록 · 통계 · 작성/보기 · bulk · UI/UX(에디터·웰컴·버튼·사이드바)  
-이력: [VERSION.md](VERSION.md) · 문서 버전: [docs/DOC-VERSIONS.md](docs/DOC-VERSIONS.md) · a11y: [docs/A11Y.md](docs/A11Y.md)
+이력: [VERSION.md](VERSION.md) · 내보내기/공유: [docs/EXPORT-SHARE.md](docs/EXPORT-SHARE.md) · 문서 버전: [docs/DOC-VERSIONS.md](docs/DOC-VERSIONS.md)
 
 ---
 
@@ -155,7 +155,7 @@ npm run bundle:size     # 번들 사이즈 · 성능 예산
 | **모바일 네이티브** | PWA · 제스처 · 오프라인 · 탭바 (P57) | ✅ 3.1.0-wip |
 | **일지 트리** | 폴더 · 캘린더 · 목록 · 통계 · bulk · UI/UX (P58) | ✅ 3.2.0 |
 | **문서 버전** | 스냅샷 · diff · 복원 · 체크아웃 (P59) | ✅ 3.3.0 |
-| **내보내기/공유** | PDF · HTML · 공유 링크 · 임베드 · 클라우드 백업 (P60) | 🔄 3.4.0-wip |
+| **내보내기/공유** | PDF · HTML · 공유 링크 · 임베드 · 클라우드 백업 (P60) | ✅ 3.4.0 |
 | **DX** | 성능 예산 · 기여/테스트 가이드 | ✅ |
 
 상세: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/PERFORMANCE.md](docs/PERFORMANCE.md) · [VERSION.md](VERSION.md)
@@ -406,6 +406,40 @@ npm run dev
 | **CSRF** | mutating `/api/*`에 `x-folio-csrf` 헤더 필요 (웹훅·health 제외) |
 | **스캔** | `npm run audit` · `npm run security:scan` |
 
+
+## 내보내기 / 공유 사용법 (P60)
+
+사이드바 **공유·내보내기**에서 PDF·HTML·Markdown과 읽기 전용 공유 링크를 만듭니다.  
+상세: [docs/EXPORT-SHARE.md](docs/EXPORT-SHARE.md)
+
+### 포맷 내보내기
+
+1. 사이드바 → **공유·내보내기**
+2. 대상 문서 / 일지 선택 (보드는 PDF·HTML·MD 일괄)
+3. **MD** — YAML frontmatter · 태그 · `exportedAt` 포함
+4. **HTML** — 웹 게시용 단일 페이지
+5. **PDF** — `jspdf` 클라이언트 생성 후 다운로드
+
+### 공유 링크 · 임베드
+
+| 기능 | 설명 |
+|------|------|
+| **읽기 전용 링크** | `/share/{token}` — 스냅샷 기반 공개 뷰 |
+| **암호** | 선택 입력 시 SHA-256 해시 보호 |
+| **만료** | 일수 설정 · 만료 시 HTTP 410 |
+| **추적** | 조회수 · Markdown 다운로드 수 |
+| **iframe** | `?embed=1` 코드 복사 → 외부 사이트 삽입 |
+
+공유 생성 후 URL·임베드 코드를 복사하고, 목록에서 폐기할 수 있습니다.
+
+### 클라우드 백업
+
+1. 패널 **백업** 섹션에서 간격(시간)·충돌 전략 설정
+2. **지금 백업** — Supabase `folio-backups` 업로드 (없으면 로컬 JSON 다운로드)
+3. 첨부/이미지는 `folio-attachments` 버킷 (미설정 시 data URL 폴백)
+4. 백업 JSON 가져오기로 버전 충돌 해결 (`merge` / prefer-local / prefer-incoming)
+
+Storage 버킷은 Supabase Dashboard에서 생성하세요 (`docs/env.example` 참고).
 
 ## 문서 버전 관리 사용법 (P59)
 
@@ -886,15 +920,15 @@ npm run runbook:backup
 - **v3.1** ✅ — 모바일 네이티브 앱 (PWA · 제스처 · 오프라인) · **3.1.0-wip**
 - **v3.2** ✅ — 일지 트리·캘린더·목록·통계 · UI/UX 개선 · **3.2.0**
 - **v3.3** ✅ — 문서 버전 관리 (스냅샷 · Diff · 복원) · **3.3.0**
-- **v3.4** 🔄 — 내보내기/공유 고도화 (PDF · HTML · 공유 · 임베드) · **3.4.0-wip**
+- **v3.4** ✅ — 내보내기/공유 고도화 (PDF · HTML · 공유 · 임베드) · **3.4.0**
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 32 진행 중** (v**3.4.0-wip**)
-- 진행 중: **P60** 내보내기/공유 고도화
-- 완료: Phase 1~31 · P59
-- 다음: Phase 32 완료 · 3.4.0 정식
-- 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md) · [docs/EXPORT-SHARE.md](docs/EXPORT-SHARE.md))
+- 현재 Phase: **Phase 32 완료** (v**3.4.0** 정식)
+- 진행 중: —
+- 완료: Phase 1~32 · P60 내보내기/공유 고도화
+- 다음: v3.x
+- 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md))
 
 ---
 
@@ -907,4 +941,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · vv3.4.0-wip
+**Folio** — 프로젝트의 기록, 한 곳에서. · v3.4.0

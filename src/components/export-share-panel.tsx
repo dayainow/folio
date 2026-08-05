@@ -37,7 +37,6 @@ import {
 } from '@/lib/export-rich'
 import { downloadText, safeFilename } from '@/lib/export'
 import {
-  buildEmbedCode,
   createShareLink,
   listShareLinks,
   revokeShareLink,
@@ -130,7 +129,7 @@ export function ExportSharePanel({
             <h2 id={titleId} className="text-sm font-semibold">
               내보내기 · 공유
             </h2>
-            <p className="text-[11px] text-muted-foreground">P60 · PDF/HTML · 공유 링크 · 백업</p>
+            <p className="text-[11px] text-muted-foreground">PDF · HTML · 공유 링크 · 백업</p>
           </div>
           <Button type="button" size="icon" variant="ghost" className="h-8 w-8" onClick={onClose} aria-label="닫기">
             <X className="h-4 w-4" />
@@ -525,9 +524,4 @@ export function ExportShareButton() {
       <ExportSharePanel open={open} onClose={() => setOpen(false)} />
     </>
   )
-}
-
-/** 임베드 코드만 필요할 때 */
-export function copyEmbedForToken(token: string) {
-  return buildEmbedCode(token)
 }
