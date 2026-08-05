@@ -2,7 +2,7 @@
 
 ![Dashboard](screenshots/dashboard.png)
 
-**프로젝트의 기록, 한 곳에서.** · **v3.0.0-wip**
+**프로젝트의 기록, 한 곳에서.** · **v3.0.0**
 
 Folio는 개발자의 일지·문서·일정·프로세스를 하나로 묶는 워크스페이스입니다.
 Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정을 tracking하는 흐름을,
@@ -68,7 +68,7 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 
 ---
 
-## Phase 1~28
+## Phase 1~28 완료
 
 | Phase | 버전 | 요약 | 상태 |
 |-------|------|------|------|
@@ -99,9 +99,9 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **25** | **2.7.0** | 번역/다국어 (ko · en · ja) | ✅ |
 | **26** | **2.8.0** | 데이터 마이그레이션 (버전 · SQLite · 롤백) | ✅ |
 | **27** | **2.9.0-wip** | 접근성/품질 강화 (WCAG · E2E · 온보딩 · 고대비) | ✅ |
-| **28** | **3.0.0-wip** | 실무 편의성 (Quick Capture · 템플릿 · 시간추적 · 북마크) | 🔄 |
+| **28** | **3.0.0** | 실무 편의성 (Quick Capture · 템플릿 · 시간추적 · 북마크) | ✅ |
 
-Phase 28 상세: **P56** Quick Capture · 템플릿 · Time Tracking · 북마크 · 단축키  
+Phase 28 상세: **P56** Quick Capture · 템플릿 · Time Tracking · 북마크 · 단축키 · `dc0817f`  
 Phase 27 상세: **P55** 접근성/품질 — WCAG AA · Playwright · coverage · 온보딩/팁 · 고대비 · `782ae7b`  
 이력: [VERSION.md](VERSION.md) · a11y: [docs/A11Y.md](docs/A11Y.md) · 마이그레이션: [docs/MIGRATION-TOOLS.md](docs/MIGRATION-TOOLS.md)
 
@@ -146,7 +146,7 @@ npm run bundle:size     # 번들 사이즈 · 성능 예산
 | **다국어** | ko · en · ja i18n · 문서 locale (P53) | ✅ 2.7.0 |
 | **마이그레이션** | 버전 스크립트 · SQLite · 롤백 · 검증 (P54) | ✅ 2.8.0 |
 | **접근성/품질** | WCAG AA · Playwright · 온보딩 · 고대비 (P55) | ✅ 2.9.0-wip |
-| **실무 편의** | Quick Capture · 템플릿 · 시간추적 · 북마크 (P56) | 🔄 3.0.0-wip |
+| **실무 편의** | Quick Capture · 템플릿 · 시간추적 · 북마크 (P56) | ✅ 3.0.0 |
 | **DX** | 성능 예산 · 기여/테스트 가이드 | ✅ |
 
 상세: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/PERFORMANCE.md](docs/PERFORMANCE.md) · [VERSION.md](VERSION.md)
@@ -429,6 +429,51 @@ npm run runbook:backup   # 배포·마이그레이션 전
 ```
 
 대량 데이터·클라우드 모드에서는 마이그레이션 전에 반드시 백업하세요.
+
+## 실무 편의성 사용법 (P56)
+
+일상 입력·템플릿·시간 기록·북마크·단축키로 반복 작업을 줄입니다.
+
+### Quick Capture
+
+1. **⌘/Ctrl+Shift+N** — 어디서든 일지 빠른 입력 모달
+2. 템플릿 칩(일일 회의·스크럼·회고·버그 리포트) 선택 후 내용 작성
+3. **⌘/Ctrl+Enter** 또는 저장 — 오늘 일지에 이어 붙이고 모달 닫기
+4. **Esc** 또는 바깥 클릭으로 닫기
+
+### 템플릿
+
+| 영역 | builtin 예 | 커스텀 |
+|------|------------|--------|
+| **일지** | 일일 회의 · 스크럼 · 회고 · 버그 리포트 | Quick Capture / 템플릿 추가 |
+| **문서** | 요구사항 · 설계 · 회의록 · Retrospective | 문서 사이드바 **템플릿** |
+| **보드** | 버그 · 기능 · 개선 · 태스크 | 새 태스크 폼 **템플릿** |
+
+커스텀은 이름·본문 입력으로 추가하고, `*` 표시 항목은 삭제할 수 있습니다 (builtin은 읽기 전용).
+
+### 시간 추적
+
+1. 일정(Board) 카드의 **Play/Pause**로 타이머 시작·정지
+2. 다른 태스크를 시작하면 이전 타이머는 자동 정지
+3. 상단 **오늘 / 주 / 월** 집계로 합산 시간 확인
+4. 카드를 **Done**으로 옮기면 활성 타이머 자동 정지
+
+### 북마크
+
+1. 문서 헤더 북마크 아이콘 · 보드 카드 ★(즐겨찾기와 연동)
+2. 우측 요약 사이드바 **북마크**에서 폴더별 빠른 이동
+3. 폴더 추가(+) · 폴더 우클릭으로 삭제(기본 폴더 제외)
+
+### 키보드 단축키
+
+| 단축키 | 동작 |
+|--------|------|
+| ⌘/Ctrl+Shift+**N** | Quick Capture (새 일지) |
+| ⌘/Ctrl+Shift+**D** | 새 문서 |
+| ⌘/Ctrl+Shift+**T** | 새 태스크 |
+| ⌘/Ctrl+Shift+**F** | 통합 검색 포커스 |
+| ⌘/Ctrl+Shift+**G** | 가이드 (`/guide`) |
+| ⌘/Ctrl+**K** | 통합 검색 (기존) |
 
 ## 다국어 지원 사용법 (P53)
 
@@ -724,14 +769,14 @@ npm run runbook:backup
 - **v2.7** ✅ — 번역/다국어 (ko · en · ja)
 - **v2.8** ✅ — 데이터 마이그레이션 (버전 · SQLite · 롤백)
 - **v2.9** ✅ — 접근성/품질 강화 (WCAG · E2E · 온보딩 · 고대비) · 2.9.0-wip
-- **v3.0** 🔄 — 실무 편의성 (Quick Capture · 템플릿 · 시간추적 · 북마크) · **3.0.0-wip**
+- **v3.0** ✅ — 실무 편의성 (Quick Capture · 템플릿 · 시간추적 · 북마크)
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 28 진행 중** (v**3.0.0-wip**)
-- 진행 중: **P56** 실무 편의성 강화
-- 완료: Phase 1~27 · P55 접근성/품질 (`782ae7b`)
-- 다음: Phase 28 완료 · 3.0.0 정식
+- 현재 Phase: **Phase 28 완료** (v**3.0.0** 정식)
+- 진행 중: —
+- 완료: Phase 1~28 (3.0.0) · P56 실무 편의성 강화
+- 다음: v3.x 로드맵
 - 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md))
 
 ---
@@ -745,4 +790,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · v3.0.0-wip
+**Folio** — 프로젝트의 기록, 한 곳에서. · v3.0.0

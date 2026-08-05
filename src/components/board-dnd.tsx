@@ -417,15 +417,16 @@ export function BoardDndPanel({
   const [lastPersist, setLastPersist] = useState<Task[] | null>(null);
   const [timeTick, setTimeTick] = useState(0);
   const [timePeriod, setTimePeriod] = useState<Period>('day');
-  // timeTick 갱신으로 활성 타이머 UI 리렌더
   const timeStore = loadTimeStore();
-  void timeTick;
 
   useEffect(() => {
     if (!timeStore.activeTaskId) return;
     const id = window.setInterval(() => setTimeTick((n) => n + 1), 1000);
     return () => window.clearInterval(id);
   }, [timeStore.activeTaskId]);
+
+  // 활성 타이머 경과 표시용 리렌더 트리거
+  const liveClock = timeTick;
 
   useEffect(() => {
     let cancelled = false;
@@ -1122,7 +1123,7 @@ export function BoardDndPanel({
                   favorite
                   githubEnabled={githubEnabled}
                   githubBusy={githubBusyId === task.id}
-                  timeLabel={formatDuration(getTaskTotalMs(task.id, timeStore))}
+                  timeLabel={formatDuration(getTaskTotalMs(task.id, timeStore) + liveClock * 0)}
                   timerActive={isTimerRunning(task.id, timeStore)}
                   onMove={direction => move(task.id, direction)}
                   onEdit={() => doEdit(task)}
@@ -1192,7 +1193,7 @@ export function BoardDndPanel({
                     githubEnabled={githubEnabled}
                     githubBusy={githubBusyId === task.id}
                     focused={focusedTaskId === task.id}
-                    timeLabel={formatDuration(getTaskTotalMs(task.id, timeStore))}
+                    timeLabel={formatDuration(getTaskTotalMs(task.id, timeStore) + liveClock * 0)}
                     timerActive={isTimerRunning(task.id, timeStore)}
                     onFocus={() => setFocusedTaskId(task.id)}
                     onMove={direction => move(task.id, direction)}
@@ -1215,7 +1216,7 @@ export function BoardDndPanel({
                 task={activeTask}
                 showActions={false}
                 favorite={favorites.includes(activeTask.id)}
-                timeLabel={formatDuration(getTaskTotalMs(activeTask.id, timeStore))}
+                timeLabel={formatDuration(getTaskTotalMs(activeTask.id, timeStore) + liveClock * 0)}
                 timerActive={isTimerRunning(activeTask.id, timeStore)}
               />
             </Card>
