@@ -6,6 +6,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { Download, Loader2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 export type ExportMenuItem = {
   id: string
@@ -22,6 +23,7 @@ export function ExportMenu({
   size = 'sm',
   align = 'right',
   extra,
+  className,
 }: {
   items: ExportMenuItem[]
   label?: string
@@ -29,6 +31,7 @@ export function ExportMenu({
   align?: 'left' | 'right'
   /** 드롭다운 상단 추가 UI (날짜 범위 등) */
   extra?: ReactNode
+  className?: string
 }) {
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -86,7 +89,7 @@ export function ExportMenu({
         type="button"
         size={size}
         variant="outline"
-        className="gap-1.5"
+        className={cn('gap-1.5', className)}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={menuId}

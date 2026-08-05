@@ -20,6 +20,8 @@ export type DocCommentsPanelProps = {
   targetId: string
   user?: { id: string; name: string; email?: string | null } | null
   mentionSuggestions?: string[]
+  /** 하단 메타 패널용 콤팩트 레이아웃 */
+  compact?: boolean
 }
 
 export function DocCommentsPanel({
@@ -27,6 +29,7 @@ export function DocCommentsPanel({
   targetId,
   user,
   mentionSuggestions = [],
+  compact = false,
 }: DocCommentsPanelProps) {
   const [items, setItems] = useState<DocComment[]>(() =>
     listComments({ kind: targetKind, id: targetId }),
@@ -78,7 +81,14 @@ export function DocCommentsPanel({
   }
 
   return (
-    <section className="rounded-xl border border-gray-100 dark:border-gray-800 bg-card p-3" aria-label="주석">
+    <section
+      className={
+        compact
+          ? 'flex h-full min-h-0 flex-col rounded-lg border border-gray-200/80 bg-white/70 p-2.5 dark:border-gray-700 dark:bg-gray-950/50'
+          : 'rounded-xl border border-gray-100 bg-card p-3 dark:border-gray-800'
+      }
+      aria-label="주석"
+    >
       <div className="mb-2 flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 text-xs font-semibold">
           <MessageSquarePlus className="h-3.5 w-3.5" aria-hidden />
@@ -102,7 +112,7 @@ export function DocCommentsPanel({
         value={body}
         onChange={(e) => setBody(e.target.value)}
         placeholder="피드백을 남기세요. @이름 으로 멘션"
-        className="min-h-[72px] resize-none text-xs"
+        className={compact ? 'min-h-[52px] resize-none text-xs' : 'min-h-[72px] resize-none text-xs'}
         aria-label="주석 입력"
       />
       {mentionSuggestions.length > 0 && (
@@ -111,7 +121,7 @@ export function DocCommentsPanel({
             <button
               key={m}
               type="button"
-              className="rounded-md border border-gray-100 px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-muted"
+              className="rounded-md border border-gray-100 px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               onClick={() => insertMention(m)}
             >
               @{m}
@@ -125,14 +135,14 @@ export function DocCommentsPanel({
         </Button>
       </div>
 
-      <ul className="mt-3 space-y-2">
+      <ul className={compact ? 'mt-2 max-h-28 space-y-2 overflow-y-auto' : 'mt-3 space-y-2'}>
         {visible.length === 0 && (
           <li className="text-[11px] text-muted-foreground">아직 주석이 없습니다.</li>
         )}
         {visible.map((c) => (
           <li
             key={c.id}
-            className="rounded-lg border border-gray-50 dark:border-gray-800 bg-muted/20 p-2 text-xs"
+            className="rounded-lg border border-gray-50 bg-muted/20 p-2 text-xs dark:border-gray-800"
           >
             <div className="mb-1 flex items-center justify-between gap-2">
               <span className="font-medium">{c.authorName}</span>

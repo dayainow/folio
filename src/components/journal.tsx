@@ -5,42 +5,25 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Save, Check, Loader2, ChevronLeft, ChevronRight, Upload } from 'lucide-react';
 import { saveJournal, saveJournalWithFallback, loadJournalsWithFallback, getAllTags, type JournalEntry } from '@/lib/journal';
 import { loadTasksWithFallback } from '@/lib/board';
 import { readObsidianMarkdownFiles } from '@/lib/obsidian';
 import { TagCloud, buildTagCounts } from '@/components/tag-cloud';
 import { setToastRetryHandler, showAppToast } from '@/lib/health-monitor';
-import { ExportMenu } from '@/components/export-menu';
 import {
   downloadText,
   filterJournalsByRange,
   journalsFilename,
   journalsToMarkdown,
 } from '@/lib/export';
-import { PresenceBar } from '@/components/presence-bar';
-import { CollabTextarea } from '@/components/collab-textarea';
-import { DocCommentsPanel } from '@/components/doc-comments';
-import { CustomFieldsPanel } from '@/components/custom-fields-panel';
-import dynamic from 'next/dynamic';
+import { JournalEditor } from '@/components/journal-editor';
 import { useCollabUser } from '@/hooks/use-collab-user';
 import { useSwipe } from '@/hooks/use-swipe';
 import { editorHeightFromViewport, useVisualViewport } from '@/hooks/use-visual-viewport';
 import { subscribeMobileAction } from '@/lib/mobile-actions';
 import { publishActivity } from '@/lib/activity-stream';
 import { getOrCreateGuestId } from '@/lib/presence';
-import { cn } from '@/lib/utils';
-
-const VoiceInputButton = dynamic(
-  () => import('@/components/voice-input-button').then((m) => ({ default: m.VoiceInputButton })),
-  { ssr: false, loading: () => null },
-);
-const ImageAttachButton = dynamic(
-  () => import('@/components/image-attach-button').then((m) => ({ default: m.ImageAttachButton })),
-  { ssr: false, loading: () => null },
-);
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -522,324 +505,92 @@ export const JournalPanel = memo(function JournalPanel({
           : 'grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6'
       }
     >
-      <Card
-        className={
-          writingFirst
-            ? 'flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-card shadow-sm dark:border-gray-800'
-            : 'rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm bg-card'
-        }
-      >
-        <div
-          className={
-            writingFirst
-              ? 'flex flex-wrap items-center justify-between gap-2 border-b border-gray-50 px-3 py-2 dark:border-gray-800'
-              : 'flex items-center justify-between p-4 border-b border-gray-50 dark:border-gray-800'
-          }
-        >
-          <div
-            ref={dateSwipeRef}
-            className={`flex items-center ${writingFirst ? 'gap-1.5' : 'gap-3'} touch-pan-y`}
-            title="좌우로 쓸어 날짜 이동"
-          >
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={prevDay}
-              className={writingFirst ? 'h-12 w-12 min-h-[48px] min-w-[48px] md:h-7 md:w-7 md:min-h-0 md:min-w-0' : 'h-12 w-12 min-h-[48px] min-w-[48px] md:h-8 md:w-8 md:min-h-0 md:min-w-0'}
-              aria-label="이전 날짜"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <div className="flex items-center gap-1.5">
-              <Calendar className={`${writingFirst ? 'h-3.5 w-3.5' : 'h-4 w-4'} text-gray-400`} aria-hidden />
-              <span
-                className={`font-medium tabular-nums ${writingFirst ? 'text-xs' : 'text-sm'}`}
-                aria-live="polite"
-              >
-                {date}
-              </span>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={nextDay}
-              className={writingFirst ? 'h-12 w-12 min-h-[48px] min-w-[48px] md:h-7 md:w-7 md:min-h-0 md:min-w-0' : 'h-12 w-12 min-h-[48px] min-w-[48px] md:h-8 md:w-8 md:min-h-0 md:min-w-0'}
-              aria-label="다음 날짜"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-          <div className={`flex flex-wrap items-center ${writingFirst ? 'gap-1.5' : 'gap-2'}`}>
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              accept=".md,text/markdown"
-              className="hidden"
-              onChange={importObsidian}
-            />
-            <ExportMenu
-              label="내보내기"
-              items={[
-                {
-                  id: 'md-range',
-                  label: 'Markdown (기간)',
-                  description: 'journals-YYYY-MM-DD-to-YYYY-MM-DD.md',
-                  run: async (setProgress) => {
-                    setProgress(0.2, '일지 수집…')
-                    const asEntries: Record<string, JournalEntry> = {}
-                    for (const [d, day] of Object.entries(days)) {
-                      asEntries[d] = {
-                        date: d,
-                        content: day.content,
-                        tags: day.tags,
-                        updatedAt: new Date().toISOString(),
-                      }
-                    }
-                    // 사이드바 기간 필터 우선, 없으면 전체 범위
-                    const dates = Object.keys(asEntries).sort()
-                    const from = rangeStart || dates[0] || date
-                    const to = rangeEnd || dates[dates.length - 1] || date
-                    const entries = filterJournalsByRange(asEntries, from, to)
-                    setProgress(0.7, `${entries.length}건 변환…`)
-                    const md = journalsToMarkdown(entries)
-                    downloadText(md, journalsFilename(from, to), 'text/markdown;charset=utf-8')
-                    setProgress(1, '완료')
-                  },
-                },
-                {
-                  id: 'md-today',
-                  label: '오늘 Markdown',
-                  description: `${date}.md`,
-                  run: async (setProgress) => {
-                    setProgress(0.5, '변환…')
-                    const entry: JournalEntry = {
-                      date,
-                      content: draft,
-                      tags: parseTags(tagsInput),
-                      updatedAt: new Date().toISOString(),
-                    }
-                    downloadText(
-                      journalsToMarkdown([entry]),
-                      `journal-${date}.md`,
-                      'text/markdown;charset=utf-8',
-                    )
-                    setProgress(1, '완료')
-                  },
-                },
-              ]}
-              extra={
-                <p className="text-[10px] text-gray-400">
-                  기간: {rangeStart || '처음'} ~ {rangeEnd || '마지막'}
-                  <br />
-                  (사이드바 날짜 범위와 동일)
-                </p>
-              }
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="gap-2"
-              disabled={importing}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Upload className="h-4 w-4" />
-              {importing ? '가져오는 중…' : 'Obsidian 가져오기'}
-            </Button>
-            <Button
-              type="button"
-              disabled={saveState === 'saving'}
-              onClick={() => void save({ notify: notifyOnSave })}
-              size="sm"
-              aria-busy={saveState === 'saving'}
-              aria-label={
-                saveState === 'saving'
-                  ? '저장 중'
-                  : saveState === 'saved'
-                    ? '저장됨'
-                    : saveState === 'error'
-                      ? '저장 실패'
-                      : '일지 저장'
-              }
-              className="gap-2 bg-gray-900 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white min-w-[4.5rem]"
-            >
-              {saveState === 'saving' ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> 저장 중
-                </>
-              ) : saveState === 'saved' ? (
-                <>
-                  <Check className="h-4 w-4" aria-hidden /> 저장됨
-                </>
-              ) : saveState === 'error' ? (
-                <>
-                  <Save className="h-4 w-4" aria-hidden /> 실패
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4" aria-hidden /> 저장
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-        <span className="sr-only" aria-live="polite">
-          {saveState === 'saved' ? '일지가 저장되었습니다' : saveState === 'saving' ? '일지 저장 중' : saveState === 'error' ? '일지 저장 실패' : ''}
-        </span>
-        {saveError && (
-          <div
-            role="alert"
-            className="mx-4 mt-2 flex flex-wrap items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
-          >
-            <span className="flex-1">{saveError}</span>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="h-7 text-xs"
-              onClick={() => void save({ notify: notifyOnSave })}
-            >
-              다시 시도
-            </Button>
-          </div>
-        )}
-        {hasNotifyChannel && (
-          <div className="px-4 pt-2">
-            <label className="inline-flex items-center gap-2 text-[11px] text-gray-500 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={notifyOnSave}
-                onChange={e => setNotifyOnSave(e.target.checked)}
-                className="rounded border-gray-300"
-              />
-              저장 시 Slack/Discord 알림
-            </label>
-          </div>
-        )}
-        {importMsg && (
-          <p className="px-4 pt-2 text-[11px] text-gray-500">{importMsg}</p>
-        )}
-        <div className={writingFirst ? 'shrink-0 px-3 pt-2 sm:px-4' : 'p-4'}>
-          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-            <PresenceBar roomId={`journal:${date}`} tab="journal" user={collabUser} />
-            <div className="flex flex-wrap items-center gap-1">
-              <VoiceInputButton
-                onTranscript={(text) =>
-                  setDraft((prev) => (prev.trim() ? `${prev.replace(/\s*$/, '')}\n${text}` : text))
+      <JournalEditor
+        writingFirst={writingFirst}
+        date={date}
+        dateSwipeRef={dateSwipeRef}
+        onPrevDay={prevDay}
+        onNextDay={nextDay}
+        saveState={saveState}
+        saveError={saveError}
+        onSave={() => void save({ notify: notifyOnSave })}
+        fileInputRef={fileInputRef}
+        onImportChange={importObsidian}
+        importing={importing}
+        importMsg={importMsg}
+        exportItems={[
+          {
+            id: 'md-range',
+            label: 'Markdown (기간)',
+            description: 'journals-YYYY-MM-DD-to-YYYY-MM-DD.md',
+            run: async (setProgress) => {
+              setProgress(0.2, '일지 수집…')
+              const asEntries: Record<string, JournalEntry> = {}
+              for (const [d, day] of Object.entries(days)) {
+                asEntries[d] = {
+                  date: d,
+                  content: day.content,
+                  tags: day.tags,
+                  updatedAt: new Date().toISOString(),
                 }
-              />
-              <ImageAttachButton
-                onInsert={(md) => setDraft((prev) => `${prev}${md}`)}
-              />
-            </div>
-          </div>
-          <label htmlFor="journal-draft" className="sr-only">
-            일지 본문
-          </label>
-          <div style={editorStyle} className={cn(writingFirst && 'md:[--folio-editor-h:min(18rem,38vh)]')}>
-            <CollabTextarea
-              id="journal-draft"
-              roomId={`journal:${date}`}
-              value={draft}
-              onChange={setDraft}
-              user={collabUser}
-              placeholder="오늘 한 일, 회의 내용, 이슈, 배운 것... 자유롭게 적으세요.\nMarkdown 지원: # 제목, - 리스트, **굵게**"
-              className={editorClass}
-              aria-describedby="journal-draft-hint"
-            />
-          </div>
-          <p id="journal-draft-hint" className="sr-only">
-            마크다운을 사용할 수 있습니다. 저장 버튼 또는 자동 저장으로 기록됩니다. 실시간 협업(Yjs)이 활성화되어 있습니다.
+              }
+              const dates = Object.keys(asEntries).sort()
+              const from = rangeStart || dates[0] || date
+              const to = rangeEnd || dates[dates.length - 1] || date
+              const entries = filterJournalsByRange(asEntries, from, to)
+              setProgress(0.7, `${entries.length}건 변환…`)
+              const md = journalsToMarkdown(entries)
+              downloadText(md, journalsFilename(from, to), 'text/markdown;charset=utf-8')
+              setProgress(1, '완료')
+            },
+          },
+          {
+            id: 'md-today',
+            label: '오늘 Markdown',
+            description: `${date}.md`,
+            run: async (setProgress) => {
+              setProgress(0.5, '변환…')
+              const entry: JournalEntry = {
+                date,
+                content: draft,
+                tags: parseTags(tagsInput),
+                updatedAt: new Date().toISOString(),
+              }
+              downloadText(
+                journalsToMarkdown([entry]),
+                `journal-${date}.md`,
+                'text/markdown;charset=utf-8',
+              )
+              setProgress(1, '완료')
+            },
+          },
+        ]}
+        exportExtra={
+          <p className="text-[10px] text-gray-400">
+            기간: {rangeStart || '처음'} ~ {rangeEnd || '마지막'}
+            <br />
+            (사이드바 날짜 범위와 동일)
           </p>
-          <div className="mt-3">
-            <DocCommentsPanel targetKind="journal" targetId={date} user={collabUser} />
-          </div>
-        </div>
-        <div className={writingFirst ? 'shrink-0 px-3 pb-3 pt-1 sm:px-4' : 'px-4 pb-4'}>
-          <Separator className={writingFirst ? 'mb-2' : 'mb-3'} />
-          <div className={writingFirst ? 'space-y-1.5' : 'space-y-2'}>
-            <div className="flex flex-wrap items-center gap-2" aria-label="현재 태그">
-              <span className="text-xs text-gray-400">태그:</span>
-              {currentTags.map(tag => (
-                <Badge
-                  key={tag}
-                  variant="secondary"
-                  className="text-xs cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700"
-                  onClick={() => removeTag(tag)}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`${tag} 태그 제거`}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      removeTag(tag);
-                    }
-                  }}
-                >
-                  #{tag} ×
-                </Badge>
-              ))}
-              {currentTags.length === 0 && (
-                <span className="text-xs text-gray-300">없음</span>
-              )}
-            </div>
-            <label htmlFor="journal-tag-draft" className="sr-only">
-              태그 입력
-            </label>
-            <Input
-              id="journal-tag-draft"
-              value={tagDraft}
-              onChange={handleTagDraftChange}
-              onKeyDown={handleTagKeyDown}
-              onBlur={commitTagDraft}
-              placeholder="태그 입력 후 Enter 또는 쉼표"
-              className="h-8 text-xs"
-              aria-describedby="journal-tag-hint"
-            />
-            {!writingFirst && (
-              <p id="journal-tag-hint" className="text-[11px] text-gray-400">
-                Enter로 추가 · 빈 입력에서 Backspace로 마지막 태그 삭제
-              </p>
-            )}
-            {writingFirst && <p id="journal-tag-hint" className="sr-only">Enter로 태그 추가</p>}
-            {allTags.length > 0 && (!writingFirst || tagDraft.trim()) && (
-              <div className="space-y-1.5">
-                {!writingFirst && (
-                  <span className="text-[11px] text-gray-400">
-                    기존 태그 {tagDraft.trim() ? '자동완성' : '제안'}
-                  </span>
-                )}
-                <div className="flex flex-wrap gap-1">
-                  {suggestions.length === 0 ? (
-                    !writingFirst ? (
-                      <span className="text-[11px] text-gray-300">추가할 태그 없음</span>
-                    ) : null
-                  ) : (
-                    suggestions.map(tag => (
-                      <button
-                        key={tag}
-                        type="button"
-                        onMouseDown={e => {
-                          e.preventDefault();
-                          addTags([tag]);
-                          setTagDraft('');
-                        }}
-                        className="text-xs px-2 py-1 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors"
-                      >
-                        #{tag}
-                      </button>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-        <div className={writingFirst ? 'px-3 pb-3 sm:px-4' : 'px-4 pb-4'}>
-          <CustomFieldsPanel entity="journal" recordId={date} />
-        </div>
-      </Card>
+        }
+        hasNotifyChannel={hasNotifyChannel}
+        notifyOnSave={notifyOnSave}
+        onNotifyOnSaveChange={setNotifyOnSave}
+        draft={draft}
+        onDraftChange={setDraft}
+        editorClassName={editorClass}
+        editorStyle={editorStyle}
+        collabUser={collabUser}
+        currentTags={currentTags}
+        tagDraft={tagDraft}
+        onTagDraftChange={handleTagDraftChange}
+        onTagKeyDown={handleTagKeyDown}
+        onTagBlur={commitTagDraft}
+        onRemoveTag={removeTag}
+        suggestions={suggestions}
+        allTags={allTags}
+        onAddTags={addTags}
+        onTagDraftClear={() => setTagDraft('')}
+      />
 
       {!writingFirst && (
       <div className="space-y-4">
