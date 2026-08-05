@@ -37,6 +37,9 @@
 # Local runbook backups
 /backups/
 
+# Share link server store (P60)
+.data/
+
 # debug
 npm-debug.log*
 yarn-debug.log*

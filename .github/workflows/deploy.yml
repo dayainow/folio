@@ -23,7 +23,7 @@ concurrency:
 
 env:
   NEXT_TELEMETRY_DISABLED: "1"
-  FOLIO_VERSION: "3.3.0"
+  FOLIO_VERSION: "3.4.0-wip"
 
 jobs:
   gate:

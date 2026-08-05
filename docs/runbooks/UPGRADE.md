@@ -1,10 +1,27 @@
 # 업그레이드 런북 (Upgrade)
 
-버전 업그레이드 · 마이그레이션 · 다운타임 최소화. (P22 · **v3.3 갱신**)
+버전 업그레이드 · 마이그레이션 · 다운타임 최소화. (P22 · **v3.4 갱신**)
 
 ---
 
-## 0. v3.3 (3.2 → 3.3)
+## 0. v3.4 (3.3 → 3.4)
+
+| 구분 | 예 | 의미 |
+|------|----|------|
+| 정식 | `3.4.0` | Phase 32 완료 릴리즈 (내보내기/공유) |
+| WIP | `3.4.0-wip` | Phase 32 진행 중 (P60) |
+| Patch | `3.4.1` | 버그픽스 · 문서 |
+
+체크리스트:
+
+- [ ] `npm run runbook:backup`
+- [ ] 공유·내보내기 패널 · `/share/[token]` · Storage 버킷 스모크 ([docs/EXPORT-SHARE.md](../EXPORT-SHARE.md))
+- [ ] `npm ci` · `npm run lint && npm run typecheck && npm run test && npm run qa:smoke`
+- [ ] Preview/스테이징 스모크 후 Production
+
+---
+
+## 0.0. v3.3 (3.2 → 3.3)
 
 | 구분 | 예 | 의미 |
 |------|----|------|
