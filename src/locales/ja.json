@@ -114,7 +114,14 @@
     "troubleshooting": "トラブルシューティング"
   },
   "docs": {
-    "localeNote": "このドキュメントは選択した言語版です。"
+    "localeNote": "このドキュメントは選択した言語版です。",
+    "versions": "バージョン",
+    "history": "バージョン履歴",
+    "compare": "比較",
+    "restore": "復元",
+    "checkout": "チェックアウト",
+    "manualVersion": "手動バージョン作成",
+    "autoSnapshot": "自動スナップショット"
   },
   "capture": {
     "title": "クイック日記",

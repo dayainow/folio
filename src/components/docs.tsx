@@ -24,8 +24,20 @@ import {
   Share2,
   Link2,
   Bookmark,
+  History,
 } from 'lucide-react';
 import { loadDocsWithFallback, saveDocWithFallback, deleteDocWithFallback, loadCategories, type DocEntry } from '@/lib/docs';
+import {
+  deleteDocVersions,
+  restoreFromVersion,
+  snapshotOnSave,
+  startDocAutoSnapshot,
+  stopDocAutoSnapshot,
+  checkoutVersionAsDoc,
+  type DocVersion,
+} from '@/lib/doc-versions';
+import { DocDiffViewer } from '@/components/doc-diff';
+import { DocVersionSelect, DocVersionsPanel } from '@/components/doc-versions-panel';
 import { readObsidianMarkdownFiles, uniqueDocTitle } from '@/lib/obsidian';
 import { TemplatePicker } from '@/components/template-picker';
 import type { FolioTemplate } from '@/lib/templates';
@@ -181,8 +193,15 @@ export const DocsPanel = memo(function DocsPanel({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [exportMsg, setExportMsg] = useState<string | null>(null);
   const [exportBusy, setExportBusy] = useState(false);
+  const [showVersions, setShowVersions] = useState(false);
+  const [diffVersion, setDiffVersion] = useState<DocVersion | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const draftRef = useRef({ selectedId, title, content, category, docs });
+
+  useEffect(() => {
+    draftRef.current = { selectedId, title, content, category, docs };
+  }, [selectedId, title, content, category, docs]);
 
   const selectDoc = useCallback(async (doc: DocEntry) => {
     // 편집 중 다른 문서로 이동 시 현재 내용 저장
@@ -258,7 +277,8 @@ export const DocsPanel = memo(function DocsPanel({
       setSaveState('error');
       return;
     }
-    const createdAt = docs.find(d => d.id === selectedId)?.createdAt ?? new Date().toISOString();
+    const previous = docs.find(d => d.id === selectedId) ?? null;
+    const createdAt = previous?.createdAt ?? new Date().toISOString();
     const updated: DocEntry = {
       id: selectedId,
       title,
@@ -274,6 +294,7 @@ export const DocsPanel = memo(function DocsPanel({
     setEditPane('edit');
     try {
       await saveDocWithFallback(updated);
+      snapshotOnSave(updated, previous);
       setSaveState('saved');
       window.setTimeout(() => setSaveState('idle'), 2000);
       void publishActivity({
@@ -330,6 +351,31 @@ export const DocsPanel = memo(function DocsPanel({
       setSaveError('문서 저장에 실패했습니다. 다시 시도해 주세요.');
     }
   };
+
+  // P59 — 5분 자동 스냅샷 (선택 문서 기준)
+  useEffect(() => {
+    if (!selectedId) return;
+    return startDocAutoSnapshot(selectedId, () => {
+      const d = draftRef.current;
+      if (!d.selectedId) return null;
+      const createdAt =
+        d.docs.find((x) => x.id === d.selectedId)?.createdAt ?? new Date().toISOString();
+      return {
+        id: d.selectedId,
+        title: d.title.trim() || '제목 없음',
+        content: d.content,
+        category: d.category,
+        createdAt,
+        updatedAt: new Date().toISOString(),
+      };
+    });
+  }, [selectedId]);
+
+  useEffect(() => {
+    return () => {
+      if (selectedId) stopDocAutoSnapshot(selectedId);
+    };
+  }, [selectedId]);
 
   // P44 — FAB 새 문서 / 저장
   const onMobileAction = useEffectEvent((action: { type: string }) => {
@@ -402,6 +448,8 @@ export const DocsPanel = memo(function DocsPanel({
     const deleted = docs.find((d) => d.id === id);
     setDocs(prev => prev.filter(d => d.id !== id));
     setSelectedId(null);
+    deleteDocVersions(id);
+    stopDocAutoSnapshot(id);
     try {
       await deleteDocWithFallback(id);
       void recordFolioTimelineEvent({
@@ -411,6 +459,42 @@ export const DocsPanel = memo(function DocsPanel({
       });
     } catch {
       /* UI는 이미 반영 */
+    }
+  };
+
+  const applyVersionRestore = (v: DocVersion) => {
+    if (!window.confirm(`${v.label}로 복원할까요? 현재 편집 내용이 덮어씌워집니다.`)) return;
+    const fields = restoreFromVersion(v);
+    setTitle(fields.title);
+    setContent(fields.content);
+    setCategory(fields.category);
+    setEditing(true);
+    setShowVersions(true);
+  };
+
+  const openDiff = (v: DocVersion) => {
+    setDiffVersion(v);
+  };
+
+  const checkoutVersion = async (v: DocVersion, newTitle: string) => {
+    const draft = checkoutVersionAsDoc(v, newTitle);
+    const newDoc: DocEntry = {
+      id: crypto.randomUUID(),
+      title: draft.title,
+      content: draft.content,
+      category: draft.category,
+      createdAt: draft.createdAt,
+      updatedAt: draft.updatedAt,
+    };
+    setDocs((prev) => [newDoc, ...prev]);
+    selectDoc(newDoc);
+    setEditing(true);
+    setDiffVersion(null);
+    try {
+      await saveDocWithFallback(newDoc);
+      snapshotOnSave(newDoc, null);
+    } catch {
+      /* UI 반영됨 */
     }
   };
 
@@ -691,6 +775,25 @@ export const DocsPanel = memo(function DocsPanel({
                 )}
               </div>
               <div className="flex items-center gap-2 shrink-0">
+                <DocVersionSelect
+                  docId={selectedId}
+                  onPick={(v) => {
+                    setShowVersions(true);
+                    openDiff(v);
+                  }}
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={showVersions ? 'default' : 'ghost'}
+                  className="h-8 gap-1 px-2"
+                  aria-label="버전 이력"
+                  aria-pressed={showVersions}
+                  onClick={() => setShowVersions((v) => !v)}
+                >
+                  <History className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline text-[11px]">버전</span>
+                </Button>
                 {editing ? (
                   <>
                     <select
@@ -810,6 +913,28 @@ export const DocsPanel = memo(function DocsPanel({
             <span className="sr-only" aria-live="polite">
               {saveState === 'saved' ? '문서가 저장되었습니다' : saveState === 'saving' ? '문서 저장 중' : ''}
             </span>
+
+            {showVersions && selectedId && (
+              <div className="border-b border-gray-50 px-3 py-2 dark:border-gray-800">
+                <DocVersionsPanel
+                  doc={
+                    docs.find((d) => d.id === selectedId) ?? {
+                      id: selectedId,
+                      title,
+                      content,
+                      category,
+                      createdAt: new Date().toISOString(),
+                      updatedAt: new Date().toISOString(),
+                    }
+                  }
+                  currentContent={content}
+                  currentTitle={title}
+                  onCompare={openDiff}
+                  onRestore={applyVersionRestore}
+                  className="max-h-64"
+                />
+              </div>
+            )}
 
             {editing && (
               <div className="px-4 pt-3 flex flex-wrap items-center gap-2">
@@ -948,6 +1073,38 @@ export const DocsPanel = memo(function DocsPanel({
           />
         </div>
       )}
+
+      <DocDiffViewer
+        open={Boolean(diffVersion)}
+        onClose={() => setDiffVersion(null)}
+        before={
+          diffVersion ?? {
+            label: '—',
+            title: '',
+            content: '',
+          }
+        }
+        after={{
+          label: '현재',
+          title,
+          content,
+        }}
+        onRestore={
+          diffVersion
+            ? () => {
+                applyVersionRestore(diffVersion);
+                setDiffVersion(null);
+              }
+            : undefined
+        }
+        onCheckout={
+          diffVersion
+            ? (newTitle) => {
+                void checkoutVersion(diffVersion, newTitle);
+              }
+            : undefined
+        }
+      />
     </div>
   );
 });

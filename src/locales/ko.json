@@ -114,7 +114,14 @@
     "troubleshooting": "문제 해결"
   },
   "docs": {
-    "localeNote": "이 문서는 선택한 언어 버전입니다."
+    "localeNote": "이 문서는 선택한 언어 버전입니다.",
+    "versions": "버전",
+    "history": "버전 이력",
+    "compare": "비교",
+    "restore": "복원",
+    "checkout": "체크아웃",
+    "manualVersion": "수동 버전 만들기",
+    "autoSnapshot": "자동 스냅샷"
   },
   "capture": {
     "title": "빠른 일지",

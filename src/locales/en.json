@@ -114,7 +114,14 @@
     "troubleshooting": "Troubleshooting"
   },
   "docs": {
-    "localeNote": "This document is the selected language version."
+    "localeNote": "This document is the selected language version.",
+    "versions": "Versions",
+    "history": "Version history",
+    "compare": "Compare",
+    "restore": "Restore",
+    "checkout": "Checkout",
+    "manualVersion": "Create manual version",
+    "autoSnapshot": "Auto snapshot"
   },
   "capture": {
     "title": "Quick journal",
