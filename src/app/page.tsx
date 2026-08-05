@@ -131,8 +131,8 @@ const PwaInstallPrompt = dynamic(
   { ssr: false, loading: () => null },
 );
 
-const OnboardingTour = dynamic(
-  () => import('@/components/onboarding-tour').then((m) => ({ default: m.OnboardingTour })),
+const WelcomeModal = dynamic(
+  () => import('@/components/welcome-modal').then((m) => ({ default: m.WelcomeModal })),
   { ssr: false, loading: () => null },
 );
 
@@ -521,7 +521,7 @@ export default function Home() {
   return (
     <>
       <WebVitalsReporter />
-      <OnboardingTour />
+      <WelcomeModal />
       <ProductivityHost
         onOpenJournalTab={() => setTab('journal')}
         onJournalSaved={(date) => {

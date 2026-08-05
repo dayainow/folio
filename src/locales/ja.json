@@ -89,6 +89,18 @@
     "step4Title": "アクセシビリティ",
     "step4Body": "Tabで移動。サイドバーでダーク/ハイコントラストを切替。スキップリンクで本文へ。"
   },
+  "welcome": {
+    "title": "Folioへようこそ",
+    "subtitle": "日記・文書・予定を、ひとところで軽く記録します。",
+    "journalTitle": "日記",
+    "journalBody": "その日の記録とタグを残し、自動保存で続けます。",
+    "docsTitle": "文書",
+    "docsBody": "メモやWikiを整理し、バージョンを管理します。",
+    "boardTitle": "予定",
+    "boardBody": "ボードでタスクと予定をカンバンで追います。",
+    "dontShowAgain": "次回から表示しない",
+    "start": "はじめる"
+  },
   "help": {
     "tips": "ヒント",
     "title": "クイックヘルプ",

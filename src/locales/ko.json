@@ -89,6 +89,18 @@
     "step4Title": "접근성 팁",
     "step4Body": "Tab으로 이동하고, 고대비·다크 모드는 사이드바에서 전환하세요. 스킵 링크로 본문으로 바로 갈 수 있습니다."
   },
+  "welcome": {
+    "title": "Folio에 오신 것을 환영합니다",
+    "subtitle": "일지·문서·일정을 한곳에서 가볍게 기록하세요.",
+    "journalTitle": "일지",
+    "journalBody": "하루의 기록과 태그를 남기고 자동 저장으로 이어갑니다.",
+    "docsTitle": "문서",
+    "docsBody": "메모와 위키 문서를 정리하고 버전을 관리합니다.",
+    "boardTitle": "일정",
+    "boardBody": "보드에서 할 일과 일정을 칸반으로 추적합니다.",
+    "dontShowAgain": "다시 보지 않기",
+    "start": "시작하기"
+  },
   "help": {
     "tips": "팁",
     "title": "빠른 도움말",

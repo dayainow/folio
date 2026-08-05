@@ -89,6 +89,18 @@
     "step4Title": "Accessibility tips",
     "step4Body": "Navigate with Tab. Toggle dark/high-contrast in the sidebar. Use the skip link to jump to content."
   },
+  "welcome": {
+    "title": "Welcome to Folio",
+    "subtitle": "Journal, docs, and schedule — lightly, in one place.",
+    "journalTitle": "Journal",
+    "journalBody": "Capture the day with tags and autosave.",
+    "docsTitle": "Docs",
+    "docsBody": "Organize notes and manage document versions.",
+    "boardTitle": "Schedule",
+    "boardBody": "Track tasks and plans on a kanban board.",
+    "dontShowAgain": "Don’t show again",
+    "start": "Get started"
+  },
   "help": {
     "tips": "Tips",
     "title": "Quick help",
