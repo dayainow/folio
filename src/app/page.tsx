@@ -151,6 +151,7 @@ export default function Home() {
   const [authReady, setAuthReady] = useState(false);
   const [tab, setTab] = useState<TabValue>('journal');
   const [focusJournalDate, setFocusJournalDate] = useState<string | null>(null);
+  const [focusJournalFolder, setFocusJournalFolder] = useState<string | null>(null);
   const [focusDocId, setFocusDocId] = useState<string | null>(null);
   const [focusTaskId, setFocusTaskId] = useState<string | null>(null);
   const [activeTeamId, setActiveTeamIdState] = useState<string | null>(() =>
@@ -382,6 +383,7 @@ export default function Home() {
       if (!parsed.tab) return;
       setTab(parsed.tab);
       if (parsed.tab === 'journal' && parsed.date) setFocusJournalDate(parsed.date);
+      if (parsed.tab === 'journal' && parsed.folder) setFocusJournalFolder(parsed.folder);
       if (parsed.tab === 'docs' && parsed.docId) setFocusDocId(parsed.docId);
       if (parsed.tab === 'board' && parsed.taskId) setFocusTaskId(parsed.taskId);
       const url = new URL(window.location.href);
@@ -694,7 +696,11 @@ export default function Home() {
                   <TabsContent value="journal-write" className="mt-0">
                     <JournalPanel
                       focusDate={focusJournalDate}
-                      onFocusHandled={() => setFocusJournalDate(null)}
+                      focusFolder={focusJournalFolder}
+                      onFocusHandled={() => {
+                        setFocusJournalDate(null);
+                        setFocusJournalFolder(null);
+                      }}
                       onDraftChange={handleDraftChange}
                       writingFirst
                     />

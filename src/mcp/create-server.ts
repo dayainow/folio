@@ -25,7 +25,7 @@ function text(data: unknown) {
 export function createFolioMcpServer(): McpServer {
   const server = new McpServer({
     name: 'folio',
-    version: process.env.npm_package_version ?? '3.1.0-wip',
+    version: process.env.npm_package_version ?? '3.2.0-wip',
   })
 
   // --- tools (journal.read → journal_read) ---

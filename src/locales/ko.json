@@ -138,5 +138,18 @@
   },
   "shortcuts": {
     "tip": "⌘⇧N 일지 · ⌘⇧D 문서 · ⌘⇧T 태스크 · ⌘⇧F 검색 · ⌘⇧G 가이드"
+  },
+  "journalTree": {
+    "title": "일지 트리",
+    "search": "트리 검색…",
+    "newFolder": "새 폴더",
+    "uncategorized": "미분류",
+    "byDate": "날짜별",
+    "byProject": "프로젝트별",
+    "byTag": "태그별",
+    "bulkMove": "이동",
+    "bulkTag": "태그",
+    "bulkExport": "내보내기",
+    "bulkDelete": "삭제"
   }
 }

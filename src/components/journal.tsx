@@ -8,7 +8,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Save, Check, Loader2, ChevronLeft, ChevronRight, Upload } from 'lucide-react';
-import { saveJournal, saveJournalWithFallback, loadJournalsWithFallback, getAllTags, type JournalEntry } from '@/lib/journal';
+import { saveJournal, saveJournalWithFallback, loadJournalsWithFallback, getAllTags, deleteJournals, loadJournals, type JournalEntry } from '@/lib/journal';
+import { JournalTree } from '@/components/journal-tree';
+import { collectDatesInFolder, findFolderBySlug } from '@/lib/journal-tree';
 import { loadTasksWithFallback } from '@/lib/board';
 import { readObsidianMarkdownFiles } from '@/lib/obsidian';
 import { TagCloud, buildTagCounts } from '@/components/tag-cloud';
@@ -85,11 +87,14 @@ function joinTags(tags: string[]): string {
 
 export const JournalPanel = memo(function JournalPanel({
   focusDate,
+  focusFolder,
   onFocusHandled,
   onDraftChange,
   writingFirst = false,
 }: {
   focusDate?: string | null;
+  /** P58 — 폴더 slug 또는 id */
+  focusFolder?: string | null;
   onFocusHandled?: () => void;
   /** 우측 사이드바 미리보기 연동 */
   onDraftChange?: (date: string, content: string) => void;
@@ -102,6 +107,9 @@ export const JournalPanel = memo(function JournalPanel({
   const [rangeStart, setRangeStart] = useState('');
   const [rangeEnd, setRangeEnd] = useState('');
   const [boardTagSources, setBoardTagSources] = useState<Array<{ tags: string[] }>>([]);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+  const [journalMap, setJournalMap] = useState<Record<string, JournalEntry>>({});
+  const [showTree, setShowTree] = useState(true);
 
   type Day = { content: string; tags: string[] };
   const [days, setDays] = useState<Record<string, Day>>({});
@@ -160,6 +168,7 @@ export const JournalPanel = memo(function JournalPanel({
       for (const k in entries) map[k] = { content: entries[k].content, tags: entries[k].tags };
       const today = todayStr();
       setDays(map);
+      setJournalMap(entries);
       setBoardTagSources(tasks.map(t => ({ tags: t.tags })));
       setDate(today);
       setDraft(map[today]?.content ?? '');
@@ -180,6 +189,13 @@ export const JournalPanel = memo(function JournalPanel({
     }, 0);
     return () => window.clearTimeout(handle);
   }, [focusDate, ready, selectDate, onFocusHandled]);
+
+  useEffect(() => {
+    if (!focusFolder || !ready) return;
+    const folder = findFolderBySlug(focusFolder);
+    if (folder) setSelectedFolderId(folder.id);
+    else setSelectedFolderId(focusFolder);
+  }, [focusFolder, ready]);
 
   const onDraftChangeRef = useRef(onDraftChange);
   onDraftChangeRef.current = onDraftChange;
@@ -424,15 +440,43 @@ export const JournalPanel = memo(function JournalPanel({
   };
 
   const recentEntries = useMemo(() => {
+    const folderDates =
+      selectedFolderId != null
+        ? new Set(collectDatesInFolder(selectedFolderId, journalMap))
+        : null;
     return Object.entries(days)
       .sort((a, b) => b[0].localeCompare(a[0]))
       .filter(([d]) => {
+        if (folderDates && !folderDates.has(d)) return false;
         if (filterTag && !days[d].tags?.includes(filterTag)) return false;
         if (rangeStart && d < rangeStart) return false;
         if (rangeEnd && d > rangeEnd) return false;
         return true;
       });
-  }, [days, filterTag, rangeStart, rangeEnd]);
+  }, [days, filterTag, rangeStart, rangeEnd, selectedFolderId, journalMap]);
+
+  const syncJournalMap = useCallback(() => {
+    setJournalMap(loadJournals());
+  }, []);
+
+  const handleDeleteJournals = useCallback(
+    (dates: string[]) => {
+      deleteJournals(dates);
+      setDays((prev) => {
+        const next = { ...prev };
+        for (const d of dates) delete next[d];
+        return next;
+      });
+      setJournalMap(loadJournals());
+      if (dates.includes(date)) {
+        const t = todayStr();
+        setDate(t);
+        setDraft('');
+        setTagsInput('');
+      }
+    },
+    [date],
+  );
 
   const suggestions = useMemo(() => {
     const q = tagDraft.trim().toLowerCase();
@@ -518,10 +562,46 @@ export const JournalPanel = memo(function JournalPanel({
     <div
       className={
         writingFirst
-          ? 'grid grid-cols-1'
-          : 'grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6'
+          ? showTree
+            ? 'grid grid-cols-1 gap-3 lg:grid-cols-[220px_minmax(0,1fr)]'
+            : 'grid grid-cols-1'
+          : showTree
+            ? 'grid grid-cols-1 gap-6 lg:grid-cols-[220px_minmax(0,1fr)_280px]'
+            : 'grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6'
       }
     >
+      {showTree && (
+        <div className={writingFirst ? 'hidden max-h-[min(70vh,32rem)] lg:block' : 'max-h-[min(70vh,36rem)]'}>
+          <JournalTree
+            journals={{
+              ...journalMap,
+              ...Object.fromEntries(
+                Object.entries(days).map(([d, day]) => [
+                  d,
+                  {
+                    ...(journalMap[d] ?? {
+                      date: d,
+                      content: day.content,
+                      tags: day.tags,
+                      updatedAt: new Date().toISOString(),
+                    }),
+                    content: day.content,
+                    tags: day.tags,
+                  } satisfies JournalEntry,
+                ]),
+              ),
+            }}
+            selectedDate={date}
+            selectedFolderId={selectedFolderId}
+            searchQuery=""
+            onSelectDate={(d) => selectDate(d)}
+            onSelectFolder={setSelectedFolderId}
+            onJournalsChange={syncJournalMap}
+            onDeleteJournals={handleDeleteJournals}
+            className="h-full"
+          />
+        </div>
+      )}
       <Card
         className={
           writingFirst
@@ -541,6 +621,16 @@ export const JournalPanel = memo(function JournalPanel({
             className={`flex items-center ${writingFirst ? 'gap-1.5' : 'gap-3'} touch-pan-y`}
             title="좌우로 쓸어 날짜 이동"
           >
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className={writingFirst ? 'h-7 px-1.5 text-[10px] lg:hidden' : 'h-8 text-xs'}
+              onClick={() => setShowTree((v) => !v)}
+              aria-label="일지 트리 토글"
+            >
+              트리
+            </Button>
             <Button
               variant="ghost"
               size="icon"

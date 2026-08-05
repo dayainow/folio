@@ -138,5 +138,18 @@
   },
   "shortcuts": {
     "tip": "⌘⇧N journal · ⌘⇧D doc · ⌘⇧T task · ⌘⇧F search · ⌘⇧G guide"
+  },
+  "journalTree": {
+    "title": "Journal tree",
+    "search": "Search tree…",
+    "newFolder": "New folder",
+    "uncategorized": "Uncategorized",
+    "byDate": "By date",
+    "byProject": "By project",
+    "byTag": "By tag",
+    "bulkMove": "Move",
+    "bulkTag": "Tag",
+    "bulkExport": "Export",
+    "bulkDelete": "Delete"
   }
 }

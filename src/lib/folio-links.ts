@@ -3,7 +3,7 @@
  */
 
 export type FolioDeepLink =
-  | { tab: 'journal'; date?: string }
+  | { tab: 'journal'; date?: string; folder?: string }
   | { tab: 'docs'; docId?: string }
   | { tab: 'board'; taskId?: string }
   | { tab: 'process' }
@@ -25,6 +25,7 @@ export function buildFolioDeepLink(link: FolioDeepLink, origin?: string): string
   const params = new URLSearchParams()
   params.set('tab', link.tab)
   if (link.tab === 'journal' && link.date) params.set('date', link.date)
+  if (link.tab === 'journal' && link.folder) params.set('folder', link.folder)
   if (link.tab === 'docs' && link.docId) params.set('docId', link.docId)
   if (link.tab === 'board' && link.taskId) params.set('taskId', link.taskId)
   const qs = params.toString()
@@ -36,6 +37,7 @@ export function parseFolioDeepLink(
 ): {
   tab: 'journal' | 'docs' | 'board' | 'process' | null
   date: string | null
+  folder: string | null
   docId: string | null
   taskId: string | null
 } {
@@ -48,6 +50,7 @@ export function parseFolioDeepLink(
   return {
     tab,
     date: params.get('date'),
+    folder: params.get('folder'),
     docId: params.get('docId'),
     taskId: params.get('taskId'),
   }

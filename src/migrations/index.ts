@@ -4,12 +4,14 @@
 import { migration001Baseline } from '@/migrations/001_baseline'
 import { migration002NormalizeTags } from '@/migrations/002_normalize_tags'
 import { migration003EnsureTimestamps } from '@/migrations/003_ensure_timestamps'
+import { migration004JournalTreeMeta } from '@/migrations/004_journal_tree_meta'
 import type { Migration } from '@/migrations/types'
 
 export const MIGRATIONS: Migration[] = [
   migration001Baseline,
   migration002NormalizeTags,
   migration003EnsureTimestamps,
+  migration004JournalTreeMeta,
 ].sort((a, b) => a.id - b.id)
 
 export const LATEST_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1]?.id ?? 0
