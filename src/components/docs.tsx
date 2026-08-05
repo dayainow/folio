@@ -23,9 +23,14 @@ import {
   Loader2,
   Share2,
   Link2,
+  Bookmark,
 } from 'lucide-react';
 import { loadDocsWithFallback, saveDocWithFallback, deleteDocWithFallback, loadCategories, type DocEntry } from '@/lib/docs';
 import { readObsidianMarkdownFiles, uniqueDocTitle } from '@/lib/obsidian';
+import { TemplatePicker } from '@/components/template-picker';
+import type { FolioTemplate } from '@/lib/templates';
+import { toggleBookmark, isBookmarked } from '@/lib/bookmarks';
+import { notifyBookmarksChanged } from '@/components/bookmarks-sidebar';
 import { exportDocToBeacon, fetchBeaconMtimes } from '@/lib/beacon';
 import { getBeaconAutoArtifact } from '@/lib/beacon-automation';
 import { recordFolioTimelineEvent } from '@/lib/beacon-timeline-consent';
@@ -225,12 +230,12 @@ export const DocsPanel = memo(function DocsPanel({
     setEditing(true);
   };
 
-  const startNew = async () => {
+  const startNew = async (fromTemplate?: FolioTemplate) => {
     const newDoc: DocEntry = {
       id: crypto.randomUUID(),
-      title: '새 문서',
-      content: '',
-      category: filterCat || 'Dev Guide',
+      title: fromTemplate?.name ?? '새 문서',
+      content: fromTemplate?.body ?? '',
+      category: fromTemplate?.category || filterCat || 'Dev Guide',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -337,6 +342,15 @@ export const DocsPanel = memo(function DocsPanel({
     }
   });
   useEffect(() => subscribeMobileAction(onMobileAction), []);
+
+  const onShortcutNewDoc = useEffectEvent(() => {
+    void startNew();
+  });
+  useEffect(() => {
+    const onNew = () => onShortcutNewDoc();
+    window.addEventListener('folio:new-doc', onNew);
+    return () => window.removeEventListener('folio:new-doc', onNew);
+  }, []);
 
   const exportToBeacon = async (strategy?: 'merge' | 'reapply') => {
     if (!selectedId) return;
@@ -517,6 +531,11 @@ export const DocsPanel = memo(function DocsPanel({
           <Button type="button" onClick={() => void startNew()} size="sm" className="w-full gap-2 bg-gray-900 hover:bg-gray-800">
             <Plus className="h-4 w-4" /> 새 문서
           </Button>
+          <TemplatePicker
+            kind="doc"
+            onApply={(tpl) => void startNew(tpl)}
+            className="px-0.5"
+          />
           <input
             ref={fileInputRef}
             type="file"
@@ -709,6 +728,28 @@ export const DocsPanel = memo(function DocsPanel({
                       actorName={collabUser?.name}
                       actorId={collabUser?.id}
                     />
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 gap-1 px-2"
+                      aria-label="북마크"
+                      onClick={() => {
+                        const doc = docs.find((d) => d.id === selectedId)
+                        if (!doc) return
+                        toggleBookmark({
+                          kind: 'doc',
+                          targetId: doc.id,
+                          title: doc.title,
+                          tags: [doc.category],
+                        })
+                        notifyBookmarksChanged()
+                      }}
+                    >
+                      <Bookmark
+                        className={`h-3.5 w-3.5 ${isBookmarked('doc', selectedId) ? 'fill-amber-400 text-amber-500' : ''}`}
+                      />
+                    </Button>
                     <ExportMenu
                       label="MD"
                       items={[

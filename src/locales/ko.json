@@ -96,7 +96,7 @@
     "tipSave": "저장 모드(로컬/클라우드/Beacon)는 사이드바에서 바꿉니다",
     "tipTheme": "달/해 아이콘은 다크모드, 대비 아이콘은 고대비입니다",
     "tipGuide": "가이드 메뉴에서 온보딩·문제 해결을 보세요",
-    "tipKeyboard": "Escape로 모달·검색을 닫고, Board에서 ←/→로 컬럼을 이동합니다"
+    "tipKeyboard": "⌘⇧N 일지 · ⌘⇧D 문서 · ⌘⇧T 태스크 · ⌘⇧F 검색 · ⌘⇧G 가이드"
   },
   "errors": {
     "generic": "오류가 발생했습니다",
@@ -115,5 +115,28 @@
   },
   "docs": {
     "localeNote": "이 문서는 선택한 언어 버전입니다."
+  },
+  "capture": {
+    "title": "빠른 일지",
+    "hint": "⌘/Ctrl+Shift+N · Esc 또는 바깥 클릭으로 닫기 · ⌘/Ctrl+Enter 저장",
+    "placeholder": "오늘 기록을 바로 남기세요…",
+    "save": "저장하고 닫기",
+    "saved": "일지가 저장되었습니다"
+  },
+  "templates": {
+    "label": "템플릿",
+    "add": "추가",
+    "newName": "템플릿 이름",
+    "newBody": "템플릿 내용"
+  },
+  "bookmarks": {
+    "title": "북마크",
+    "empty": "북마크가 없습니다. 문서·태스크에서 추가하세요.",
+    "addFolder": "폴더 추가",
+    "folderName": "폴더 이름",
+    "deleteFolderConfirm": "이 폴더를 삭제할까요?"
+  },
+  "shortcuts": {
+    "tip": "⌘⇧N 일지 · ⌘⇧D 문서 · ⌘⇧T 태스크 · ⌘⇧F 검색 · ⌘⇧G 가이드"
   }
 }

@@ -96,7 +96,7 @@
     "tipSave": "保存モード(ローカル/クラウド/Beacon)はサイドバーで変更",
     "tipTheme": "太陽/月はダークモード、コントラストはハイコントラスト",
     "tipGuide": "ガイドでオンボーディングとトラブルシュート",
-    "tipKeyboard": "Escapeでモーダルを閉じ、Boardは←/→で列移動"
+    "tipKeyboard": "⌘⇧N 日記 · ⌘⇧D 文書 · ⌘⇧T タスク · ⌘⇧F 検索 · ⌘⇧G ガイド"
   },
   "errors": {
     "generic": "エラーが発生しました",
@@ -115,5 +115,28 @@
   },
   "docs": {
     "localeNote": "このドキュメントは選択した言語版です。"
+  },
+  "capture": {
+    "title": "クイック日記",
+    "hint": "⌘/Ctrl+Shift+N · Esc/外側クリックで閉じる · ⌘/Ctrl+Enterで保存",
+    "placeholder": "今日のメモをすぐ残す…",
+    "save": "保存して閉じる",
+    "saved": "日記を保存しました"
+  },
+  "templates": {
+    "label": "テンプレート",
+    "add": "追加",
+    "newName": "テンプレート名",
+    "newBody": "テンプレート本文"
+  },
+  "bookmarks": {
+    "title": "ブックマーク",
+    "empty": "ブックマークがありません。文書・タスクから追加してください。",
+    "addFolder": "フォルダ追加",
+    "folderName": "フォルダ名",
+    "deleteFolderConfirm": "このフォルダを削除しますか？"
+  },
+  "shortcuts": {
+    "tip": "⌘⇧N 日記 · ⌘⇧D 文書 · ⌘⇧T タスク · ⌘⇧F 検索 · ⌘⇧G ガイド"
   }
 }

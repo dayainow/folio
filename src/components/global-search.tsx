@@ -139,8 +139,19 @@ export function GlobalSearch({ onNavigate, variant = 'default' }: GlobalSearchPr
         }, 0);
       }
     };
+    const onFocusSearch = () => {
+      setExpanded(true);
+      window.setTimeout(() => {
+        inputRef.current?.focus();
+        setOpen(true);
+      }, 0);
+    };
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    window.addEventListener('folio:focus-search', onFocusSearch);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('folio:focus-search', onFocusSearch);
+    };
   }, []);
 
   // 모바일 검색 풀스크린일 때 스크롤 잠금

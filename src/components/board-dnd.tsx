@@ -34,10 +34,27 @@ import {
   ExternalLink,
   Star,
   GitBranch,
+  Timer,
+  Pause,
+  Play,
 } from 'lucide-react';
 import { loadTasksWithFallback, saveTasksWithFallback, deleteTaskWithFallback, type Task, DEFAULT_COLUMNS } from '@/lib/board';
 import { loadJournalsWithFallback } from '@/lib/journal';
 import { loadFavorites, saveFavorites, toggleFavorite } from '@/lib/favorites';
+import { toggleBookmark } from '@/lib/bookmarks';
+import { notifyBookmarksChanged } from '@/components/bookmarks-sidebar';
+import { TemplatePicker } from '@/components/template-picker';
+import {
+  aggregateMs,
+  formatDuration,
+  getTaskTotalMs,
+  isTimerRunning,
+  loadTimeStore,
+  startTimer,
+  stopTimer,
+  type Period,
+} from '@/lib/time-tracking';
+import type { FolioTemplate } from '@/lib/templates';
 import { TagCloud, buildTagCounts } from '@/components/tag-cloud';
 import { recordBoardStatusChange } from '@/lib/analytics';
 import { ExportMenu } from '@/components/export-menu';
@@ -67,22 +84,28 @@ function TaskCardBody({
   favorite = false,
   githubEnabled = false,
   githubBusy = false,
+  timeLabel,
+  timerActive = false,
   onMove,
   onEdit,
   onDelete,
   onToggleFavorite,
   onCreateGithub,
+  onToggleTimer,
 }: {
   task: Task;
   showActions?: boolean;
   favorite?: boolean;
   githubEnabled?: boolean;
   githubBusy?: boolean;
+  timeLabel?: string;
+  timerActive?: boolean;
   onMove?: (direction: 'left' | 'right') => void;
   onEdit?: () => void;
   onDelete?: () => void;
   onToggleFavorite?: () => void;
   onCreateGithub?: () => void;
+  onToggleTimer?: () => void;
 }) {
   return (
     <>
@@ -132,6 +155,29 @@ function TaskCardBody({
       </div>
       {task.description && (
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{task.description}</p>
+      )}
+      {(timeLabel || onToggleTimer) && (
+        <div
+          className="mt-1.5 flex items-center gap-1 text-[10px] tabular-nums text-muted-foreground"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <Timer className="h-3 w-3" aria-hidden />
+          <span className={timerActive ? 'text-teal-600 dark:text-teal-400 font-medium' : ''}>
+            {timeLabel ?? '0:00'}
+          </span>
+          {onToggleTimer ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-5 w-5"
+              aria-label={timerActive ? '타이머 정지' : '타이머 시작'}
+              onClick={onToggleTimer}
+            >
+              {timerActive ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
+            </Button>
+          ) : null}
+        </div>
       )}
       <div className="flex flex-wrap items-center gap-1.5 mt-2">
         <Badge variant="outline" className={`text-[10px] px-1 py-0 h-auto ${PRIORITY_COLORS[task.priority]}`}>
@@ -231,24 +277,30 @@ function DraggableTaskCard({
   githubEnabled,
   githubBusy,
   focused,
+  timeLabel,
+  timerActive,
   onFocus,
   onMove,
   onEdit,
   onDelete,
   onToggleFavorite,
   onCreateGithub,
+  onToggleTimer,
 }: {
   task: Task;
   favorite: boolean;
   githubEnabled: boolean;
   githubBusy: boolean;
   focused: boolean;
+  timeLabel: string;
+  timerActive: boolean;
   onFocus: () => void;
   onMove: (direction: 'left' | 'right') => void;
   onEdit: () => void;
   onDelete: () => void;
   onToggleFavorite: () => void;
   onCreateGithub: () => void;
+  onToggleTimer: () => void;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: task.id,
@@ -286,11 +338,14 @@ function DraggableTaskCard({
         favorite={favorite}
         githubEnabled={githubEnabled}
         githubBusy={githubBusy}
+        timeLabel={timeLabel}
+        timerActive={timerActive}
         onMove={onMove}
         onEdit={onEdit}
         onDelete={onDelete}
         onToggleFavorite={onToggleFavorite}
         onCreateGithub={onCreateGithub}
+        onToggleTimer={onToggleTimer}
       />
     </Card>
   );
@@ -360,6 +415,17 @@ export function BoardDndPanel({
   const [focusedTaskId, setFocusedTaskId] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [lastPersist, setLastPersist] = useState<Task[] | null>(null);
+  const [timeTick, setTimeTick] = useState(0);
+  const [timePeriod, setTimePeriod] = useState<Period>('day');
+  // timeTick 갱신으로 활성 타이머 UI 리렌더
+  const timeStore = loadTimeStore();
+  void timeTick;
+
+  useEffect(() => {
+    if (!timeStore.activeTaskId) return;
+    const id = window.setInterval(() => setTimeTick((n) => n + 1), 1000);
+    return () => window.clearInterval(id);
+  }, [timeStore.activeTaskId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -502,6 +568,30 @@ export function BoardDndPanel({
     setForm({ title: '', description: '', priority: 'medium', tags: '', status });
   };
 
+  useEffect(() => {
+    const onNew = () => openNewTask('backlog');
+    window.addEventListener('folio:new-task', onNew);
+    return () => window.removeEventListener('folio:new-task', onNew);
+  }, []);
+
+  const applyBoardTemplate = (tpl: FolioTemplate) => {
+    setComposing(true);
+    setEditingId(null);
+    setForm({
+      title: tpl.name,
+      description: tpl.body,
+      priority: tpl.priority ?? 'medium',
+      tags: (tpl.tags ?? []).join(', '),
+      status: tpl.status ?? 'backlog',
+    });
+  };
+
+  const handleToggleTimer = (taskId: string) => {
+    if (isTimerRunning(taskId)) stopTimer(taskId);
+    else startTimer(taskId);
+    setTimeTick((n) => n + 1);
+  };
+
   const syncFromJira = async () => {
     setJiraSyncing(true);
     setJiraMessage(null);
@@ -605,6 +695,10 @@ export function BoardDndPanel({
   const setTaskStatus = async (id: string, status: Task['status']) => {
     const task = tasks.find(t => t.id === id);
     if (!task || task.status === status) return;
+    if (status === 'done' && isTimerRunning(id)) {
+      stopTimer(id);
+      setTimeTick((n) => n + 1);
+    }
     recordBoardStatusChange(id, status);
     await persist(tasks.map(t => t.id === id ? { ...t, status, updatedAt: new Date().toISOString() } : t));
 
@@ -721,6 +815,16 @@ export function BoardDndPanel({
 
   const handleToggleFavorite = (id: string) => {
     setFavorites(prev => toggleFavorite(id, prev));
+    const task = tasks.find((t) => t.id === id);
+    if (task) {
+      toggleBookmark({
+        kind: 'task',
+        targetId: id,
+        title: task.title,
+        tags: task.tags,
+      });
+      notifyBookmarksChanged();
+    }
   };
 
   const move = async (id: string, direction: 'left' | 'right') => {
@@ -888,6 +992,24 @@ export function BoardDndPanel({
         >
           <Plus className="h-3 w-3" /> 새 태스크
         </Button>
+        <div className="ml-auto flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+          <Timer className="h-3.5 w-3.5" aria-hidden />
+          {(['day', 'week', 'month'] as Period[]).map((p) => (
+            <button
+              key={p}
+              type="button"
+              className={
+                timePeriod === p
+                  ? 'font-semibold text-foreground underline'
+                  : 'hover:underline'
+              }
+              onClick={() => setTimePeriod(p)}
+            >
+              {p === 'day' ? '오늘' : p === 'week' ? '주' : '월'}{' '}
+              {formatDuration(aggregateMs(p, timeStore))}
+            </button>
+          ))}
+        </div>
       </div>
 
       <Card className="rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-3 bg-card">
@@ -932,6 +1054,9 @@ export function BoardDndPanel({
 
       {(editingId || composing) ? (
         <Card className="rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-4 bg-card">
+          <div className="mb-3">
+            <TemplatePicker kind="board" onApply={applyBoardTemplate} />
+          </div>
           <div className="space-y-3">
             <Input
               value={form.title}
@@ -997,11 +1122,14 @@ export function BoardDndPanel({
                   favorite
                   githubEnabled={githubEnabled}
                   githubBusy={githubBusyId === task.id}
+                  timeLabel={formatDuration(getTaskTotalMs(task.id, timeStore))}
+                  timerActive={isTimerRunning(task.id, timeStore)}
                   onMove={direction => move(task.id, direction)}
                   onEdit={() => doEdit(task)}
                   onDelete={() => doDelete(task.id)}
                   onToggleFavorite={() => handleToggleFavorite(task.id)}
                   onCreateGithub={() => void linkGitHubIssue(task)}
+                  onToggleTimer={() => handleToggleTimer(task.id)}
                 />
               </Card>
             ))}
@@ -1064,12 +1192,15 @@ export function BoardDndPanel({
                     githubEnabled={githubEnabled}
                     githubBusy={githubBusyId === task.id}
                     focused={focusedTaskId === task.id}
+                    timeLabel={formatDuration(getTaskTotalMs(task.id, timeStore))}
+                    timerActive={isTimerRunning(task.id, timeStore)}
                     onFocus={() => setFocusedTaskId(task.id)}
                     onMove={direction => move(task.id, direction)}
                     onEdit={() => doEdit(task)}
                     onDelete={() => doDelete(task.id)}
                     onToggleFavorite={() => handleToggleFavorite(task.id)}
                     onCreateGithub={() => void linkGitHubIssue(task)}
+                    onToggleTimer={() => handleToggleTimer(task.id)}
                   />
                 ))}
               </DroppableColumn>
@@ -1084,6 +1215,8 @@ export function BoardDndPanel({
                 task={activeTask}
                 showActions={false}
                 favorite={favorites.includes(activeTask.id)}
+                timeLabel={formatDuration(getTaskTotalMs(activeTask.id, timeStore))}
+                timerActive={isTimerRunning(activeTask.id, timeStore)}
               />
             </Card>
           ) : null}

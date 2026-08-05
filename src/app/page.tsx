@@ -134,6 +134,11 @@ const OnboardingTour = dynamic(
   { ssr: false, loading: () => null },
 );
 
+const ProductivityHost = dynamic(
+  () => import('@/components/productivity-host').then((m) => ({ default: m.ProductivityHost })),
+  { ssr: false, loading: () => null },
+);
+
 type TabValue = 'journal' | 'docs' | 'board' | 'process';
 
 const TAB_ORDER: TabValue[] = ['journal', 'docs', 'board', 'process'];
@@ -429,6 +434,20 @@ export default function Home() {
   const sidebar = (
     <WidgetSidebar
       onOpenTab={(t) => handleTabChange(t)}
+      onBookmarkNavigate={(payload) => {
+        if (payload.kind === 'journal') {
+          setTab('journal');
+          setFocusJournalDate(payload.targetId);
+          return;
+        }
+        if (payload.kind === 'doc') {
+          setTab('docs');
+          setFocusDocId(payload.targetId);
+          return;
+        }
+        setTab('board');
+        setFocusTaskId(payload.targetId);
+      }}
       journalPreview={journalPreview}
       footer={sidebarFooter}
       className="h-full"
@@ -439,6 +458,15 @@ export default function Home() {
     <>
       <WebVitalsReporter />
       <OnboardingTour />
+      <ProductivityHost
+        onOpenJournalTab={() => setTab('journal')}
+        onJournalSaved={(date) => {
+          setTab('journal');
+          setFocusJournalDate(date);
+        }}
+        onNewDoc={() => setTab('docs')}
+        onNewTask={() => setTab('board')}
+      />
       <PerfProfiler id="FolioHome">
     <div className={cn('flex min-h-screen flex-col bg-background', mobileFs && 'folio-fs-root')}>
       <a href="#main-content" className="skip-link">

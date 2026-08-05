@@ -14,7 +14,7 @@ concurrency:
 
 env:
   NEXT_TELEMETRY_DISABLED: "1"
-  FOLIO_VERSION: "2.9.0-wip"
+  FOLIO_VERSION: "3.0.0-wip"
 
 jobs:
   quality:

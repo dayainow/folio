@@ -12,10 +12,12 @@ import { fetchBeaconSummary, type ProjectSummary } from '@/lib/beacon'
 import { AiSummaryWidget } from '@/components/ai-summary-widget'
 import { ActivityFeed } from '@/components/activity-feed'
 import { PluginWidgetHost } from '@/components/plugin-widget-host'
+import { BookmarksSidebar, type BookmarkNavigate } from '@/components/bookmarks-sidebar'
 import { cn } from '@/lib/utils'
 
 export type WidgetSidebarProps = {
-  onOpenTab?: (tab: 'journal' | 'board' | 'process') => void
+  onOpenTab?: (tab: 'journal' | 'docs' | 'board' | 'process') => void
+  onBookmarkNavigate?: (payload: BookmarkNavigate) => void
   /** 좌측 일지 에디터와 연동된 미리보기 (있으면 우선) */
   journalPreview?: { date: string; content: string } | null
   footer?: ReactNode
@@ -27,6 +29,7 @@ export const WidgetDashboard = WidgetSidebar
 
 export function WidgetSidebar({
   onOpenTab,
+  onBookmarkNavigate,
   journalPreview: livePreview,
   footer,
   className,
@@ -98,6 +101,8 @@ export function WidgetSidebar({
           <RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} />
         </Button>
       </div>
+
+      <BookmarksSidebar onNavigate={onBookmarkNavigate} />
 
       {/* 오늘의 일지 미리보기 */}
       <section className="rounded-xl border border-gray-100 dark:border-gray-800 bg-card p-3">

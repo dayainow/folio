@@ -96,7 +96,7 @@
     "tipSave": "Switch storage mode (local/cloud/Beacon) in the sidebar",
     "tipTheme": "Sun/moon toggles dark mode; contrast icon toggles high contrast",
     "tipGuide": "Open Guide for onboarding and troubleshooting",
-    "tipKeyboard": "Escape closes modals; Board uses ←/→ to move columns"
+    "tipKeyboard": "⌘⇧N journal · ⌘⇧D doc · ⌘⇧T task · ⌘⇧F search · ⌘⇧G guide"
   },
   "errors": {
     "generic": "Something went wrong",
@@ -115,5 +115,28 @@
   },
   "docs": {
     "localeNote": "This document is the selected language version."
+  },
+  "capture": {
+    "title": "Quick journal",
+    "hint": "⌘/Ctrl+Shift+N · Esc or outside click to close · ⌘/Ctrl+Enter to save",
+    "placeholder": "Capture today’s note…",
+    "save": "Save & close",
+    "saved": "Journal saved"
+  },
+  "templates": {
+    "label": "Templates",
+    "add": "Add",
+    "newName": "Template name",
+    "newBody": "Template body"
+  },
+  "bookmarks": {
+    "title": "Bookmarks",
+    "empty": "No bookmarks yet. Add from docs or tasks.",
+    "addFolder": "Add folder",
+    "folderName": "Folder name",
+    "deleteFolderConfirm": "Delete this folder?"
+  },
+  "shortcuts": {
+    "tip": "⌘⇧N journal · ⌘⇧D doc · ⌘⇧T task · ⌘⇧F search · ⌘⇧G guide"
   }
 }
