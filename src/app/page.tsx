@@ -36,6 +36,7 @@ import {
 } from '@/lib/mobile-actions';
 import { Activity, BookOpen, Maximize2, Minimize2, PanelRight, Users, X } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 
 const PanelFallback = ({ label }: { label: string }) => (
   <div className="min-h-[12rem] py-8 text-center text-sm text-muted-foreground" role="status" aria-live="polite">
@@ -91,8 +92,8 @@ const TeamSidebar = dynamic(
   { ssr: false },
 );
 
-const WidgetSidebar = dynamic(
-  () => import('@/components/widgets').then((m) => ({ default: m.WidgetSidebar })),
+const SummarySidebar = dynamic(
+  () => import('@/components/summary-sidebar').then((m) => ({ default: m.SummarySidebar })),
   { ssr: false, loading: () => <SidebarSkeleton /> },
 );
 
@@ -428,19 +429,21 @@ export default function Home() {
   };
 
   const sidebarFooter = (
-    <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-1.5">
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-2">
         <StorageModeToggle />
         <CollabModeToggle />
         <ThemeToggle />
         <HelpTipsButton />
       </div>
-      <div className="flex flex-wrap items-center gap-1.5">
+      <Separator className="my-1" />
+      <div className="flex flex-wrap items-center gap-2">
         <FullExportButton />
         <DataMigrationButton />
         <McpSyncButton />
       </div>
-      <div className="flex flex-wrap items-center gap-1.5">
+      <Separator className="my-1" />
+      <div className="flex flex-wrap items-center gap-2">
         <HealthStatus />
         <StorageObservabilityButton />
         <PerfObservabilityButton />
@@ -449,12 +452,15 @@ export default function Home() {
         <BeaconChangeBadge />
       </div>
       {authReady && email && (
-        <TeamSwitcher
-          enabled
-          activeTeamId={activeTeamId}
-          onActiveTeamChange={handleActiveTeamChange}
-          onOpenManage={() => setTeamPanelOpen(true)}
-        />
+        <>
+          <Separator className="my-1" />
+          <TeamSwitcher
+            enabled
+            activeTeamId={activeTeamId}
+            onActiveTeamChange={handleActiveTeamChange}
+            onOpenManage={() => setTeamPanelOpen(true)}
+          />
+        </>
       )}
       {authReady ? (
         email ? (
@@ -466,7 +472,7 @@ export default function Home() {
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-8 px-2 text-[11px]"
+                className="min-h-11 px-3 text-[11px]"
                 onClick={() => void handleSignOut()}
               >
                 {t('common.logout')}
@@ -479,7 +485,7 @@ export default function Home() {
             href="/login"
             className={cn(
               buttonVariants({ size: 'sm', variant: 'outline' }),
-              'h-8 w-full text-xs',
+              'inline-flex min-h-11 w-full items-center justify-center text-xs',
             )}
           >
             {t('common.login')}
@@ -490,7 +496,7 @@ export default function Home() {
   );
 
   const sidebar = (
-    <WidgetSidebar
+    <SummarySidebar
       onOpenTab={(t) => handleTabChange(t)}
       onBookmarkNavigate={(payload) => {
         if (payload.kind === 'journal') {
@@ -507,7 +513,7 @@ export default function Home() {
         setFocusTaskId(payload.targetId);
       }}
       journalPreview={journalPreview}
-      footer={sidebarFooter}
+      extras={sidebarFooter}
       className="h-full"
     />
   );

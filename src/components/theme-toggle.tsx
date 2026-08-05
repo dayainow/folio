@@ -48,28 +48,28 @@ export function ThemeToggle() {
         type="button"
         size="icon"
         variant="outline"
-        className="h-7 w-7"
+        className="min-h-11 min-w-11"
         onClick={onToggleTheme}
         aria-label={themeLabel}
         title={themeLabel}
       >
         {mode === 'dark' ? (
-          <Sun className="h-3.5 w-3.5" />
+          <Sun className="h-4 w-4" />
         ) : (
-          <Moon className="h-3.5 w-3.5" />
+          <Moon className="h-4 w-4" />
         )}
       </Button>
       <Button
         type="button"
         size="icon"
         variant={contrast ? 'default' : 'outline'}
-        className="h-7 w-7"
+        className="min-h-11 min-w-11"
         onClick={onToggleContrast}
         aria-label={contrastLabel}
         aria-pressed={contrast}
         title={contrastLabel}
       >
-        <Contrast className="h-3.5 w-3.5" />
+        <Contrast className="h-4 w-4" />
       </Button>
     </div>
   )
