@@ -243,7 +243,7 @@ export async function zipFullExport(
 
   const metadata = {
     exportedAt: new Date().toISOString(),
-    version: input.version ?? process.env.npm_package_version ?? '3.2.0',
+    version: input.version ?? process.env.npm_package_version ?? '3.3.0',
     counts: {
       journals: journalEntries.length,
       docs: input.docs.length,

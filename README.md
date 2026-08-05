@@ -2,7 +2,7 @@
 
 ![Dashboard](screenshots/dashboard.png)
 
-**프로젝트의 기록, 한 곳에서.** · **v3.2.0**
+**프로젝트의 기록, 한 곳에서.** · **v3.3.0**
 
 Folio는 개발자의 일지·문서·일정·프로세스를 하나로 묶는 워크스페이스입니다.
 Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정을 tracking하는 흐름을,
@@ -102,12 +102,11 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **28** | **3.0.0** | 실무 편의성 (Quick Capture · 템플릿 · 시간추적 · 북마크) | ✅ |
 | **29** | **3.1.0-wip** | 모바일 네이티브 앱 (PWA · 제스처 · 오프라인 · 탭바) | ✅ |
 | **30** | **3.2.0** | 일지 트리·캘린더·목록·통계 + UI/UX 개선 5건 | ✅ |
+| **31** | **3.3.0** | 문서 버전 관리 (스냅샷 · Diff · 복원/체크아웃) | ✅ |
 
-다음: **Phase 31** — 문서 버전 관리 (P59 · 3.3.0)  
+Phase 31 상세: **P59** 문서 스냅샷 · Diff · 복원/체크아웃 · 5분 자동 · `8abaf92`  
 Phase 30 상세: **P58** 폴더/트리 · 캘린더 · 목록 · 통계 · 작성/보기 · bulk · UI/UX(에디터·웰컴·버튼·사이드바)  
-Phase 29 상세: **P57** PWA 설치 · 오프라인 우선 · Background Sync · 스와이프/햅틱 · 풀스크린  
-Phase 28 상세: **P56** Quick Capture · 템플릿 · Time Tracking · 북마크 · 단축키 · `dc0817f`  
-이력: [VERSION.md](VERSION.md) · a11y: [docs/A11Y.md](docs/A11Y.md) · 마이그레이션: [docs/MIGRATION-TOOLS.md](docs/MIGRATION-TOOLS.md)
+이력: [VERSION.md](VERSION.md) · 문서 버전: [docs/DOC-VERSIONS.md](docs/DOC-VERSIONS.md) · a11y: [docs/A11Y.md](docs/A11Y.md)
 
 ---
 
@@ -153,7 +152,7 @@ npm run bundle:size     # 번들 사이즈 · 성능 예산
 | **실무 편의** | Quick Capture · 템플릿 · 시간추적 · 북마크 (P56) | ✅ 3.0.0 |
 | **모바일 네이티브** | PWA · 제스처 · 오프라인 · 탭바 (P57) | ✅ 3.1.0-wip |
 | **일지 트리** | 폴더 · 캘린더 · 목록 · 통계 · bulk · UI/UX (P58) | ✅ 3.2.0 |
-| **문서 버전** | 스냅샷 · diff · 복원 · 체크아웃 (P59) | ⏭ Phase 31 |
+| **문서 버전** | 스냅샷 · diff · 복원 · 체크아웃 (P59) | ✅ 3.3.0 |
 | **DX** | 성능 예산 · 기여/테스트 가이드 | ✅ |
 
 상세: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/PERFORMANCE.md](docs/PERFORMANCE.md) · [VERSION.md](VERSION.md)
@@ -404,6 +403,25 @@ npm run dev
 | **CSRF** | mutating `/api/*`에 `x-folio-csrf` 헤더 필요 (웹훅·health 제외) |
 | **스캔** | `npm run audit` · `npm run security:scan` |
 
+
+## 문서 버전 관리 사용법 (P59)
+
+문서 탭에서 스냅샷·Diff·복원/체크아웃을 사용합니다. 상세: [docs/DOC-VERSIONS.md](docs/DOC-VERSIONS.md)
+
+### 스냅샷 · 이력
+
+1. 문서 편집 화면 → 상단 **버전** 셀렉트 또는 우측 **버전 이력** 패널
+2. **수동 스냅샷** — 현재 제목/본문 저장 (`v1.0` · `v1.1` …)
+3. **자동** — 약 5분 간격 자동 스냅샷 · 중요 변경(제목/본문 20%+)은 `important` 종류
+4. 문서당 최대 80개 보관 (`folio_doc_versions_v1`)
+
+### Diff · 복원 · 체크아웃
+
+| 동작 | 설명 |
+|------|------|
+| **비교** | 이력에서 버전 선택 → 라인/단어 Diff |
+| **복원** | 선택한 버전 내용으로 현재 문서 덮어쓰기 |
+| **체크아웃** | 버전을 편집 버퍼로 불러와 이어서 수정 |
 
 ## 데이터 마이그레이션 사용법
 
@@ -864,14 +882,14 @@ npm run runbook:backup
 - **v3.0** ✅ — 실무 편의성 (Quick Capture · 템플릿 · 시간추적 · 북마크)
 - **v3.1** ✅ — 모바일 네이티브 앱 (PWA · 제스처 · 오프라인) · **3.1.0-wip**
 - **v3.2** ✅ — 일지 트리·캘린더·목록·통계 · UI/UX 개선 · **3.2.0**
-- **v3.3** ⏭ — 문서 버전 관리 (스냅샷 · diff · 복원) · Phase 31
+- **v3.3** ✅ — 문서 버전 관리 (스냅샷 · Diff · 복원) · **3.3.0**
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 30 완료** (v**3.2.0**)
+- 현재 Phase: **Phase 31 완료** (v**3.3.0** 정식)
 - 진행 중: —
-- 완료: Phase 1~30 · P58 · UI/UX 개선 5건
-- 다음: Phase 31 · P59 문서 버전 관리 · 3.3.0
+- 완료: Phase 1~31 · P59 문서 버전 관리
+- 다음: v3.x
 - 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md))
 
 ---
@@ -885,4 +903,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · v3.2.0
+**Folio** — 프로젝트의 기록, 한 곳에서. · v3.3.0
