@@ -64,6 +64,8 @@
   "settings": {
     "themeLight": "ライトモード",
     "themeDark": "ダークモード",
+    "contrastOn": "ハイコントラストをオン",
+    "contrastOff": "ハイコントラストをオフ",
     "security": "セキュリティ",
     "plugins": "プラグイン",
     "collabRealtime": "リアルタイム共同編集",
@@ -71,6 +73,30 @@
     "fullscreenExit": "フルスクリーン終了",
     "notifications": "通知",
     "notificationsEmpty": "通知はありません。"
+  },
+  "onboarding": {
+    "progress": "{current} / {total}",
+    "next": "次へ",
+    "back": "戻る",
+    "skip": "スキップ",
+    "done": "はじめる",
+    "step1Title": "Folioへようこそ",
+    "step1Body": "日記・文書・ボードを一か所で。データは既定でブラウザに保存されます。",
+    "step2Title": "今日の日記から",
+    "step2Body": "下部の作成ボタンや日記タブで記録できます。タグと自動保存に対応しています。",
+    "step3Title": "検索とガイド",
+    "step3Body": "⌘/Ctrl+Kで統合検索。ガイドでオンボーディングと機能を確認できます。",
+    "step4Title": "アクセシビリティ",
+    "step4Body": "Tabで移動。サイドバーでダーク/ハイコントラストを切替。スキップリンクで本文へ。"
+  },
+  "help": {
+    "tips": "ヒント",
+    "title": "クイックヘルプ",
+    "tipSearch": "⌘/Ctrl+K — 日記・文書・タスクを検索",
+    "tipSave": "保存モード(ローカル/クラウド/Beacon)はサイドバーで変更",
+    "tipTheme": "太陽/月はダークモード、コントラストはハイコントラスト",
+    "tipGuide": "ガイドでオンボーディングとトラブルシュート",
+    "tipKeyboard": "Escapeでモーダルを閉じ、Boardは←/→で列移動"
   },
   "errors": {
     "generic": "エラーが発生しました",

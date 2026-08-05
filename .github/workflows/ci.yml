@@ -14,7 +14,7 @@ concurrency:
 
 env:
   NEXT_TELEMETRY_DISABLED: "1"
-  FOLIO_VERSION: "2.8.0"
+  FOLIO_VERSION: "2.9.0-wip"
 
 jobs:
   quality:
@@ -41,6 +41,10 @@ jobs:
       - name: Unit tests
         run: npm run test
 
+      - name: Coverage (P55, optional gate)
+        run: npm run test:coverage
+        continue-on-error: true
+
       - name: Dependency audit (high+)
         run: npm audit --omit=dev --audit-level=high
         continue-on-error: true
@@ -62,6 +66,12 @@ jobs:
           BUNDLE_BUDGET_FAIL: "1"
           FOLIO_BUNDLE_BUDGET_MB: "8"
 
+      - name: Playwright a11y smoke (optional)
+        run: npx playwright install chromium --with-deps && npm run test:e2e
+        continue-on-error: true
+        env:
+          CI: "true"
+
       - name: Lighthouse CI
         run: npm run lhci
         continue-on-error: true
@@ -72,9 +82,9 @@ jobs:
         if: always()
         run: |
           {
-            echo "## CI (v2.4 P50)"
+            echo "## CI (v2.9 P55)"
             echo "- ref: \`${{ github.sha }}\`"
             echo "- required: lint · typecheck · test · qa:smoke · build · bundle-size(budget)"
-            echo "- optional: lighthouse CI"
+            echo "- optional: coverage · playwright e2e · lighthouse CI"
             echo "- FOLIO_VERSION=\`${{ env.FOLIO_VERSION }}\`"
           } >> "$GITHUB_STEP_SUMMARY"

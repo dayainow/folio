@@ -10,7 +10,8 @@ import { GlobalSearch, type SearchNavigatePayload } from '@/components/global-se
 import { AdvancedSearchButton } from '@/components/advanced-search';
 import { LanguageToggle } from '@/components/language-toggle';
 import { useI18n } from '@/components/i18n-provider';
-import { ThemeToggle } from '@/components/theme-toggle';
+import { ThemeToggle } from '@/components/theme-toggle'
+import { HelpTipsButton } from '@/components/help-tips';
 import { StorageModeToggle } from '@/components/storage-mode-toggle';
 import { CollabModeToggle } from '@/components/collab-mode-toggle';
 import { HealthStatus } from '@/components/health-status';
@@ -125,6 +126,11 @@ const PluginsButton = dynamic(
 
 const PwaInstallPrompt = dynamic(
   () => import('@/components/pwa-install-prompt').then((m) => ({ default: m.PwaInstallPrompt })),
+  { ssr: false, loading: () => null },
+);
+
+const OnboardingTour = dynamic(
+  () => import('@/components/onboarding-tour').then((m) => ({ default: m.OnboardingTour })),
   { ssr: false, loading: () => null },
 );
 
@@ -364,6 +370,7 @@ export default function Home() {
         <StorageModeToggle />
         <CollabModeToggle />
         <ThemeToggle />
+        <HelpTipsButton />
       </div>
       <div className="flex flex-wrap items-center gap-1.5">
         <FullExportButton />
@@ -431,6 +438,7 @@ export default function Home() {
   return (
     <>
       <WebVitalsReporter />
+      <OnboardingTour />
       <PerfProfiler id="FolioHome">
     <div className={cn('flex min-h-screen flex-col bg-background', mobileFs && 'folio-fs-root')}>
       <a href="#main-content" className="skip-link">

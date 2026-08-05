@@ -64,6 +64,8 @@
   "settings": {
     "themeLight": "Light mode",
     "themeDark": "Dark mode",
+    "contrastOn": "Turn on high contrast",
+    "contrastOff": "Turn off high contrast",
     "security": "Security",
     "plugins": "Plugins",
     "collabRealtime": "Live collaboration",
@@ -71,6 +73,30 @@
     "fullscreenExit": "Exit fullscreen",
     "notifications": "Notifications",
     "notificationsEmpty": "No notifications."
+  },
+  "onboarding": {
+    "progress": "{current} / {total}",
+    "next": "Next",
+    "back": "Back",
+    "skip": "Skip",
+    "done": "Get started",
+    "step1Title": "Welcome to Folio",
+    "step1Body": "Journal, docs, and board in one place. Data stays in your browser by default.",
+    "step2Title": "Start with today’s journal",
+    "step2Body": "Use the write button or Journal tab. Tags and autosave are built in.",
+    "step3Title": "Search and guide",
+    "step3Body": "Press ⌘/Ctrl+K to search. Open Guide for onboarding and features.",
+    "step4Title": "Accessibility tips",
+    "step4Body": "Navigate with Tab. Toggle dark/high-contrast in the sidebar. Use the skip link to jump to content."
+  },
+  "help": {
+    "tips": "Tips",
+    "title": "Quick help",
+    "tipSearch": "⌘/Ctrl+K — search journals, docs, and tasks",
+    "tipSave": "Switch storage mode (local/cloud/Beacon) in the sidebar",
+    "tipTheme": "Sun/moon toggles dark mode; contrast icon toggles high contrast",
+    "tipGuide": "Open Guide for onboarding and troubleshooting",
+    "tipKeyboard": "Escape closes modals; Board uses ←/→ to move columns"
   },
   "errors": {
     "generic": "Something went wrong",

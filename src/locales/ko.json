@@ -64,6 +64,8 @@
   "settings": {
     "themeLight": "라이트 모드",
     "themeDark": "다크 모드",
+    "contrastOn": "고대비 모드 켜기",
+    "contrastOff": "고대비 모드 끄기",
     "security": "보안",
     "plugins": "플러그인",
     "collabRealtime": "실시간 협업",
@@ -71,6 +73,30 @@
     "fullscreenExit": "풀스크린 종료",
     "notifications": "알림",
     "notificationsEmpty": "알림이 없습니다."
+  },
+  "onboarding": {
+    "progress": "{current} / {total}",
+    "next": "다음",
+    "back": "이전",
+    "skip": "건너뛰기",
+    "done": "시작하기",
+    "step1Title": "Folio에 오신 것을 환영합니다",
+    "step1Body": "일지·문서·일정을 한곳에서 기록합니다. 데이터는 기본적으로 브라우저에 안전하게 저장됩니다.",
+    "step2Title": "오늘 일지부터",
+    "step2Body": "하단 쓰기 버튼이나 일지 탭에서 오늘 기록을 남기세요. 태그와 자동 저장을 지원합니다.",
+    "step3Title": "검색과 가이드",
+    "step3Body": "⌘/Ctrl+K로 통합 검색, 헤더 가이드에서 온보딩·기능을 확인할 수 있습니다.",
+    "step4Title": "접근성 팁",
+    "step4Body": "Tab으로 이동하고, 고대비·다크 모드는 사이드바에서 전환하세요. 스킵 링크로 본문으로 바로 갈 수 있습니다."
+  },
+  "help": {
+    "tips": "팁",
+    "title": "빠른 도움말",
+    "tipSearch": "⌘/Ctrl+K — 일지·문서·일정 통합 검색",
+    "tipSave": "저장 모드(로컬/클라우드/Beacon)는 사이드바에서 바꿉니다",
+    "tipTheme": "달/해 아이콘은 다크모드, 대비 아이콘은 고대비입니다",
+    "tipGuide": "가이드 메뉴에서 온보딩·문제 해결을 보세요",
+    "tipKeyboard": "Escape로 모달·검색을 닫고, Board에서 ←/→로 컬럼을 이동합니다"
   },
   "errors": {
     "generic": "오류가 발생했습니다",

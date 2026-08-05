@@ -2,7 +2,7 @@
 
 ![Dashboard](screenshots/dashboard.png)
 
-**프로젝트의 기록, 한 곳에서.** · **v2.8.0**
+**프로젝트의 기록, 한 곳에서.** · **v2.9.0-wip**
 
 Folio는 개발자의 일지·문서·일정·프로세스를 하나로 묶는 워크스페이스입니다.
 Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정을 tracking하는 흐름을,
@@ -68,7 +68,7 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 
 ---
 
-## Phase 1~26 완료
+## Phase 1~27
 
 | Phase | 버전 | 요약 | 상태 |
 |-------|------|------|------|
@@ -98,10 +98,11 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **24** | **2.6.0** | 고급 검색/필터 (Lunr · 저장검색 · 실시간) | ✅ |
 | **25** | **2.7.0** | 번역/다국어 (ko · en · ja) | ✅ |
 | **26** | **2.8.0** | 데이터 마이그레이션 (버전 · SQLite · 롤백) | ✅ |
+| **27** | **2.9.0-wip** | 접근성/품질 강화 (WCAG · E2E · 온보딩 · 고대비) | 🔄 |
 
+Phase 27 상세: **P55** 접근성/품질 — WCAG AA · Playwright · coverage · 온보딩/팁 · 고대비 · docs/A11Y.md  
 Phase 26 상세: **P54** 마이그레이션 — runner · rollback · sql.js · 충돌/검증 UI · `37dea98`  
-Phase 25 상세: P53 i18n — 로더 · 언어 토글 · docs/ko|en|ja  
-이력: [VERSION.md](VERSION.md) · 마이그레이션: [docs/MIGRATION-TOOLS.md](docs/MIGRATION-TOOLS.md) · i18n: [docs/I18N.md](docs/I18N.md)
+이력: [VERSION.md](VERSION.md) · a11y: [docs/A11Y.md](docs/A11Y.md) · 마이그레이션: [docs/MIGRATION-TOOLS.md](docs/MIGRATION-TOOLS.md)
 
 ---
 
@@ -121,6 +122,9 @@ npm run dev
 
 ```bash
 npm run lint && npm run typecheck && npm run test && npm run qa:smoke
+npm run test:coverage   # lib 커버리지 (P55 목표 80%)
+npm run test:e2e        # Playwright a11y 스모크 (빌드·start 필요)
+npm run bundle:size     # 번들 사이즈 · 성능 예산
 ```
 
 ---
@@ -140,6 +144,7 @@ npm run lint && npm run typecheck && npm run test && npm run qa:smoke
 | **검색** | Lunr 고급 검색 · 저장 필터 · 실시간 (P52) | ✅ 2.6.0 |
 | **다국어** | ko · en · ja i18n · 문서 locale (P53) | ✅ 2.7.0 |
 | **마이그레이션** | 버전 스크립트 · SQLite · 롤백 · 검증 (P54) | ✅ 2.8.0 |
+| **접근성/품질** | WCAG AA · Playwright · 온보딩 · 고대비 (P55) | 🔄 2.9.0-wip |
 | **DX** | 성능 예산 · 기여/테스트 가이드 | ✅ |
 
 상세: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/PERFORMANCE.md](docs/PERFORMANCE.md) · [VERSION.md](VERSION.md)
@@ -716,13 +721,14 @@ npm run runbook:backup
 - **v2.6** ✅ — 고급 검색/필터 (Lunr · 저장검색 · 실시간)
 - **v2.7** ✅ — 번역/다국어 (ko · en · ja)
 - **v2.8** ✅ — 데이터 마이그레이션 (버전 · SQLite · 롤백)
+- **v2.9** 🔄 — 접근성/품질 강화 (WCAG · E2E · 온보딩 · 고대비) · **2.9.0-wip**
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 26 완료** (v**2.8.0** 정식)
-- 진행 중: —
+- 현재 Phase: **Phase 27 진행 중** (v**2.9.0-wip**)
+- 진행 중: **P55** 접근성/품질 강화
 - 완료: Phase 1~26 (2.8.0) · P54 데이터 마이그레이션 도구
-- 다음: v2.x 로드맵
+- 다음: Phase 27 완료 · 2.9.0 정식
 - 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md))
 
 ---
@@ -736,4 +742,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · v2.8.0
+**Folio** — 프로젝트의 기록, 한 곳에서. · v2.9.0-wip

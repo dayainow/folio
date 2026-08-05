@@ -1,8 +1,8 @@
+/**
+ * P16/P55 — 접근성 훅 · 라이브 리전 · 키보드 헬퍼
+ */
 'use client'
 
-/**
- * 접근성 훅 — Escape 닫기, 포커스 트랩 (P16).
- */
 import { useEffect, useRef, type RefObject } from 'react'
 
 /** Escape로 닫기 — 드롭다운·모달용 */
@@ -44,8 +44,8 @@ export function useFocusTrap(open: boolean, containerRef: RefObject<HTMLElement 
       if (e.key !== 'Tab') return
       const items = focusables()
       if (items.length === 0) return
-      const firstEl = items[0]
-      const lastEl = items[items.length - 1]
+      const firstEl = items[0]!
+      const lastEl = items[items.length - 1]!
       if (e.shiftKey && document.activeElement === firstEl) {
         e.preventDefault()
         lastEl.focus()
@@ -61,4 +61,33 @@ export function useFocusTrap(open: boolean, containerRef: RefObject<HTMLElement 
       previousFocus.current?.focus?.()
     }
   }, [open, containerRef])
+}
+
+/** P55 — 스크린 리더용 polite 안내 */
+export function announceToScreenReader(message: string, politeness: 'polite' | 'assertive' = 'polite') {
+  if (typeof document === 'undefined' || !message.trim()) return
+  let region = document.getElementById('folio-a11y-live')
+  if (!region) {
+    region = document.createElement('div')
+    region.id = 'folio-a11y-live'
+    region.setAttribute('aria-live', politeness)
+    region.setAttribute('aria-atomic', 'true')
+    region.className = 'sr-only'
+    document.body.appendChild(region)
+  } else {
+    region.setAttribute('aria-live', politeness)
+  }
+  region.textContent = ''
+  window.setTimeout(() => {
+    if (region) region.textContent = message
+  }, 30)
+}
+
+/** 포커스 가능 요소로 이동 (탭 전환 후) */
+export function focusFirstIn(container: HTMLElement | null) {
+  if (!container) return
+  const el = container.querySelector<HTMLElement>(
+    'button:not([disabled]), [href], input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+  )
+  el?.focus()
 }

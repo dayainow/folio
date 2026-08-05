@@ -44,7 +44,7 @@ export const viewport = {
   viewportFit: "cover" as const,
 };
 
-const themeInitScript = `(function(){try{if(localStorage.getItem('folio_theme')==='dark'){document.documentElement.classList.add('dark');}}catch(e){}})();`;
+const themeInitScript = `(function(){try{var d=document.documentElement;if(localStorage.getItem('folio_theme')==='dark'){d.classList.add('dark');}if(localStorage.getItem('folio_high_contrast')==='1'){d.classList.add('high-contrast');d.dataset.contrast='high';}}catch(e){}})();`;
 
 const localeInitScript = `(function(){try{var k='folio_locale';var v=localStorage.getItem(k);if(!v){var n=(navigator.language||'').toLowerCase();v=n.indexOf('ja')===0?'ja':n.indexOf('en')===0?'en':'ko';}if(v==='ko'||v==='en'||v==='ja'){document.documentElement.lang=v;document.cookie=k+'='+v+';path=/;max-age=31536000;SameSite=Lax';}}catch(e){}})();`;
 
