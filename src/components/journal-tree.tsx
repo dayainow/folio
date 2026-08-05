@@ -88,14 +88,12 @@ export function JournalTree({
   const [ctx, setCtx] = useState<CtxMenu | null>(null)
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
-  const [filterQ, setFilterQ] = useState(searchQuery)
+  const [localFilter, setLocalFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState<JournalStatus | 'all'>('all')
   const [dragDate, setDragDate] = useState<string | null>(null)
   const treeRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    setFilterQ(searchQuery)
-  }, [searchQuery])
+  const filterQ = localFilter || searchQuery
 
   const refresh = useCallback(() => {
     setCollapsed(new Set(loadJournalTree().collapsed))
@@ -455,8 +453,8 @@ export function JournalTree({
 
       <div className="space-y-1.5 border-b border-gray-50 px-2 py-1.5 dark:border-gray-800">
         <Input
-          value={filterQ}
-          onChange={(e) => setFilterQ(e.target.value)}
+          value={localFilter || searchQuery}
+          onChange={(e) => setLocalFilter(e.target.value)}
           placeholder="트리 검색…"
           className="h-7 text-xs"
           aria-label="트리 검색"

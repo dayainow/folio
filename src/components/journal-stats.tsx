@@ -8,11 +8,7 @@ import dynamic from 'next/dynamic'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import {
-  computeJournalAnalytics,
-  type AnalyticsRange,
-  type JournalAnalytics,
-} from '@/lib/analytics'
+import { computeJournalAnalytics, type AnalyticsRange } from '@/lib/analytics'
 import { loadJournalsWithFallback, type JournalEntry } from '@/lib/journal'
 import { computeHourHeatmap, computeWritingStreak } from '@/lib/calendar-engine'
 
@@ -39,33 +35,26 @@ export const JournalStatsPanel = memo(function JournalStatsPanel({
   className?: string
 }) {
   const [range, setRange] = useState<AnalyticsRange>('1m')
-  const [journals, setJournals] = useState<Record<string, JournalEntry>>(journalsProp ?? {})
-  const [data, setData] = useState<JournalAnalytics | null>(null)
+  const [loaded, setLoaded] = useState<Record<string, JournalEntry>>({})
 
   useEffect(() => {
-    if (journalsProp) {
-      setJournals(journalsProp)
-      return
-    }
+    if (journalsProp) return
     let cancelled = false
     void loadJournalsWithFallback().then((j) => {
-      if (!cancelled) setJournals(j)
+      if (!cancelled) setLoaded(j)
     })
     return () => {
       cancelled = true
     }
   }, [journalsProp])
 
-  useEffect(() => {
-    setData(computeJournalAnalytics(journals, range))
-  }, [journals, range])
-
+  const journals = journalsProp ?? loaded
+  const data = useMemo(() => computeJournalAnalytics(journals, range), [journals, range])
   const streak = useMemo(() => computeWritingStreak(journals), [journals])
   const hours = useMemo(() => computeHourHeatmap(journals), [journals])
   const maxHour = Math.max(1, ...hours.map((h) => h.count))
 
   const lineData = useMemo(() => {
-    if (!data) return []
     if (range === '1w' || range === '1m') {
       return data.daily.map((d) => ({ label: d.date.slice(5), count: d.count }))
     }
@@ -76,7 +65,7 @@ export const JournalStatsPanel = memo(function JournalStatsPanel({
   }, [data, range])
 
   const pieData = useMemo(
-    () => (data?.tags ?? []).slice(0, 8).map((t) => ({ name: t.tag, value: t.count })),
+    () => data.tags.slice(0, 8).map((t) => ({ name: t.tag, value: t.count })),
     [data],
   )
 
@@ -101,28 +90,26 @@ export const JournalStatsPanel = memo(function JournalStatsPanel({
       </div>
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <StatCard label="작성 수" value={String(data?.totalEntries ?? 0)} />
-        <StatCard label="단어 수" value={String(data?.totalWords ?? 0)} />
+        <StatCard label="작성 수" value={String(data.totalEntries)} />
+        <StatCard label="단어 수" value={String(data.totalWords)} />
         <StatCard label="연속 작성" value={`${streak.current}일`} hint={`최장 ${streak.longest}일`} />
         <StatCard
           label="주간 평균"
           value={
-            data?.weekly.length
+            data.weekly.length
               ? (data.weekly.reduce((s, w) => s + w.count, 0) / data.weekly.length).toFixed(1)
               : '0'
           }
         />
       </div>
 
-      {data && (
-        <JournalCharts
-          lineData={lineData}
-          pieData={pieData}
-          rangeLabel={
-            range === '1w' || range === '1m' ? '일별 작성 추이' : '주간/월간 작성 추이'
-          }
-        />
-      )}
+      <JournalCharts
+        lineData={lineData}
+        pieData={pieData}
+        rangeLabel={
+          range === '1w' || range === '1m' ? '일별 작성 추이' : '주간/월간 작성 추이'
+        }
+      />
 
       <Card className="rounded-2xl border border-gray-100 p-3 dark:border-gray-800">
         <h4 className="mb-2 text-xs font-semibold">작성 시간대 히트맵</h4>
@@ -142,7 +129,7 @@ export const JournalStatsPanel = memo(function JournalStatsPanel({
         </div>
       </Card>
 
-      {data && data.tags.length > 0 && (
+      {data.tags.length > 0 && (
         <Card className="rounded-2xl border border-gray-100 p-3 dark:border-gray-800">
           <h4 className="mb-2 text-xs font-semibold">태그별 사용 빈도</h4>
           <ul className="space-y-1">

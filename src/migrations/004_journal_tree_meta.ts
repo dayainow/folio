@@ -25,15 +25,13 @@ export const migration004JournalTreeMeta: Migration = {
   down: (data) => {
     const journals = { ...data.journals }
     for (const [date, entry] of Object.entries(journals)) {
-      const {
-        folder_id: _f,
-        parent_id: _p,
-        projectId: _pr,
-        importance: _i,
-        status: _s,
-        ...rest
-      } = entry
-      journals[date] = rest
+      const next = { ...entry }
+      delete next.folder_id
+      delete next.parent_id
+      delete next.projectId
+      delete next.importance
+      delete next.status
+      journals[date] = next
     }
     return { ...data, schemaVersion: 3, journals }
   },

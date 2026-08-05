@@ -53,17 +53,19 @@ export function JournalBrowsePanel({
   }, [])
 
   useEffect(() => {
-    if (!ready) return
-    if (focusDate) {
+    if (!ready || !focusDate) return
+    queueMicrotask(() => {
       setSelectedDate(focusDate)
       onFocusHandled?.()
-    }
+    })
   }, [focusDate, ready, onFocusHandled])
 
   useEffect(() => {
     if (!ready || !focusFolder) return
-    setFolderId(focusFolder)
-    setView('tree')
+    queueMicrotask(() => {
+      setFolderId(focusFolder)
+      setView('tree')
+    })
   }, [focusFolder, ready])
 
   const folderDates = folderId ? collectDatesInFolder(folderId, journals) : null
