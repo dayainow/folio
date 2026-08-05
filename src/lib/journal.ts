@@ -127,6 +127,32 @@ export function deleteJournals(dates: string[]): number {
   return n;
 }
 
+/**
+ * P58 — 일지 날짜 키 이동 (캘린더 DnD).
+ * 대상에 본문이 있으면 false.
+ */
+export function moveJournalDate(from: string, to: string): boolean {
+  if (from === to) return true;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(to)) return false;
+  const all = loadJournals();
+  const entry = all[from];
+  if (!entry) return false;
+  if (all[to]?.content?.trim()) return false;
+  delete all[from];
+  all[to] = {
+    ...entry,
+    ...(all[to] ? { tags: Array.from(new Set([...(all[to].tags ?? []), ...(entry.tags ?? [])])) } : {}),
+    date: to,
+    updatedAt: new Date().toISOString(),
+  };
+  setLocalJson(STORAGE_KEY, all);
+  flushLocalJson(STORAGE_KEY);
+  void import('@/lib/journal-tree').then(({ retargetJournalDate }) => {
+    retargetJournalDate(from, to);
+  });
+  return true;
+}
+
 /** 저장된 일지들에서 중복 없는 태그 목록을 정렬해 반환 */
 export function getAllTags(entries?: Record<string, { tags: string[] }>): string[] {
   const all = entries ?? loadJournals();

@@ -56,6 +56,11 @@ const JournalPanel = dynamic(
   { ssr: false, loading: () => <PanelFallback label="일지" /> },
 );
 
+const JournalBrowsePanel = dynamic(
+  () => import('@/components/journal-browse').then((m) => ({ default: m.JournalBrowsePanel })),
+  { ssr: false, loading: () => <PanelFallback label="일지 보기" /> },
+);
+
 const DocsPanel = dynamic(
   () => import('@/components/docs').then((m) => ({ default: m.DocsPanel })),
   { ssr: false, loading: () => <PanelFallback label="문서" /> },
@@ -69,11 +74,6 @@ const BoardPanel = dynamic(
 const BeaconPanel = dynamic(
   () => import('@/components/beacon').then((m) => ({ default: m.BeaconPanel })),
   { ssr: false, loading: () => <PanelFallback label="프로세스" /> },
-);
-
-const JournalAnalyticsPanel = dynamic(
-  () => import('@/components/analytics').then((m) => ({ default: m.JournalAnalyticsPanel })),
-  { ssr: false, loading: () => <PanelFallback label="통계" /> },
 );
 
 const BoardAnalyticsPanel = dynamic(
@@ -152,6 +152,9 @@ export default function Home() {
   const [tab, setTab] = useState<TabValue>('journal');
   const [focusJournalDate, setFocusJournalDate] = useState<string | null>(null);
   const [focusJournalFolder, setFocusJournalFolder] = useState<string | null>(null);
+  const [journalSubTab, setJournalSubTab] = useState<'journal-write' | 'journal-view'>(
+    'journal-write',
+  );
   const [focusDocId, setFocusDocId] = useState<string | null>(null);
   const [focusTaskId, setFocusTaskId] = useState<string | null>(null);
   const [activeTeamId, setActiveTeamIdState] = useState<string | null>(() =>
@@ -383,7 +386,10 @@ export default function Home() {
       if (!parsed.tab) return;
       setTab(parsed.tab);
       if (parsed.tab === 'journal' && parsed.date) setFocusJournalDate(parsed.date);
-      if (parsed.tab === 'journal' && parsed.folder) setFocusJournalFolder(parsed.folder);
+      if (parsed.tab === 'journal' && parsed.folder) {
+        setFocusJournalFolder(parsed.folder);
+        setJournalSubTab('journal-view');
+      }
       if (parsed.tab === 'docs' && parsed.docId) setFocusDocId(parsed.docId);
       if (parsed.tab === 'board' && parsed.taskId) setFocusTaskId(parsed.taskId);
       const url = new URL(window.location.href);
@@ -678,19 +684,23 @@ export default function Home() {
             <div ref={swipeRef} className="touch-pan-y">
             <Tabs value={tab} onValueChange={handleTabChange} className="w-full">
               <TabsContent value="journal" className="mt-0">
-                <Tabs defaultValue="journal-write" className="w-full">
+                <Tabs
+                  value={journalSubTab}
+                  onValueChange={(v) => setJournalSubTab(v as 'journal-write' | 'journal-view')}
+                  className="w-full"
+                >
                   <TabsList className="mb-3 h-auto gap-1 border-0 bg-transparent p-0">
                     <TabsTrigger
                       value="journal-write"
                       className="h-7 rounded-md px-2.5 text-[11px] data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800"
                     >
-                      {t('nav.journal')}
+                      작성
                     </TabsTrigger>
                     <TabsTrigger
-                      value="journal-stats"
+                      value="journal-view"
                       className="h-7 rounded-md px-2.5 text-[11px] data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800"
                     >
-                      {t('nav.stats')}
+                      보기
                     </TabsTrigger>
                   </TabsList>
                   <TabsContent value="journal-write" className="mt-0">
@@ -705,8 +715,19 @@ export default function Home() {
                       writingFirst
                     />
                   </TabsContent>
-                  <TabsContent value="journal-stats" className="mt-0">
-                    <JournalAnalyticsPanel />
+                  <TabsContent value="journal-view" className="mt-0">
+                    <JournalBrowsePanel
+                      focusDate={focusJournalDate}
+                      focusFolder={focusJournalFolder}
+                      onFocusHandled={() => {
+                        setFocusJournalDate(null);
+                        setFocusJournalFolder(null);
+                      }}
+                      onOpenWrite={(date) => {
+                        setFocusJournalDate(date);
+                        setJournalSubTab('journal-write');
+                      }}
+                    />
                   </TabsContent>
                 </Tabs>
               </TabsContent>

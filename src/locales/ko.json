@@ -151,5 +151,16 @@
     "bulkTag": "태그",
     "bulkExport": "내보내기",
     "bulkDelete": "삭제"
+  },
+  "journalView": {
+    "write": "작성",
+    "view": "보기",
+    "calendar": "캘린더",
+    "list": "목록",
+    "tree": "트리",
+    "stats": "통계",
+    "month": "월간",
+    "week": "주간",
+    "day": "일간"
   }
 }

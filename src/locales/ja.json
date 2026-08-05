@@ -151,5 +151,16 @@
     "bulkTag": "タグ",
     "bulkExport": "書き出し",
     "bulkDelete": "削除"
+  },
+  "journalView": {
+    "write": "作成",
+    "view": "閲覧",
+    "calendar": "カレンダー",
+    "list": "一覧",
+    "tree": "ツリー",
+    "stats": "統計",
+    "month": "月間",
+    "week": "週間",
+    "day": "日間"
   }
 }

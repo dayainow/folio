@@ -257,6 +257,16 @@ export function clearJournalCustomRefs(journalDate: string): void {
   saveStore(store)
 }
 
+/** 일지 날짜 키 변경 시 트리 참조 갱신 */
+export function retargetJournalDate(from: string, to: string): void {
+  if (from === to) return
+  const store = loadJournalTree()
+  store.refs = store.refs.map((r) =>
+    r.journalDate === from ? { ...r, journalDate: to } : r,
+  )
+  saveStore(store)
+}
+
 export function toggleFolderCollapsed(folderId: string): string[] {
   const store = loadJournalTree()
   const set = new Set(store.collapsed)

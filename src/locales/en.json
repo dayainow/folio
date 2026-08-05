@@ -151,5 +151,16 @@
     "bulkTag": "Tag",
     "bulkExport": "Export",
     "bulkDelete": "Delete"
+  },
+  "journalView": {
+    "write": "Write",
+    "view": "Browse",
+    "calendar": "Calendar",
+    "list": "List",
+    "tree": "Tree",
+    "stats": "Stats",
+    "month": "Month",
+    "week": "Week",
+    "day": "Day"
   }
 }
