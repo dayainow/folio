@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * P58 — 일지 「보기」 패널 (캘린더 / 목록 / 트리 / 통계)
+ * P58 — 일지 「보기」 패널 (트리 | 캘린더 | 목록 | 통계)
  */
 import { useCallback, useEffect, useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -15,7 +15,7 @@ import {
   loadJournalsWithFallback,
   type JournalEntry,
 } from '@/lib/journal'
-import { collectDatesInFolder } from '@/lib/journal-tree'
+import { collectDatesInFolder, findFolderBySlug } from '@/lib/journal-tree'
 
 export type JournalBrowsePanelProps = {
   focusDate?: string | null
@@ -34,7 +34,7 @@ export function JournalBrowsePanel({
   const [ready, setReady] = useState(false)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [folderId, setFolderId] = useState<string | null>(null)
-  const [view, setView] = useState('calendar')
+  const [view, setView] = useState('tree')
 
   const reload = useCallback(() => {
     setJournals(loadJournals())
@@ -63,7 +63,8 @@ export function JournalBrowsePanel({
   useEffect(() => {
     if (!ready || !focusFolder) return
     queueMicrotask(() => {
-      setFolderId(focusFolder)
+      const folder = findFolderBySlug(focusFolder)
+      setFolderId(folder?.id ?? focusFolder)
       setView('tree')
     })
   }, [focusFolder, ready])
@@ -88,6 +89,12 @@ export function JournalBrowsePanel({
     <Tabs value={view} onValueChange={setView} className="w-full">
       <TabsList className="mb-3 h-auto flex-wrap gap-1 border-0 bg-transparent p-0">
         <TabsTrigger
+          value="tree"
+          className="h-7 rounded-md px-2.5 text-[11px] data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800"
+        >
+          트리
+        </TabsTrigger>
+        <TabsTrigger
           value="calendar"
           className="h-7 rounded-md px-2.5 text-[11px] data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800"
         >
@@ -100,18 +107,35 @@ export function JournalBrowsePanel({
           목록
         </TabsTrigger>
         <TabsTrigger
-          value="tree"
-          className="h-7 rounded-md px-2.5 text-[11px] data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800"
-        >
-          트리
-        </TabsTrigger>
-        <TabsTrigger
           value="stats"
           className="h-7 rounded-md px-2.5 text-[11px] data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800"
         >
           통계
         </TabsTrigger>
       </TabsList>
+
+      <TabsContent value="tree" className="mt-0">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[260px_minmax(0,1fr)]">
+          <JournalTree
+            journals={journals}
+            selectedDate={selectedDate}
+            selectedFolderId={folderId}
+            onSelectDate={selectDate}
+            onSelectFolder={setFolderId}
+            onJournalsChange={reload}
+            onDeleteJournals={handleDelete}
+            className="min-h-[24rem] lg:min-h-[min(70vh,36rem)]"
+          />
+          <JournalList
+            journals={journals}
+            selectedDate={selectedDate}
+            folderFilterId={folderId}
+            folderDates={folderDates}
+            onSelectDate={selectDate}
+            onJournalsChange={reload}
+          />
+        </div>
+      </TabsContent>
 
       <TabsContent value="calendar" className="mt-0">
         <JournalCalendar
@@ -131,29 +155,6 @@ export function JournalBrowsePanel({
           onSelectDate={selectDate}
           onJournalsChange={reload}
         />
-      </TabsContent>
-
-      <TabsContent value="tree" className="mt-0">
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[260px_minmax(0,1fr)]">
-          <JournalTree
-            journals={journals}
-            selectedDate={selectedDate}
-            selectedFolderId={folderId}
-            onSelectDate={selectDate}
-            onSelectFolder={setFolderId}
-            onJournalsChange={reload}
-            onDeleteJournals={handleDelete}
-            className="min-h-[24rem]"
-          />
-          <JournalList
-            journals={journals}
-            selectedDate={selectedDate}
-            folderFilterId={folderId}
-            folderDates={folderDates}
-            onSelectDate={selectDate}
-            onJournalsChange={reload}
-          />
-        </div>
       </TabsContent>
 
       <TabsContent value="stats" className="mt-0">

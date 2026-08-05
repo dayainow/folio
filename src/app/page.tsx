@@ -706,10 +706,8 @@ export default function Home() {
                   <TabsContent value="journal-write" className="mt-0">
                     <JournalPanel
                       focusDate={focusJournalDate}
-                      focusFolder={focusJournalFolder}
                       onFocusHandled={() => {
                         setFocusJournalDate(null);
-                        setFocusJournalFolder(null);
                       }}
                       onDraftChange={handleDraftChange}
                       writingFirst
