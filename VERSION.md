@@ -6,11 +6,11 @@
 
 | 항목 | 값 |
 |------|-----|
-| 버전 | **4.0.0-wip** |
-| Phase | Phase 38 |
-| 진행 중 | P66 성능 최적화 · 테스트 강화 |
-| 다음 | 4.0.0 정식 |
-| 이어가기 | `origin/main` @ Phase 38 P66 |
+| 버전 | **4.0.0** |
+| Phase | Phase 38 완료 |
+| 진행 중 | — |
+| 다음 | Phase 39 |
+| 이어가기 | `origin/main` @ v4.0.0 |
 
 ## 완료 항목
 
@@ -116,20 +116,21 @@
 | — | Phase 36 완료 · 3.8.0 정식 릴리즈 | `95aaf66` |
 | P65 | 테마/다크/고대비/커스텀 프리셋·접근성 | `d6400a1` |
 | — | Phase 37 완료 · 3.9.0 정식 릴리즈 | `dc3d804` |
-| P66 | 성능 최적화 · 테스트 강화 (진행 중) | `542a006` |
+| P66 | 성능 최적화 · 테스트 강화 | `542a006` |
+| — | Phase 38 완료 · 4.0.0 정식 릴리즈 | (본 커밋) |
 
 ## 진행 중
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| P66 | 번들 · Web Vitals · E2E/Storybook · memo/window · image | Phase 38 · 4.0.0-wip |
+| — | (없음) | Phase 38 마감 |
 
-## Phase 38 계획
+## Phase 38 계획 (완료)
 
 | ID | 요약 | 노트 |
 |----|------|------|
-| P66 | 번들 분석/예산 · 관측 · Vitest 80% · Playwright · Storybook/Chromatic · LHCI · 가상화 | 🔄 진행 중 |
-| — | 4.0.0 정식 | 대기 |
+| P66 | 번들 분석/예산 · 관측 · Vitest 80% · Playwright · Storybook/Chromatic · LHCI · 가상화 | ✅ `542a006` · docs/PERFORMANCE.md |
+| — | 4.0.0 정식 | ✅ Phase 38 완료 릴리즈 |
 
 ## Phase 37 계획 (완료)
 
@@ -301,7 +302,7 @@
 | 내보내기/리포트 | 고급 PDF · 인쇄 · 주간/월간 리포트 · 템플릿 | ✅ 3.7.0 (P63) |
 | 키보드 UX | 커맨드 팔레트 · 단축키 · 슬래시 명령 | ✅ 3.8.0 (P64) |
 | 테마/접근성 | Light/Dark/System · 고대비 · 커스텀 프리셋 | ✅ 3.9.0 (P65) |
-| 성능/테스트 | 번들 · Web Vitals · E2E · Storybook · 가상화 | 🔄 4.0.0-wip (P66) |
+| 성능/테스트 | 번들 · Web Vitals · E2E · Storybook · 가상화 | ✅ 4.0.0 (P66) |
 | DX | 성능 예산 · 기여 가이드 | ✅ |
 
 ## Phase 17 계획 (완료)
@@ -397,6 +398,18 @@
 | P22 | 운영 런북 | ✅ |
 
 ## 변경 이력
+
+### 4.0.0 — 2026-08-07 (Phase 38 완료)
+
+- 정식 릴리즈 **4.0.0** (성능 최적화 · 테스트 강화)
+- **P66** 성능/테스트 (`542a006`)
+  - 번들: jspdf dynamic · 무거운 사이드바 `next/dynamic` · 초기 JS/static 예산 CI
+  - 관측: Web Vitals · API · 렌더 · 종합 스코어 대시보드
+  - 테스트: Vitest 코어 80% · Playwright · Storybook/Chromatic · 시각 스냅샷 · LHCI
+  - 렌더: `react-window` · TaskCard `memo` · SVG 스프라이트
+  - 이미지: `next/image` AVIF/WebP · OptimizedImage
+  - [docs/PERFORMANCE.md](docs/PERFORMANCE.md) · [docs/TESTING.md](docs/TESTING.md)
+- README: Phase 1~38 완료 · 성능/테스트 사용법
 
 ### 4.0.0-wip — 2026-08-07 (Phase 38 · P66)
 

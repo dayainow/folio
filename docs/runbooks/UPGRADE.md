@@ -4,12 +4,13 @@
 
 ---
 
-## 0. v4.0 (3.9 → 4.0-wip)
+## 0. v4.0 (3.9 → 4.0)
 
 | 구분 | 예 | 의미 |
 |------|----|------|
-| WIP | `4.0.0-wip` | Phase 38 · P66 성능/테스트 진행 중 |
-| 정식 | `4.0.0` | Phase 38 완료 예정 |
+| 정식 | `4.0.0` | Phase 38 완료 릴리즈 (성능 · 테스트 · 번들 예산) |
+| Patch | `4.0.1` | 버그픽스 · 문서 |
+| WIP | `4.x.0-wip` | 다음 Phase 진행 중 |
 
 체크리스트:
 
@@ -17,6 +18,7 @@
 - [ ] `npm ci` · `npm run lint && npm run typecheck && npm run test && npm run test:coverage && npm run qa:smoke`
 - [ ] `npm run build && npm run bundle:size`
 - [ ] Preview에서 성능 대시보드 · 일지 목록 가상화 스모크
+- [ ] Production 배포 후 `/api/health` version=`4.0.0`
 
 ---
 

@@ -2,7 +2,7 @@
 
 ![Dashboard](screenshots/dashboard.png)
 
-**프로젝트의 기록, 한 곳에서.** · **v4.0.0-wip**
+**프로젝트의 기록, 한 곳에서.** · **v4.0.0**
 
 Folio는 개발자의 일지·문서·일정·프로세스를 하나로 묶는 워크스페이스입니다.
 Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정을 tracking하는 흐름을,
@@ -110,9 +110,9 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **35** | **3.7.0** | 내보내기/리포트 고도화 (PDF · 인쇄 · 자동 리포트) | ✅ |
 | **36** | **3.8.0** | 키보드 단축키·커맨드 팔레트·슬래시 명령 | ✅ |
 | **37** | **3.9.0** | 테마/다크/고대비/커스텀 프리셋·접근성 | ✅ |
-| **38** | **4.0.0-wip** | 성능 최적화 · 테스트 강화 | 🔄 |
+| **38** | **4.0.0** | 성능 최적화 · 테스트 강화 | ✅ |
 
-Phase 38 상세: **P66** 번들/예산 · Web Vitals · Vitest 80% · Playwright · Storybook/Chromatic · 가상화 — [docs/PERFORMANCE.md](docs/PERFORMANCE.md)  
+Phase 38 상세: **P66** 번들/예산 · Web Vitals · Vitest 80% · Playwright · Storybook/Chromatic · 가상화 — `542a006` · [docs/PERFORMANCE.md](docs/PERFORMANCE.md)  
 Phase 37 상세: **P65** Light/Dark/System · 고대비 · 프리셋 · 글자/포커스/모션 — `d6400a1` · [docs/THEMES.md](docs/THEMES.md)  
 Phase 36 상세: **P64** ⌘K 팔레트 · 단축키 커스터마이징 · `/` 슬래시 — `86745f8` · [docs/SHORTCUTS.md](docs/SHORTCUTS.md)  
 Phase 35 상세: **P63** 고급 PDF · 인쇄 미리보기 · 주간/월간 리포트 · 템플릿 — `94077f7` · [docs/REPORTS.md](docs/REPORTS.md)  
@@ -174,7 +174,7 @@ npm run bundle:size     # 번들 사이즈 · 성능 예산
 | **내보내기/리포트** | 고급 PDF · 인쇄 · 주간/월간 리포트 · 템플릿 (P63) | ✅ 3.7.0 |
 | **키보드 UX** | 커맨드 팔레트 · 단축키 · 슬래시 명령 (P64) | ✅ 3.8.0 |
 | **테마/접근성** | Light/Dark/System · 고대비 · 커스텀 프리셋 (P65) | ✅ 3.9.0 |
-| **성능/테스트** | 번들 · Web Vitals · E2E · Storybook · 가상화 (P66) | 🔄 4.0.0-wip |
+| **성능/테스트** | 번들 · Web Vitals · E2E · Storybook · 가상화 (P66) | ✅ 4.0.0 |
 | **DX** | 성능 예산 · 기여/테스트 가이드 | ✅ |
 
 상세: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/PERFORMANCE.md](docs/PERFORMANCE.md) · [VERSION.md](VERSION.md)
@@ -882,6 +882,45 @@ Phase 30 마감 시 반영된 UI/UX 5건입니다.
 
 예제: countdown · mood-tracker · estimate-points · sandbox-echo
 
+## 성능 최적화 / 테스트 사용법 (P66)
+
+상세: [docs/PERFORMANCE.md](docs/PERFORMANCE.md) · [docs/TESTING.md](docs/TESTING.md)
+
+### 성능 대시보드
+
+1. 사이드바 → **성능**
+2. 기간: **24h** / **7d** / **30d**
+3. 확인: **종합 스코어** · LCP p75 · API 평균/에러율 · 느린 렌더 · Web Vitals · 경로별 API
+4. **비우기** — 브라우저 성능 로그 초기화
+
+### 로컬 명령
+
+```bash
+npm run build && npm run bundle:size   # static ≤8MB · 초기 JS ≤900KB (CI fail)
+ANALYZE=true npm run analyze           # @next/bundle-analyzer
+npm run test:coverage                  # 코어 모듈 ≥80%
+npm run test:e2e                       # Playwright (일지·문서·보드·팔레트)
+npm run storybook                      # UI 스토리
+npm run lhci                           # Lighthouse CI
+```
+
+### Web Vitals · CI 예산
+
+| 지표 | good / 예산 |
+|------|-------------|
+| **LCP** | ≤ 2.5s |
+| **INP** | ≤ 200ms |
+| **CLS** | ≤ 0.1 |
+| **TTFB** | ≤ 800ms |
+| **`.next/static`** | ≤ 8 MB (CI fail) |
+| **초기 JS** | ≤ 900 KB (CI fail) |
+
+### 렌더 · 이미지
+
+- 긴 일지 목록: `react-window` 가상화 · 행 `memo`
+- 이미지: `OptimizedImage` + AVIF/WebP
+- SVG: `public/icons/sprite.svg` · `SpriteIcon`
+
 ## 성능 관측 사용법 (P50)
 
 사이드바 **성능** 버튼에서 Web Vitals·API·렌더 메트릭을 확인합니다. 상세: [docs/PERFORMANCE.md](docs/PERFORMANCE.md)
@@ -1089,14 +1128,14 @@ npm run runbook:backup
 - **v3.7** ✅ — 내보내기/리포트 고도화 · **3.7.0**
 - **v3.8** ✅ — 키보드 단축키·커맨드 팔레트 · **3.8.0**
 - **v3.9** ✅ — 테마/다크/고대비/접근성 · **3.9.0**
-- **v4.0** 🔄 — 성능 최적화 · 테스트 강화 · **4.0.0-wip**
+- **v4.0** ✅ — 성능 최적화 · 테스트 강화 · **4.0.0**
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 38** (v**4.0.0-wip**)
-- 진행 중: **P66** 성능 최적화 / 테스트 강화
-- 완료: Phase 1~37 · P65
-- 다음: Phase 38 마무리 · 4.0.0 정식
+- 현재 Phase: **Phase 38 완료** (v**4.0.0**)
+- 진행 중: —
+- 완료: Phase 1~38 · P66
+- 다음: Phase 39
 - 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md) · [docs/PERFORMANCE.md](docs/PERFORMANCE.md))
 
 ---
@@ -1110,4 +1149,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · v4.0.0-wip
+**Folio** — 프로젝트의 기록, 한 곳에서. · v4.0.0
