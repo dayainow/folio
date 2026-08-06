@@ -24,6 +24,7 @@ import { PerfProfiler } from '@/lib/render-profiler';
 import { MobileNav } from '@/components/mobile-nav';
 import { FullExportButton } from '@/components/full-export-button';
 import { ExportShareButton } from '@/components/export-share-panel';
+import { ReportsButton } from '@/components/reports-panel';
 import { DataMigrationButton } from '@/components/data-migration-panel';
 import { McpSyncButton } from '@/components/mcp-sync-button';
 import { getActiveTeamId } from '@/lib/team';
@@ -441,6 +442,7 @@ export default function Home() {
       <div className="flex flex-wrap items-center gap-2">
         <FullExportButton />
         <ExportShareButton />
+        <ReportsButton />
         <DataMigrationButton />
         <McpSyncButton />
       </div>

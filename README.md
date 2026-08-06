@@ -2,7 +2,7 @@
 
 ![Dashboard](screenshots/dashboard.png)
 
-**프로젝트의 기록, 한 곳에서.** · **v3.6.0**
+**프로젝트의 기록, 한 곳에서.** · **v3.7.0-wip**
 
 Folio는 개발자의 일지·문서·일정·프로세스를 하나로 묶는 워크스페이스입니다.
 Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정을 tracking하는 흐름을,
@@ -107,13 +107,15 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **32** | **3.4.0** | 내보내기/공유 고도화 (PDF · HTML · 공유 링크 · 임베드 · 클라우드) | ✅ |
 | **33** | **3.5.0** | 알림/메시지 시스템 고도화 (허브 · 인앱 · 이메일 · rich 푸시) | ✅ |
 | **34** | **3.6.0** | 일지 보기/문서 탭 단순화 (카드 · 드로어 · 작성|보기) | ✅ |
+| **35** | **3.7.0-wip** | 내보내기/리포트 고도화 (PDF · 인쇄 · 자동 리포트) | 🔄 |
 
+Phase 35 상세: **P63** 고급 PDF · 인쇄 미리보기 · 주간/월간 리포트 · 템플릿 — [docs/REPORTS.md](docs/REPORTS.md)  
 Phase 34 상세: **P62** 일지 보기 카드/필터 드로어 · **P62-1** 문서 작성|보기 분리(`#write`/`#view`) — `61f2d2f` / `807f49c` · `filter-drawer`  
 Phase 33 상세: **P61** 알림 허브 · 인앱 메시지 · 이메일 다이제스트 · rich 푸시 — `de0ff3a` · [docs/NOTIFICATIONS.md](docs/NOTIFICATIONS.md)  
 Phase 32 상세: **P60** PDF/HTML/MD · 공유 링크(암호·만료·추적) · iframe 임베드 · Storage 백업 — `7acbd2c` · [docs/EXPORT-SHARE.md](docs/EXPORT-SHARE.md)  
 Phase 31 상세: **P59** 문서 스냅샷 · Diff · 복원/체크아웃 · 5분 자동 · `8abaf92`  
 Phase 30 상세: **P58** 폴더/트리 · 캘린더 · 목록 · 통계 · 작성/보기 · bulk · UI/UX(에디터·웰컴·버튼·사이드바)  
-이력: [VERSION.md](VERSION.md) · 알림: [docs/NOTIFICATIONS.md](docs/NOTIFICATIONS.md) · 내보내기/공유: [docs/EXPORT-SHARE.md](docs/EXPORT-SHARE.md)
+이력: [VERSION.md](VERSION.md) · 리포트: [docs/REPORTS.md](docs/REPORTS.md) · 알림: [docs/NOTIFICATIONS.md](docs/NOTIFICATIONS.md) · 내보내기/공유: [docs/EXPORT-SHARE.md](docs/EXPORT-SHARE.md)
 
 ---
 
@@ -163,6 +165,7 @@ npm run bundle:size     # 번들 사이즈 · 성능 예산
 | **내보내기/공유** | PDF · HTML · 공유 링크 · 임베드 · 클라우드 백업 (P60) | ✅ 3.4.0 |
 | **알림/메시지** | 허브 · 인앱 · 이메일 · rich 푸시 (P61) | ✅ 3.5.0 |
 | **UI 단순화** | 일지 보기 · 문서 작성|보기 최소 UI (P62 · P62-1) | ✅ 3.6.0 |
+| **내보내기/리포트** | 고급 PDF · 인쇄 · 주간/월간 리포트 · 템플릿 (P63) | 🔄 3.7.0-wip |
 | **DX** | 성능 예산 · 기여/테스트 가이드 | ✅ |
 
 상세: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/PERFORMANCE.md](docs/PERFORMANCE.md) · [VERSION.md](VERSION.md)
@@ -445,6 +448,30 @@ npm run dev
 4. 가져오기/내보내기/템플릿은 작성 하단 · 보기 **더보기** 드로어
 
 모바일: 필터·정렬은 하단 시트(`filter-drawer`).
+
+## 내보내기 / 리포트 고도화 사용법 (P63)
+
+헤더 **리포트**에서 PDF·인쇄·자동 리포트를 다룹니다.  
+상세: [docs/REPORTS.md](docs/REPORTS.md)
+
+### 고급 PDF
+
+1. **PDF** 탭 — 용지(A4/Letter) · 여백 · 표지/목차/쪽 번호
+2. 일지: **일별 / 주별 / 월별** · 문서: **개별 / 카테고리** · 보드: 전체 또는 상태 필터
+3. **인쇄** — 미리보기 창 → 브라우저 인쇄
+
+### 자동 리포트
+
+1. **리포트** 탭 — 주간 / 월간 / 프로젝트 · 기준일 · 템플릿
+2. **MD / HTML / PDF** 다운로드 · 선택적 **이메일** (알림 prefs 수신 주소)
+3. 주간: 일지+태스크+Gate · 월간: 통계·트렌드·성과
+
+### 템플릿
+
+1. **템플릿** 탭 — 섹션 포함/제외 · 위/아래로 순서 변경
+2. 주간·월간·프로젝트별로 저장 (`folio_report_templates_v1`)
+
+기본 공유·단일 내보내기는 헤더 **공유·내보내기** (P60).
 
 ## 알림 / 메시지 시스템 사용법 (P61)
 
@@ -1001,14 +1028,15 @@ npm run runbook:backup
 - **v3.4** ✅ — 내보내기/공유 고도화 (PDF · HTML · 공유 · 임베드) · **3.4.0**
 - **v3.5** ✅ — 알림/메시지 시스템 고도화 · **3.5.0**
 - **v3.6** ✅ — 일지 보기/문서 탭 단순화 · **3.6.0**
+- **v3.7** 🔄 — 내보내기/리포트 고도화 · **3.7.0-wip**
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 34 완료** (v**3.6.0**)
-- 진행 중: —
+- 현재 Phase: **Phase 35 진행 중** (v**3.7.0-wip**)
+- 진행 중: **P63** 내보내기/리포트 고도화
 - 완료: Phase 1~34 · P62 · P62-1
-- 다음: Phase 35
-- 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md))
+- 다음: Phase 35 완료 · 3.7.0 정식
+- 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md) · [docs/REPORTS.md](docs/REPORTS.md))
 
 ---
 
@@ -1021,4 +1049,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · v3.6.0
+**Folio** — 프로젝트의 기록, 한 곳에서. · v3.7.0-wip

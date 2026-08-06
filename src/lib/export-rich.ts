@@ -139,6 +139,14 @@ function wrapHtmlPage(title: string, bodyInner: string): string {
   hr { border: 0; border-top: 1px solid #e2e8f0; margin: 1.5rem 0; }
   @media (prefers-color-scheme: dark) { hr { border-color: #334155; } }
   .folio-embed body { margin: 0.75rem auto; }
+  @page { size: A4; margin: 15mm; }
+  @media print {
+    body { max-width: none; margin: 0; padding: 0; background: #fff !important; color: #000 !important; }
+    .no-print, .folio-print-chrome, nav, header, footer.meta { display: none !important; }
+    a { color: inherit; text-decoration: none; }
+    pre { break-inside: avoid; }
+    h1, h2, h3 { break-after: avoid; }
+  }
 </style>
 </head>
 <body>

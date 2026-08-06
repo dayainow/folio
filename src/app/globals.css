@@ -257,3 +257,34 @@ html.high-contrast :focus-visible {
     scroll-behavior: auto !important;
   }
 }
+
+/* P63 — 브라우저 인쇄 최적화 */
+@media print {
+  .folio-no-print,
+  header,
+  nav,
+  [data-slot='sidebar'],
+  .folio-print-chrome {
+    display: none !important;
+  }
+
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  main,
+  .folio-tab-panel {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  a[href]::after {
+    content: none !important;
+  }
+}
+
+@page {
+  margin: 15mm;
+}
