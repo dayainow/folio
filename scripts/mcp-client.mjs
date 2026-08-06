@@ -95,7 +95,7 @@ async function withStdioRpc(request) {
     await send('initialize', {
       protocolVersion: '2024-11-05',
       capabilities: {},
-      clientInfo: { name: 'folio-mcp-client', version: '3.7.0-wip' },
+      clientInfo: { name: 'folio-mcp-client', version: '3.7.0' },
     })
     child.stdin.write(
       `${JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' })}\n`,
@@ -122,7 +122,7 @@ async function withHttpRpc(baseUrl, request) {
       params: {
         protocolVersion: '2024-11-05',
         capabilities: {},
-        clientInfo: { name: 'folio-mcp-client', version: '3.7.0-wip' },
+        clientInfo: { name: 'folio-mcp-client', version: '3.7.0' },
       },
     }),
   })

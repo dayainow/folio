@@ -8,8 +8,16 @@
 
 | 구분 | 예 | 의미 |
 |------|----|------|
-| WIP | `3.7.0-wip` | Phase 35 P63 내보내기/리포트 |
-| 정식 | `3.7.0` | (예정) Phase 35 완료 |
+| 정식 | `3.7.0` | Phase 35 완료 릴리즈 (PDF · 인쇄 · 자동 리포트) |
+| Patch | `3.7.1` | 버그픽스 · 문서 |
+| WIP | `3.x.0-wip` | 다음 Phase 진행 중 |
+
+체크리스트:
+
+- [ ] `npm run runbook:backup`
+- [ ] 헤더 **리포트**: PDF(일/주/월·카테고리·보드) · 주간/월간 리포트 · 템플릿 · 인쇄 미리보기
+- [ ] `npm ci` · `npm run lint && npm run typecheck && npm run test && npm run qa:smoke`
+- [ ] Preview/스테이징 스모크 후 Production
 
 ---
 
