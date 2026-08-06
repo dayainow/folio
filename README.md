@@ -108,7 +108,7 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **33** | **3.5.0** | 알림/메시지 시스템 고도화 (허브 · 인앱 · 이메일 · rich 푸시) | ✅ |
 | **34** | **3.6.0-wip** | 일지 보기/문서 탭 단순화 (카드 · 드로어 · 팝업 캘린더) | 🔄 |
 
-Phase 34 상세: **P62** 일지 보기 카드/필터 드로어 · 문서 단일 뷰 · `filter-drawer`  
+Phase 34 상세: **P62** 일지 보기 카드/필터 드로어 · **P62-1** 문서 작성|보기 분리(`#write`/`#view`) · `filter-drawer`  
 Phase 33 상세: **P61** 알림 허브 · 인앱 메시지 · 이메일 다이제스트 · rich 푸시 — `de0ff3a` · [docs/NOTIFICATIONS.md](docs/NOTIFICATIONS.md)  
 Phase 32 상세: **P60** PDF/HTML/MD · 공유 링크(암호·만료·추적) · iframe 임베드 · Storage 백업 — `7acbd2c` · [docs/EXPORT-SHARE.md](docs/EXPORT-SHARE.md)  
 Phase 31 상세: **P59** 문서 스냅샷 · Diff · 복원/체크아웃 · 5분 자동 · `8abaf92`  
@@ -428,9 +428,10 @@ npm run dev
 
 ### 문서
 
-1. 검색바 + 칩(전체/내 문서/공유/북마크)
-2. 좌측 폴더 트리(카테고리 2depth)
-3. 카드 그리드 → 클릭 시 에디터 · **목록**으로 복귀
+1. 상단 **작성 | 보기** 탭 (`#write` / `#view`)
+2. **작성**: 문서 선택기 · 제목+마크다운 · 카테고리/저장 · 3초 디바운스 자동저장
+3. **보기**: 검색바 + 칩(전체/내 문서/공유/북마크) · 좌측 폴더 2depth · 카드 그리드 · 필터/정렬 드로어
+4. 카드 클릭 → 작성 탭으로 이동 · dirty 시 전환 확인
 4. 가져오기/내보내기/템플릿은 **더보기** 드로어
 
 모바일: 필터·정렬은 하단 시트(`filter-drawer`).
@@ -994,8 +995,8 @@ npm run runbook:backup
 ## 작업 관리
 
 - 현재 Phase: **Phase 34 진행 중** (v**3.6.0-wip**)
-- 진행 중: **P62** 일지 보기/문서 탭 단순화
-- 완료: Phase 1~33 · P61
+- 진행 중: **P62** 일지 보기/문서 탭 단순화 · **P62-1** 문서 작성|보기 분리
+- 완료: Phase 1~33 · P61 · P62(일지 보기/문서 최소 UI)
 - 다음: Phase 34 완료 · 3.6.0 정식
 - 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md) · [docs/NOTIFICATIONS.md](docs/NOTIFICATIONS.md))
 
