@@ -1,6 +1,6 @@
 # 업그레이드 런북 (Upgrade)
 
-버전 업그레이드 · 마이그레이션 · 다운타임 최소화. (P22 · **v3.5 갱신**)
+버전 업그레이드 · 마이그레이션 · 다운타임 최소화. (P22 · **v3.6 갱신**)
 
 ---
 
@@ -8,8 +8,16 @@
 
 | 구분 | 예 | 의미 |
 |------|----|------|
-| WIP | `3.6.0-wip` | Phase 34 P62 UI 단순화 |
-| 정식 | `3.6.0` | (예정) Phase 34 완료 |
+| 정식 | `3.6.0` | Phase 34 완료 릴리즈 (일지 보기 · 문서 작성|보기) |
+| Patch | `3.6.1` | 버그픽스 · 문서 |
+| WIP | `3.x.0-wip` | 다음 Phase 진행 중 |
+
+체크리스트:
+
+- [ ] `npm run runbook:backup`
+- [ ] 일지 보기(카드·필터 드로어·날짜 팝업) · 문서 작성|보기(`#write`/`#view`) 스모크
+- [ ] `npm ci` · `npm run lint && npm run typecheck && npm run test && npm run qa:smoke`
+- [ ] Preview/스테이징 스모크 후 Production
 
 ---
 
