@@ -8,8 +8,16 @@
 
 | 구분 | 예 | 의미 |
 |------|----|------|
-| WIP | `3.9.0-wip` | Phase 37 P65 테마/접근성 |
-| 정식 | `3.9.0` | (예정) Phase 37 완료 |
+| 정식 | `3.9.0` | Phase 37 완료 릴리즈 (테마 · 고대비 · 프리셋 · 접근성) |
+| Patch | `3.9.1` | 버그픽스 · 문서 |
+| WIP | `3.x.0-wip` | 다음 Phase 진행 중 |
+
+체크리스트:
+
+- [ ] `npm run runbook:backup`
+- [ ] Light/Dark/System · 고대비 · 프리셋 JSON · 글자/포커스/모션 스모크
+- [ ] `npm ci` · `npm run lint && npm run typecheck && npm run test && npm run qa:smoke`
+- [ ] Preview/스테이징 스모크 후 Production
 
 ---
 

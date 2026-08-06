@@ -2,7 +2,7 @@
 
 ![Dashboard](screenshots/dashboard.png)
 
-**프로젝트의 기록, 한 곳에서.** · **v3.9.0-wip**
+**프로젝트의 기록, 한 곳에서.** · **v3.9.0**
 
 Folio는 개발자의 일지·문서·일정·프로세스를 하나로 묶는 워크스페이스입니다.
 Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정을 tracking하는 흐름을,
@@ -109,9 +109,9 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **34** | **3.6.0** | 일지 보기/문서 탭 단순화 (카드 · 드로어 · 작성|보기) | ✅ |
 | **35** | **3.7.0** | 내보내기/리포트 고도화 (PDF · 인쇄 · 자동 리포트) | ✅ |
 | **36** | **3.8.0** | 키보드 단축키·커맨드 팔레트·슬래시 명령 | ✅ |
-| **37** | **3.9.0-wip** | 테마/다크/고대비/커스텀 프리셋·접근성 | 🔄 |
+| **37** | **3.9.0** | 테마/다크/고대비/커스텀 프리셋·접근성 | ✅ |
 
-Phase 37 상세: **P65** Light/Dark/System · 고대비 · 프리셋 · 글자/포커스/모션 — [docs/THEMES.md](docs/THEMES.md)  
+Phase 37 상세: **P65** Light/Dark/System · 고대비 · 프리셋 · 글자/포커스/모션 — `d6400a1` · [docs/THEMES.md](docs/THEMES.md)  
 Phase 36 상세: **P64** ⌘K 팔레트 · 단축키 커스터마이징 · `/` 슬래시 — `86745f8` · [docs/SHORTCUTS.md](docs/SHORTCUTS.md)  
 Phase 35 상세: **P63** 고급 PDF · 인쇄 미리보기 · 주간/월간 리포트 · 템플릿 — `94077f7` · [docs/REPORTS.md](docs/REPORTS.md)  
 Phase 34 상세: **P62** 일지 보기 카드/필터 드로어 · **P62-1** 문서 작성|보기 분리(`#write`/`#view`) — `61f2d2f` / `807f49c` · `filter-drawer`  
@@ -171,7 +171,7 @@ npm run bundle:size     # 번들 사이즈 · 성능 예산
 | **UI 단순화** | 일지 보기 · 문서 작성|보기 최소 UI (P62 · P62-1) | ✅ 3.6.0 |
 | **내보내기/리포트** | 고급 PDF · 인쇄 · 주간/월간 리포트 · 템플릿 (P63) | ✅ 3.7.0 |
 | **키보드 UX** | 커맨드 팔레트 · 단축키 · 슬래시 명령 (P64) | ✅ 3.8.0 |
-| **테마/접근성** | Light/Dark/System · 고대비 · 커스텀 프리셋 (P65) | 🔄 3.9.0-wip |
+| **테마/접근성** | Light/Dark/System · 고대비 · 커스텀 프리셋 (P65) | ✅ 3.9.0 |
 | **DX** | 성능 예산 · 기여/테스트 가이드 | ✅ |
 
 상세: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/PERFORMANCE.md](docs/PERFORMANCE.md) · [VERSION.md](VERSION.md)
@@ -1085,14 +1085,14 @@ npm run runbook:backup
 - **v3.6** ✅ — 일지 보기/문서 탭 단순화 · **3.6.0**
 - **v3.7** ✅ — 내보내기/리포트 고도화 · **3.7.0**
 - **v3.8** ✅ — 키보드 단축키·커맨드 팔레트 · **3.8.0**
-- **v3.9** 🔄 — 테마/다크/고대비/접근성 · **3.9.0-wip**
+- **v3.9** ✅ — 테마/다크/고대비/접근성 · **3.9.0**
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 37 진행 중** (v**3.9.0-wip**)
-- 진행 중: **P65** 테마/접근성 개선
-- 완료: Phase 1~36 · P64
-- 다음: Phase 37 완료 · 3.9.0 정식
+- 현재 Phase: **Phase 37 완료** (v**3.9.0**)
+- 진행 중: —
+- 완료: Phase 1~37 · P65
+- 다음: Phase 38
 - 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md) · [docs/THEMES.md](docs/THEMES.md))
 
 ---
@@ -1106,4 +1106,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · v3.9.0-wip
+**Folio** — 프로젝트의 기록, 한 곳에서. · v3.9.0

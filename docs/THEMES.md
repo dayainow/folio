@@ -1,6 +1,6 @@
 # 테마 · 고대비 · 접근성 (P65)
 
-Phase 37 / P65 — Light / Dark / System · 커스텀 프리셋 · WCAG 고대비 (v**3.9.0-wip**).
+Phase 37 / P65 — Light / Dark / System · 커스텀 프리셋 · WCAG 고대비 (v**3.9.0**).
 
 ## 기본 테마
 
