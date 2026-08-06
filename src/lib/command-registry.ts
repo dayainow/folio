@@ -72,6 +72,7 @@ export type CommandHandlers = {
   openReports: () => void
   openPlugins: () => void
   openShortcutSettings: () => void
+  openThemeSettings: () => void
   openHelp: () => void
   openGuide: () => void
   openThemeToggle?: () => void
@@ -175,6 +176,13 @@ export function buildCommands(h: CommandHandlers): CommandDef[] {
       keywords: ['settings', '설정', 'shortcut', '단축키'],
       category: 'settings',
       run: h.openShortcutSettings,
+    },
+    {
+      id: 'settings-theme',
+      title: '설정 · 테마/접근성',
+      keywords: ['theme', '테마', '다크', '고대비', '접근성', 'dark', 'contrast'],
+      category: 'settings',
+      run: h.openThemeSettings,
     },
     {
       id: 'help-shortcuts',

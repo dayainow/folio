@@ -44,7 +44,7 @@ export const viewport = {
   viewportFit: "cover" as const,
 };
 
-const themeInitScript = `(function(){try{var d=document.documentElement;if(localStorage.getItem('folio_theme')==='dark'){d.classList.add('dark');}if(localStorage.getItem('folio_high_contrast')==='1'){d.classList.add('high-contrast');d.dataset.contrast='high';}}catch(e){}})();`;
+const themeInitScript = `(function(){try{var d=document.documentElement;var t=localStorage.getItem('folio_theme');var dark=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(dark){d.classList.add('dark');d.dataset.theme='dark';d.style.colorScheme='dark';}else{d.dataset.theme='light';d.style.colorScheme='light';}if(t){d.dataset.themePref=t;}if(localStorage.getItem('folio_high_contrast')==='1'){d.classList.add('high-contrast');d.dataset.contrast='high';}var a=localStorage.getItem('folio_appearance_v1');if(a){try{var p=JSON.parse(a);if(p.fontScale)d.dataset.fontScale=p.fontScale;if(p.boldText)d.classList.add('folio-bold-text');if(p.strongFocus)d.classList.add('folio-strong-focus');if(p.reduceMotion==='reduce')d.classList.add('folio-reduce-motion');if(p.reduceMotion==='no-preference')d.classList.add('folio-allow-motion');}catch(e){}}}catch(e){}})();`;
 
 const localeInitScript = `(function(){try{var k='folio_locale';var v=localStorage.getItem(k);if(!v){var n=(navigator.language||'').toLowerCase();v=n.indexOf('ja')===0?'ja':n.indexOf('en')===0?'en':'ko';}if(v==='ko'||v==='en'||v==='ja'){document.documentElement.lang=v;document.cookie=k+'='+v+';path=/;max-age=31536000;SameSite=Lax';}}catch(e){}})();`;
 

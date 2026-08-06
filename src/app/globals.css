@@ -247,6 +247,105 @@ html.high-contrast :focus-visible {
   outline-offset: 3px;
 }
 
+/* P65 — 테마 전환 애니메이션 */
+html.theme-animating,
+html.theme-animating *,
+html.theme-animating *::before,
+html.theme-animating *::after {
+  transition:
+    background-color 220ms ease,
+    color 220ms ease,
+    border-color 220ms ease,
+    fill 220ms ease,
+    stroke 220ms ease,
+    box-shadow 220ms ease !important;
+}
+
+/* P65 — 글자 크기 */
+html[data-font-scale='sm'] {
+  font-size: 93.75%;
+}
+html[data-font-scale='md'] {
+  font-size: 100%;
+}
+html[data-font-scale='lg'] {
+  font-size: 112.5%;
+}
+html[data-font-scale='xl'] {
+  font-size: 125%;
+}
+
+/* P65 — 굵은 텍스트 */
+html.folio-bold-text body {
+  font-weight: 500;
+}
+html.folio-bold-text h1,
+html.folio-bold-text h2,
+html.folio-bold-text h3,
+html.folio-bold-text strong,
+html.folio-bold-text b {
+  font-weight: 700;
+}
+
+/* P65 — 강화 포커스 */
+html.folio-strong-focus :focus-visible {
+  outline: 4px solid var(--ring);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--ring) 35%, transparent);
+}
+
+/* P65 — 강제 모션 감소 */
+html.folio-reduce-motion *,
+html.folio-reduce-motion *::before,
+html.folio-reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* P65 — 커스텀 프리셋 색 */
+html.folio-custom-theme {
+  --primary: var(--folio-custom-primary);
+  --accent: color-mix(in oklab, var(--folio-custom-accent) 35%, var(--background));
+  --ring: var(--folio-custom-accent);
+  --sidebar-primary: var(--folio-custom-primary);
+}
+html.folio-custom-theme.dark {
+  --primary: color-mix(in oklab, var(--folio-custom-accent) 80%, white);
+  --ring: var(--folio-custom-accent);
+}
+
+html[data-font-family='serif'] body {
+  font-family: ui-serif, Georgia, 'Times New Roman', serif;
+}
+html[data-font-family='mono'] body {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+/* P65 — 다크 모드 표면 강화 (카드/입력 대비) */
+.dark .bg-white {
+  background-color: var(--card) !important;
+}
+.dark .text-gray-900 {
+  color: var(--foreground) !important;
+}
+.dark .text-gray-500,
+.dark .text-gray-400 {
+  color: var(--muted-foreground) !important;
+}
+.dark .border-gray-100,
+.dark .border-gray-200 {
+  border-color: var(--border) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:not(.folio-allow-motion).theme-animating,
+  html:not(.folio-allow-motion).theme-animating * {
+    transition: none !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

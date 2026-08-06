@@ -153,6 +153,7 @@ export function ProductivityHost({
       openReports: () => window.dispatchEvent(new Event('folio:open-reports')),
       openPlugins: () => window.dispatchEvent(new Event('folio:open-plugins')),
       openShortcutSettings: () => setSettingsOpen(true),
+      openThemeSettings: () => window.dispatchEvent(new Event('folio:open-theme-settings')),
       openHelp: () => setHelpOpen(true),
       openGuide: () => window.location.assign('/guide'),
     }),

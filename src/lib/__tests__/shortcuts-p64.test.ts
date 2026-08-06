@@ -83,6 +83,7 @@ describe('command registry', () => {
       openReports: noop,
       openPlugins: noop,
       openShortcutSettings: noop,
+      openThemeSettings: noop,
       openHelp: noop,
       openGuide: noop,
     }

@@ -2,7 +2,7 @@
 
 ![Dashboard](screenshots/dashboard.png)
 
-**프로젝트의 기록, 한 곳에서.** · **v3.8.0**
+**프로젝트의 기록, 한 곳에서.** · **v3.9.0-wip**
 
 Folio는 개발자의 일지·문서·일정·프로세스를 하나로 묶는 워크스페이스입니다.
 Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정을 tracking하는 흐름을,
@@ -109,7 +109,9 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **34** | **3.6.0** | 일지 보기/문서 탭 단순화 (카드 · 드로어 · 작성|보기) | ✅ |
 | **35** | **3.7.0** | 내보내기/리포트 고도화 (PDF · 인쇄 · 자동 리포트) | ✅ |
 | **36** | **3.8.0** | 키보드 단축키·커맨드 팔레트·슬래시 명령 | ✅ |
+| **37** | **3.9.0-wip** | 테마/다크/고대비/커스텀 프리셋·접근성 | 🔄 |
 
+Phase 37 상세: **P65** Light/Dark/System · 고대비 · 프리셋 · 글자/포커스/모션 — [docs/THEMES.md](docs/THEMES.md)  
 Phase 36 상세: **P64** ⌘K 팔레트 · 단축키 커스터마이징 · `/` 슬래시 — `86745f8` · [docs/SHORTCUTS.md](docs/SHORTCUTS.md)  
 Phase 35 상세: **P63** 고급 PDF · 인쇄 미리보기 · 주간/월간 리포트 · 템플릿 — `94077f7` · [docs/REPORTS.md](docs/REPORTS.md)  
 Phase 34 상세: **P62** 일지 보기 카드/필터 드로어 · **P62-1** 문서 작성|보기 분리(`#write`/`#view`) — `61f2d2f` / `807f49c` · `filter-drawer`  
@@ -117,7 +119,7 @@ Phase 33 상세: **P61** 알림 허브 · 인앱 메시지 · 이메일 다이�
 Phase 32 상세: **P60** PDF/HTML/MD · 공유 링크(암호·만료·추적) · iframe 임베드 · Storage 백업 — `7acbd2c` · [docs/EXPORT-SHARE.md](docs/EXPORT-SHARE.md)  
 Phase 31 상세: **P59** 문서 스냅샷 · Diff · 복원/체크아웃 · 5분 자동 · `8abaf92`  
 Phase 30 상세: **P58** 폴더/트리 · 캘린더 · 목록 · 통계 · 작성/보기 · bulk · UI/UX(에디터·웰컴·버튼·사이드바)  
-이력: [VERSION.md](VERSION.md) · 단축키: [docs/SHORTCUTS.md](docs/SHORTCUTS.md) · 리포트: [docs/REPORTS.md](docs/REPORTS.md) · 알림: [docs/NOTIFICATIONS.md](docs/NOTIFICATIONS.md) · 내보내기/공유: [docs/EXPORT-SHARE.md](docs/EXPORT-SHARE.md)
+이력: [VERSION.md](VERSION.md) · 테마: [docs/THEMES.md](docs/THEMES.md) · 단축키: [docs/SHORTCUTS.md](docs/SHORTCUTS.md) · 리포트: [docs/REPORTS.md](docs/REPORTS.md)
 
 ---
 
@@ -169,6 +171,7 @@ npm run bundle:size     # 번들 사이즈 · 성능 예산
 | **UI 단순화** | 일지 보기 · 문서 작성|보기 최소 UI (P62 · P62-1) | ✅ 3.6.0 |
 | **내보내기/리포트** | 고급 PDF · 인쇄 · 주간/월간 리포트 · 템플릿 (P63) | ✅ 3.7.0 |
 | **키보드 UX** | 커맨드 팔레트 · 단축키 · 슬래시 명령 (P64) | ✅ 3.8.0 |
+| **테마/접근성** | Light/Dark/System · 고대비 · 커스텀 프리셋 (P65) | 🔄 3.9.0-wip |
 | **DX** | 성능 예산 · 기여/테스트 가이드 | ✅ |
 
 상세: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/PERFORMANCE.md](docs/PERFORMANCE.md) · [VERSION.md](VERSION.md)
@@ -480,6 +483,26 @@ npm run dev
 ### 슬래시 명령
 
 일지·문서 에디터에서 `/` 입력 → 머리말 · 태그 · 목록 · 템플릿 삽입.
+
+## 테마 / 접근성 사용법 (P65)
+
+상세: [docs/THEMES.md](docs/THEMES.md)
+
+### 테마
+
+1. 사이드바 **해/달/모니터** 아이콘 — Light → Dark → System 순환
+2. **고대비** 아이콘 — WCAG AAA 지향 대비
+3. **팔레트** 아이콘 — 테마 설정 패널 (프리셋 · 글자 크기 · 모션)
+
+### 커스텀 프리셋
+
+1. Primary/Accent 색 선택 후 **저장 후 적용**
+2. JSON **복사/다운로드**로 공유 · **가져오기**로 복원
+
+### 접근성
+
+- 글자 크기 · 굵은 텍스트 · 포커스 강화 · `prefers-reduced-motion` 연동
+- 커맨드 팔레트에서 「테마/접근성」 검색
 
 ## 내보내기 / 리포트 사용법 (P63)
 
@@ -1062,14 +1085,15 @@ npm run runbook:backup
 - **v3.6** ✅ — 일지 보기/문서 탭 단순화 · **3.6.0**
 - **v3.7** ✅ — 내보내기/리포트 고도화 · **3.7.0**
 - **v3.8** ✅ — 키보드 단축키·커맨드 팔레트 · **3.8.0**
+- **v3.9** 🔄 — 테마/다크/고대비/접근성 · **3.9.0-wip**
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 36 완료** (v**3.8.0**)
-- 진행 중: —
+- 현재 Phase: **Phase 37 진행 중** (v**3.9.0-wip**)
+- 진행 중: **P65** 테마/접근성 개선
 - 완료: Phase 1~36 · P64
-- 다음: Phase 37
-- 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md) · [docs/SHORTCUTS.md](docs/SHORTCUTS.md))
+- 다음: Phase 37 완료 · 3.9.0 정식
+- 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md) · [docs/THEMES.md](docs/THEMES.md))
 
 ---
 
@@ -1082,4 +1106,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · v3.8.0
+**Folio** — 프로젝트의 기록, 한 곳에서. · v3.9.0-wip
