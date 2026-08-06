@@ -1,10 +1,10 @@
 'use client'
 
 /**
- * P58 — 일지 캘린더 뷰 (월/주/일 · 색상 · DnD 날짜 변경)
+ * P58/P62 — 일지 캘린더 (전체 뷰 · 월간 팝업)
  */
-import { useCallback, useMemo, useState, type DragEvent } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
@@ -20,6 +20,7 @@ import {
   WEEKDAY_LABELS_KO,
   type CalendarViewMode,
 } from '@/lib/calendar-engine'
+import { useEscapeToClose } from '@/lib/a11y'
 
 export type JournalCalendarProps = {
   journals: Record<string, JournalEntry>
@@ -27,6 +28,8 @@ export type JournalCalendarProps = {
   onSelectDate?: (date: string) => void
   onJournalsChange?: () => void
   className?: string
+  /** P62 — 월간 팝업만 */
+  variant?: 'full' | 'popup'
 }
 
 export function JournalCalendar({
@@ -35,6 +38,7 @@ export function JournalCalendar({
   onSelectDate,
   onJournalsChange,
   className,
+  variant = 'full',
 }: JournalCalendarProps) {
   const today = todayStr()
   const [mode, setMode] = useState<CalendarViewMode>('month')
@@ -42,24 +46,25 @@ export function JournalCalendar({
   const [dragDate, setDragDate] = useState<string | null>(null)
 
   const anchor = parseDateParts(cursor)
+  const popupOnly = variant === 'popup'
 
   const cells = useMemo(() => {
-    if (mode === 'week') return buildWeekGrid(cursor, journals)
-    if (mode === 'day') return [buildDayCell(cursor, journals)]
+    if (!popupOnly && mode === 'week') return buildWeekGrid(cursor, journals)
+    if (!popupOnly && mode === 'day') return [buildDayCell(cursor, journals)]
     return buildMonthGrid(anchor.year, anchor.month0, journals)
-  }, [mode, cursor, journals, anchor.year, anchor.month0])
+  }, [mode, cursor, journals, anchor.year, anchor.month0, popupOnly])
 
   const title = useMemo(() => {
-    if (mode === 'day') return cursor
-    if (mode === 'week') {
+    if (!popupOnly && mode === 'day') return cursor
+    if (!popupOnly && mode === 'week') {
       const w = buildWeekGrid(cursor, journals)
       return `${w[0]?.date ?? ''} ~ ${w[6]?.date ?? ''}`
     }
     return `${anchor.year}년 ${anchor.month0 + 1}월`
-  }, [mode, cursor, journals, anchor.year, anchor.month0])
+  }, [mode, cursor, journals, anchor.year, anchor.month0, popupOnly])
 
   const navigate = (dir: -1 | 1) => {
-    if (mode === 'month') {
+    if (popupOnly || mode === 'month') {
       const next = shiftMonth(anchor.year, anchor.month0, dir)
       setCursor(`${next.year}-${String(next.month0 + 1).padStart(2, '0')}-01`)
       return
@@ -87,21 +92,27 @@ export function JournalCalendar({
   )
 
   return (
-    <Card className={cn('rounded-2xl border border-gray-100 p-3 dark:border-gray-800', className)}>
+    <Card
+      className={cn(
+        'rounded-2xl border border-slate-100 p-3 shadow-sm dark:border-slate-800',
+        popupOnly && 'rounded-xl border-slate-200 p-2.5 shadow-sm',
+        className,
+      )}
+    >
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-1">
-          <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(-1)} aria-label="이전">
+          <Button type="button" variant="ghost" size="icon" onClick={() => navigate(-1)} aria-label="이전">
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <h3 className="min-w-[9rem] text-center text-sm font-semibold tabular-nums">{title}</h3>
-          <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(1)} aria-label="다음">
+          <h3 className="min-w-[8rem] text-center text-sm font-semibold tabular-nums">{title}</h3>
+          <Button type="button" variant="ghost" size="icon" onClick={() => navigate(1)} aria-label="다음">
             <ChevronRight className="h-4 w-4" />
           </Button>
           <Button
             type="button"
-            variant="outline"
+            variant="secondary"
             size="sm"
-            className="ml-1 h-7 text-[11px]"
+            className="ml-1"
             onClick={() => {
               setCursor(today)
               onSelectDate?.(today)
@@ -110,27 +121,28 @@ export function JournalCalendar({
             오늘
           </Button>
         </div>
-        <div className="flex gap-1">
-          {([
-            ['month', '월간'],
-            ['week', '주간'],
-            ['day', '일간'],
-          ] as const).map(([k, label]) => (
-            <Button
-              key={k}
-              type="button"
-              size="sm"
-              variant={mode === k ? 'default' : 'outline'}
-              className="h-7 text-[11px]"
-              onClick={() => setMode(k)}
-            >
-              {label}
-            </Button>
-          ))}
-        </div>
+        {!popupOnly && (
+          <div className="flex gap-2">
+            {([
+              ['month', '월간'],
+              ['week', '주간'],
+              ['day', '일간'],
+            ] as const).map(([k, label]) => (
+              <Button
+                key={k}
+                type="button"
+                size="sm"
+                variant={mode === k ? 'default' : 'outline'}
+                onClick={() => setMode(k)}
+              >
+                {label}
+              </Button>
+            ))}
+          </div>
+        )}
       </div>
 
-      {mode !== 'day' && (
+      {(popupOnly || mode !== 'day') && (
         <div className="mb-1 grid grid-cols-7 gap-1">
           {WEEKDAY_LABELS_KO.map((w) => (
             <div key={w} className="text-center text-[10px] font-medium text-muted-foreground">
@@ -140,12 +152,7 @@ export function JournalCalendar({
         </div>
       )}
 
-      <div
-        className={cn(
-          'grid gap-1',
-          mode === 'day' ? 'grid-cols-1' : 'grid-cols-7',
-        )}
-      >
+      <div className={cn('grid gap-1', !popupOnly && mode === 'day' ? 'grid-cols-1' : 'grid-cols-7')}>
         {cells.map((c) => {
           const selected = selectedDate === c.date
           return (
@@ -156,29 +163,35 @@ export function JournalCalendar({
                 setCursor(c.date)
                 onSelectDate?.(c.date)
               }}
-              draggable={c.hasEntry}
+              draggable={!popupOnly && c.hasEntry}
               onDragStart={(e) => {
-                if (!c.hasEntry) return
+                if (popupOnly || !c.hasEntry) return
                 setDragDate(c.date)
                 e.dataTransfer.setData('text/journal-date', c.date)
                 e.dataTransfer.effectAllowed = 'move'
               }}
               onDragOver={(e) => {
+                if (popupOnly) return
                 e.preventDefault()
                 e.dataTransfer.dropEffect = 'move'
               }}
-              onDrop={(e) => onDrop(c.date, e)}
+              onDrop={(e) => {
+                if (popupOnly) return
+                onDrop(c.date, e)
+              }}
               className={cn(
-                'flex min-h-[3.25rem] flex-col rounded-lg border p-1 text-left transition-colors',
-                mode === 'day' && 'min-h-[8rem] p-3',
-                !c.inMonth && mode === 'month' && 'opacity-40',
+                'flex min-h-11 flex-col rounded-lg border p-1 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900',
+                !popupOnly && mode === 'day' && 'min-h-[8rem] p-3',
+                !c.inMonth && (popupOnly || mode === 'month') && 'opacity-40',
                 c.hasEntry
                   ? 'border-blue-200 bg-blue-50/80 dark:border-blue-900 dark:bg-blue-950/40'
                   : 'border-transparent bg-muted/40',
                 c.isToday && 'ring-2 ring-amber-400/80',
-                selected && 'outline outline-2 outline-offset-1 outline-primary',
+                selected && 'outline outline-2 outline-offset-1 outline-slate-900',
               )}
               title={c.preview || c.date}
+              aria-label={`${c.date}${c.hasEntry ? ' 작성됨' : ''}`}
+              aria-pressed={selected}
             >
               <span
                 className={cn(
@@ -186,34 +199,87 @@ export function JournalCalendar({
                   c.isToday ? 'font-bold text-amber-700 dark:text-amber-300' : 'text-muted-foreground',
                 )}
               >
-                {mode === 'day' ? c.date : c.date.slice(8)}
+                {!popupOnly && mode === 'day' ? c.date : c.date.slice(8)}
               </span>
-              {c.hasEntry && (
-                <span className={cn('mt-0.5 line-clamp-2 text-[10px] text-blue-700 dark:text-blue-300', mode === 'day' && 'line-clamp-6 text-xs')}>
+              {c.hasEntry && !popupOnly && (
+                <span
+                  className={cn(
+                    'mt-0.5 line-clamp-2 text-[10px] text-blue-700 dark:text-blue-300',
+                    mode === 'day' && 'line-clamp-6 text-xs',
+                  )}
+                >
                   {c.preview || '작성됨'}
                 </span>
               )}
-              {!c.hasEntry && mode === 'day' && (
-                <span className="mt-2 text-xs text-muted-foreground">작성된 일지가 없습니다. 클릭해 작성 탭으로 이동하세요.</span>
+              {c.hasEntry && popupOnly && (
+                <span className="mt-0.5 h-1.5 w-1.5 self-center rounded-full bg-blue-500" aria-hidden />
               )}
             </button>
           )
         })}
       </div>
-
-      <div className="mt-3 flex flex-wrap gap-3 text-[10px] text-muted-foreground">
-        <span className="inline-flex items-center gap-1">
-          <i className="h-2.5 w-2.5 rounded-sm bg-blue-400" /> 작성 있음
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <i className="h-2.5 w-2.5 rounded-sm bg-muted-foreground/30" /> 없음
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <i className="h-2.5 w-2.5 rounded-sm ring-2 ring-amber-400" /> 오늘
-        </span>
-        <span>드래그로 날짜 이동</span>
-      </div>
     </Card>
+  )
+}
+
+/** P62 — 달력 아이콘 → 월간 팝업 */
+export function JournalDatePicker({
+  journals,
+  value,
+  onChange,
+  onJournalsChange,
+}: {
+  journals: Record<string, JournalEntry>
+  value: string
+  onChange: (date: string) => void
+  onJournalsChange?: () => void
+}) {
+  const [open, setOpen] = useState(false)
+  const rootRef = useRef<HTMLDivElement | null>(null)
+  useEscapeToClose(open, () => setOpen(false))
+
+  useEffect(() => {
+    if (!open) return
+    const onDoc = (e: MouseEvent) => {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [open])
+
+  return (
+    <div ref={rootRef} className="relative inline-flex">
+      <Button
+        type="button"
+        variant="outline"
+        className="min-w-[9.5rem] justify-start gap-2 tabular-nums"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-label="날짜 선택"
+        onClick={() => setOpen((v) => !v)}
+      >
+        <CalendarIcon className="h-4 w-4 shrink-0" aria-hidden />
+        {value}
+      </Button>
+      {open && (
+        <div
+          className="absolute left-0 top-full z-40 mt-2 w-[min(100vw-2rem,20rem)]"
+          role="dialog"
+          aria-label="월간 캘린더"
+        >
+          <JournalCalendar
+            variant="popup"
+            journals={journals}
+            selectedDate={value}
+            onSelectDate={(d) => {
+              onChange(d)
+              setOpen(false)
+            }}
+            onJournalsChange={onJournalsChange}
+          />
+        </div>
+      )}
+    </div>
   )
 }
 

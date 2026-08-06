@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useEffectEvent, useMemo, useRef, memo, type ReactNode, type ChangeEvent, type KeyboardEvent } from 'react';
+import { useState, useCallback, useEffect, useEffectEvent, useMemo, useRef, memo, type ReactNode, type ChangeEvent } from 'react';
 import dynamic from 'next/dynamic';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -25,6 +25,10 @@ import {
   Link2,
   Bookmark,
   History,
+  Filter,
+  ArrowDownUp,
+  Folder,
+  MoreHorizontal,
 } from 'lucide-react';
 import { loadDocsWithFallback, saveDocWithFallback, deleteDocWithFallback, loadCategories, type DocEntry } from '@/lib/docs';
 import {
@@ -43,6 +47,9 @@ import { TemplatePicker } from '@/components/template-picker';
 import type { FolioTemplate } from '@/lib/templates';
 import { toggleBookmark, isBookmarked } from '@/lib/bookmarks';
 import { notifyBookmarksChanged } from '@/components/bookmarks-sidebar';
+import { listShareLinks, isShareExpired } from '@/lib/share-links';
+import { FilterDrawer } from '@/components/filter-drawer';
+import { cn } from '@/lib/utils';
 import { exportDocToBeacon, fetchBeaconMtimes } from '@/lib/beacon';
 import { getBeaconAutoArtifact } from '@/lib/beacon-automation';
 import { recordFolioTimelineEvent } from '@/lib/beacon-timeline-consent';
@@ -65,7 +72,6 @@ import {
   safeFilename,
   zipDocs,
 } from '@/lib/export';
-
 const LinkGraphPanel = dynamic(
   () => import('@/components/link-graph').then((m) => ({ default: m.LinkGraphPanel })),
   {
@@ -182,6 +188,9 @@ export const DocsPanel = memo(function DocsPanel({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState<string | null>(null);
+  const [scope, setScope] = useState<'all' | 'mine' | 'shared' | 'bookmarked'>('all');
+  const [docSort, setDocSort] = useState<'newest' | 'oldest' | 'title'>('newest');
+  const [browseDrawer, setBrowseDrawer] = useState<'more' | 'sort' | null>(null);
   const [editing, setEditing] = useState(false);
   const [editPane, setEditPane] = useState<EditPane>('edit');
   const [title, setTitle] = useState('');
@@ -196,7 +205,6 @@ export const DocsPanel = memo(function DocsPanel({
   const [showVersions, setShowVersions] = useState(false);
   const [diffVersion, setDiffVersion] = useState<DocVersion | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const listRef = useRef<HTMLDivElement>(null);
   const draftRef = useRef({ selectedId, title, content, category, docs });
 
   useEffect(() => {
@@ -547,10 +555,30 @@ export const DocsPanel = memo(function DocsPanel({
     }
   };
 
+  const sharedTitles = useMemo(() => {
+    const titles = new Set<string>();
+    for (const link of listShareLinks()) {
+      if (link.type !== 'doc') continue;
+      if (isShareExpired(link)) continue;
+      titles.add(link.title);
+    }
+    return titles;
+  }, []);
+
   const filtered = docs
     .filter(d => !search || d.title.toLowerCase().includes(search.toLowerCase()) || d.content.toLowerCase().includes(search.toLowerCase()))
     .filter(d => !filterCat || d.category === filterCat)
-    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    .filter((d) => {
+      if (scope === 'bookmarked') return isBookmarked('doc', d.id);
+      if (scope === 'shared') return sharedTitles.has(d.title);
+      if (scope === 'mine') return !sharedTitles.has(d.title);
+      return true;
+    })
+    .sort((a, b) => {
+      if (docSort === 'title') return a.title.localeCompare(b.title, 'ko');
+      if (docSort === 'oldest') return a.updatedAt.localeCompare(b.updatedAt);
+      return b.updatedAt.localeCompare(a.updatedAt);
+    });
 
   const openDocById = useCallback(
     (id: string) => {
@@ -581,19 +609,6 @@ export const DocsPanel = memo(function DocsPanel({
     </Button>
   );
 
-  const onListKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (filtered.length === 0) return;
-    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
-    e.preventDefault();
-    const idx = filtered.findIndex(d => d.id === selectedId);
-    const nextIdx =
-      e.key === 'ArrowDown'
-        ? Math.min(filtered.length - 1, (idx < 0 ? -1 : idx) + 1)
-        : Math.max(0, (idx < 0 ? 0 : idx) - 1);
-    const next = filtered[nextIdx];
-    if (next) selectDoc(next);
-  };
-
   const editorMinH = writingFirst
     ? 'h-[calc(100dvh-14rem)] max-h-[calc(100dvh-14rem)] min-h-[12rem] field-sizing-fixed lg:h-[calc(100dvh-12rem)] lg:max-h-[calc(100dvh-12rem)]'
     : 'min-h-[400px]';
@@ -609,17 +624,181 @@ export const DocsPanel = memo(function DocsPanel({
           : 'grid grid-cols-1 xl:grid-cols-[240px_1fr_280px] lg:grid-cols-[240px_1fr] gap-6'
       }
     >
-      {/* Sidebar */}
-      <Card className="rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="p-3 border-b border-gray-50 space-y-2">
-          <Button type="button" onClick={() => void startNew()} size="sm" className="w-full gap-2 bg-gray-900 hover:bg-gray-800">
-            <Plus className="h-4 w-4" /> 새 문서
-          </Button>
-          <TemplatePicker
-            kind="doc"
-            onApply={(tpl) => void startNew(tpl)}
-            className="px-0.5"
-          />
+      {/* Sidebar — P62 폴더 트리 2depth + 검색/칩 */}
+      <Card className="rounded-2xl border border-slate-100 shadow-sm overflow-hidden dark:border-slate-800">
+        <div className="space-y-2 border-b border-slate-50 p-3 dark:border-slate-800">
+          <div className="flex gap-2">
+            <Button type="button" onClick={() => void startNew()} className="min-w-0 flex-1 gap-2">
+              <Plus className="h-4 w-4" /> 새 문서
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              aria-label="더보기"
+              onClick={() => setBrowseDrawer('more')}
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="문서 검색…"
+              className="h-11 pl-8 text-xs"
+              aria-label="문서 검색"
+            />
+          </div>
+          <div className="flex flex-wrap gap-2" role="group" aria-label="문서 범위">
+            {(
+              [
+                ['all', '전체'],
+                ['mine', '내 문서'],
+                ['shared', '공유'],
+                ['bookmarked', '북마크'],
+              ] as const
+            ).map(([k, label]) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setScope(k)}
+                className={cn(
+                  'min-h-11 rounded-lg px-3 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900',
+                  scope === k
+                    ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
+                    : 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-slate-100',
+                )}
+                aria-pressed={scope === k}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1"
+              aria-label="정렬"
+              onClick={() => setBrowseDrawer('sort')}
+            >
+              <ArrowDownUp className="h-4 w-4" />
+              정렬
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1"
+              aria-label="폴더 필터"
+              onClick={() => setBrowseDrawer('more')}
+            >
+              <Filter className="h-4 w-4" />
+              폴더
+            </Button>
+          </div>
+        </div>
+
+        {/* 폴더 트리 2depth: 카테고리 → 문서 제목 */}
+        <ScrollArea className={writingFirst ? 'h-[calc(100dvh-22rem)] lg:h-[calc(100dvh-18rem)]' : 'h-[calc(100vh-22rem)]'}>
+          <div className="space-y-1 p-2" role="tree" aria-label="문서 폴더">
+            <button
+              type="button"
+              className={cn(
+                'flex min-h-11 w-full items-center gap-2 rounded-lg px-2 text-left text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900',
+                filterCat === null && 'bg-slate-100 dark:bg-slate-800',
+              )}
+              onClick={() => setFilterCat(null)}
+            >
+              <Folder className="h-3.5 w-3.5 text-muted-foreground" />
+              모든 폴더
+            </button>
+            {categories.slice(0, 12).map((cat) => {
+              const children = filtered.filter((d) => d.category === cat).slice(0, 8);
+              return (
+                <div key={cat} className="space-y-0.5">
+                  <button
+                    type="button"
+                    className={cn(
+                      'flex min-h-11 w-full items-center gap-2 rounded-lg px-2 text-left text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900',
+                      filterCat === cat && 'bg-slate-100 dark:bg-slate-800',
+                    )}
+                    onClick={() => setFilterCat(filterCat === cat ? null : cat)}
+                    aria-expanded={filterCat === cat}
+                  >
+                    <Folder className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="truncate">{cat}</span>
+                  </button>
+                  {(filterCat === cat || filterCat === null) &&
+                    children.map((doc) => (
+                      <button
+                        key={doc.id}
+                        type="button"
+                        className={cn(
+                          'ml-4 flex min-h-11 w-[calc(100%-1rem)] items-center gap-2 rounded-lg px-2 text-left text-[11px] text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900',
+                          selectedId === doc.id && 'bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100',
+                        )}
+                        onClick={() => void selectDoc(doc)}
+                      >
+                        <FileText className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{doc.title}</span>
+                      </button>
+                    ))}
+                </div>
+              );
+            })}
+          </div>
+        </ScrollArea>
+      </Card>
+
+      {/* 카드 그리드 (선택 전) / 에디터는 기존 컬럼 */}
+      {!selectedId && (
+        <div className="space-y-3 xl:col-span-1">
+          {filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-slate-200 px-4 py-16 text-center dark:border-slate-700">
+              <p className="text-sm font-medium text-slate-600">문서가 없습니다</p>
+              <Button type="button" onClick={() => void startNew()} className="gap-2">
+                <Plus className="h-4 w-4" />첫 문서 작성하기
+              </Button>
+            </div>
+          ) : (
+            <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {filtered.map((doc) => (
+                <li key={doc.id}>
+                  <button
+                    type="button"
+                    onClick={() => void selectDoc(doc)}
+                    className="flex h-[120px] w-full flex-col overflow-hidden rounded-xl border border-slate-100 bg-card p-3.5 text-left shadow-sm transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 dark:border-slate-800 dark:hover:bg-slate-900"
+                    aria-label={`문서 ${doc.title}`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="truncate text-sm font-medium">{doc.title}</span>
+                      <span className="shrink-0 text-[10px] text-muted-foreground">
+                        {new Date(doc.updatedAt).toLocaleDateString('ko-KR')}
+                      </span>
+                    </div>
+                    <p className="mt-1.5 line-clamp-2 flex-1 text-xs leading-relaxed text-muted-foreground">
+                      {doc.content.replace(/\s+/g, ' ').trim().slice(0, 120) || '(빈 문서)'}
+                    </p>
+                    <Badge variant="outline" className="mt-1 w-fit text-[9px]">
+                      {doc.category}
+                    </Badge>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      <FilterDrawer
+        open={browseDrawer === 'more'}
+        onClose={() => setBrowseDrawer(null)}
+        title="더보기"
+      >
+        <div className="space-y-3">
+          <TemplatePicker kind="doc" onApply={(tpl) => void startNew(tpl)} className="px-0.5" />
           <input
             ref={fileInputRef}
             type="file"
@@ -631,7 +810,6 @@ export const DocsPanel = memo(function DocsPanel({
           <Button
             type="button"
             variant="outline"
-            size="sm"
             className="w-full gap-2"
             disabled={importing}
             onClick={() => fileInputRef.current?.click()}
@@ -649,18 +827,14 @@ export const DocsPanel = memo(function DocsPanel({
                 description: selectedId ? '현재 문서 .md' : '문서를 먼저 선택하세요',
                 disabled: !selectedId,
                 run: async (setProgress) => {
-                  const doc = docs.find((d) => d.id === selectedId)
-                  if (!doc) throw new Error('선택된 문서가 없습니다.')
-                  setProgress(0.5, '변환…')
+                  const doc = docs.find((d) => d.id === selectedId);
+                  if (!doc) throw new Error('선택된 문서가 없습니다.');
+                  setProgress(0.5, '변환…');
                   const payload = editing
                     ? { ...doc, title: title.trim() || doc.title, content, category }
-                    : doc
-                  downloadText(
-                    docToMarkdown(payload),
-                    docFilename(payload),
-                    'text/markdown;charset=utf-8',
-                  )
-                  setProgress(1, '완료')
+                    : doc;
+                  downloadText(docToMarkdown(payload), docFilename(payload), 'text/markdown;charset=utf-8');
+                  setProgress(1, '완료');
                 },
               },
               {
@@ -669,9 +843,9 @@ export const DocsPanel = memo(function DocsPanel({
                 description: `${filtered.length}개 문서`,
                 disabled: filtered.length === 0,
                 run: async (setProgress) => {
-                  const blob = await zipDocs(filtered, setProgress)
-                  const suffix = filterCat ? safeFilename(filterCat, 'category') : 'filtered'
-                  downloadBlob(blob, `docs-${suffix}-${new Date().toISOString().slice(0, 10)}.zip`)
+                  const blob = await zipDocs(filtered, setProgress);
+                  const suffix = filterCat ? safeFilename(filterCat, 'category') : 'filtered';
+                  downloadBlob(blob, `docs-${suffix}-${new Date().toISOString().slice(0, 10)}.zip`);
                 },
               },
               {
@@ -680,71 +854,62 @@ export const DocsPanel = memo(function DocsPanel({
                 description: `${docs.length}개`,
                 disabled: docs.length === 0,
                 run: async (setProgress) => {
-                  const blob = await zipDocs(docs, setProgress)
-                  downloadBlob(blob, `docs-all-${new Date().toISOString().slice(0, 10)}.zip`)
+                  const blob = await zipDocs(docs, setProgress);
+                  downloadBlob(blob, `docs-all-${new Date().toISOString().slice(0, 10)}.zip`);
                 },
               },
             ]}
           />
-          {importMsg && <p className="text-[11px] text-gray-500 px-0.5">{importMsg}</p>}
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-gray-400" />
-            <Input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="검색..."
-              className="pl-8 h-8 text-xs"
-              aria-label="문서 검색"
-            />
+          {importMsg && <p className="text-[11px] text-muted-foreground">{importMsg}</p>}
+          <div>
+            <p className="mb-2 text-xs font-medium text-muted-foreground">폴더(카테고리)</p>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" size="sm" variant={filterCat === null ? 'default' : 'outline'} onClick={() => setFilterCat(null)}>
+                전체
+              </Button>
+              {categories.map((cat) => (
+                <Button
+                  key={cat}
+                  type="button"
+                  size="sm"
+                  variant={filterCat === cat ? 'default' : 'outline'}
+                  onClick={() => setFilterCat(filterCat === cat ? null : cat)}
+                >
+                  {cat}
+                </Button>
+              ))}
+            </div>
           </div>
         </div>
-        <div className="p-2 flex flex-wrap gap-1 border-b border-gray-50" role="group" aria-label="카테고리 필터">
-          <Badge variant={filterCat === null ? 'default' : 'secondary'} className="cursor-pointer text-xs" onClick={() => setFilterCat(null)}>전체</Badge>
-          {categories.map(cat => (
-            <Badge key={cat} variant={filterCat === cat ? 'default' : 'secondary'} className="cursor-pointer text-xs" onClick={() => setFilterCat(filterCat === cat ? null : cat)}>
-              {cat}
-            </Badge>
+      </FilterDrawer>
+
+      <FilterDrawer open={browseDrawer === 'sort'} onClose={() => setBrowseDrawer(null)} title="정렬">
+        <div className="flex flex-col gap-2">
+          {(
+            [
+              ['newest', '최신 수정순'],
+              ['oldest', '오래된순'],
+              ['title', '제목순'],
+            ] as const
+          ).map(([k, label]) => (
+            <Button
+              key={k}
+              type="button"
+              variant={docSort === k ? 'default' : 'outline'}
+              className="w-full justify-start"
+              onClick={() => {
+                setDocSort(k);
+                setBrowseDrawer(null);
+              }}
+            >
+              {label}
+            </Button>
           ))}
         </div>
-        <ScrollArea className={writingFirst ? 'h-[calc(100dvh-18rem)] lg:h-[calc(100dvh-14rem)]' : 'h-[calc(100vh-300px)]'}>
-          <div
-            ref={listRef}
-            className="p-2 space-y-1"
-            role="listbox"
-            aria-label="문서 목록. 위아래 화살표로 선택"
-            tabIndex={0}
-            onKeyDown={onListKeyDown}
-          >
-            {filtered.length === 0 && (
-              <div className="px-2 py-8 text-center" role="status">
-                <p className="text-xs font-medium text-gray-500 mb-1">문서가 없습니다</p>
-                <p className="text-[11px] text-gray-400">「새 문서」로 첫 문서를 만들어 보세요</p>
-              </div>
-            )}
-            {filtered.map(doc => (
-              <button
-                key={doc.id}
-                type="button"
-                role="option"
-                aria-selected={selectedId === doc.id}
-                aria-current={selectedId === doc.id ? 'true' : undefined}
-                onClick={() => selectDoc(doc)}
-                className={`w-full text-left px-3 py-2 rounded-xl text-sm transition-colors ${
-                  selectedId === doc.id ? 'bg-gray-50 ring-1 ring-gray-200' : 'hover:bg-gray-50'
-                }`}
-              >
-                <div className="font-medium text-gray-800 truncate">{doc.title}</div>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <Badge variant="outline" className="text-[10px] px-1 py-0 h-auto">{doc.category}</Badge>
-                  <span className="text-[10px] text-gray-400">{new Date(doc.updatedAt).toLocaleDateString('ko-KR')}</span>
-                </div>
-              </button>
-            ))}
-          </div>
-        </ScrollArea>
-      </Card>
+      </FilterDrawer>
 
       {/* Editor */}
+      {selectedId && (
       <Card
         className={`rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col ${
           writingFirst ? 'min-h-0 lg:h-full' : 'min-h-[500px]'
@@ -754,6 +919,19 @@ export const DocsPanel = memo(function DocsPanel({
           <>
             <div className="flex items-center justify-between p-4 border-b border-gray-50 gap-3">
               <div className="flex items-center gap-3 flex-1 min-w-0">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => {
+                    setSelectedId(null);
+                    setEditing(false);
+                  }}
+                  aria-label="문서 목록으로"
+                >
+                  목록
+                </Button>
                 <FileText className="h-4 w-4 text-gray-400 shrink-0" />
                 {editing ? (
                   <>
@@ -1055,9 +1233,10 @@ export const DocsPanel = memo(function DocsPanel({
           </div>
         )}
       </Card>
+      )}
 
       {/* 링크 그래프 — writing-first: 하단 전체 폭, 고정 높이(잘림 방지) */}
-      {(!writingFirst || docs.length > 0) && (
+      {selectedId && (!writingFirst || docs.length > 0) && (
         <div
           className={
             writingFirst

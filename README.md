@@ -2,7 +2,7 @@
 
 ![Dashboard](screenshots/dashboard.png)
 
-**프로젝트의 기록, 한 곳에서.** · **v3.5.0**
+**프로젝트의 기록, 한 곳에서.** · **v3.6.0-wip**
 
 Folio는 개발자의 일지·문서·일정·프로세스를 하나로 묶는 워크스페이스입니다.
 Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정을 tracking하는 흐름을,
@@ -69,7 +69,7 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 
 ---
 
-## Phase 1~33
+## Phase 1~34
 
 | Phase | 버전 | 요약 | 상태 |
 |-------|------|------|------|
@@ -106,7 +106,9 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **31** | **3.3.0** | 문서 버전 관리 (스냅샷 · Diff · 복원/체크아웃) | ✅ |
 | **32** | **3.4.0** | 내보내기/공유 고도화 (PDF · HTML · 공유 링크 · 임베드 · 클라우드) | ✅ |
 | **33** | **3.5.0** | 알림/메시지 시스템 고도화 (허브 · 인앱 · 이메일 · rich 푸시) | ✅ |
+| **34** | **3.6.0-wip** | 일지 보기/문서 탭 단순화 (카드 · 드로어 · 팝업 캘린더) | 🔄 |
 
+Phase 34 상세: **P62** 일지 보기 카드/필터 드로어 · 문서 단일 뷰 · `filter-drawer`  
 Phase 33 상세: **P61** 알림 허브 · 인앱 메시지 · 이메일 다이제스트 · rich 푸시 — `de0ff3a` · [docs/NOTIFICATIONS.md](docs/NOTIFICATIONS.md)  
 Phase 32 상세: **P60** PDF/HTML/MD · 공유 링크(암호·만료·추적) · iframe 임베드 · Storage 백업 — `7acbd2c` · [docs/EXPORT-SHARE.md](docs/EXPORT-SHARE.md)  
 Phase 31 상세: **P59** 문서 스냅샷 · Diff · 복원/체크아웃 · 5분 자동 · `8abaf92`  
@@ -160,6 +162,7 @@ npm run bundle:size     # 번들 사이즈 · 성능 예산
 | **문서 버전** | 스냅샷 · diff · 복원 · 체크아웃 (P59) | ✅ 3.3.0 |
 | **내보내기/공유** | PDF · HTML · 공유 링크 · 임베드 · 클라우드 백업 (P60) | ✅ 3.4.0 |
 | **알림/메시지** | 허브 · 인앱 · 이메일 · rich 푸시 (P61) | ✅ 3.5.0 |
+| **UI 단순화** | 일지 보기 · 문서 탭 최소 UI (P62) | 🔄 3.6.0-wip |
 | **DX** | 성능 예산 · 기여/테스트 가이드 | ✅ |
 
 상세: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/PERFORMANCE.md](docs/PERFORMANCE.md) · [VERSION.md](VERSION.md)
@@ -410,6 +413,27 @@ npm run dev
 | **CSRF** | mutating `/api/*`에 `x-folio-csrf` 헤더 필요 (웹훅·health 제외) |
 | **스캔** | `npm run audit` · `npm run security:scan` |
 
+
+
+## 일지 보기 / 문서 탭 단순화 사용법 (P62)
+
+기능은 숨기고, 필요할 때 1~2클릭으로 꺼냅니다.
+
+### 일지 · 보기
+
+1. **날짜** 버튼 → 월간 캘린더 팝업
+2. **필터** → 태그/기간 · 통계는 필터 안 「통계 보기」
+3. **정렬** → 최신순/오래된순
+4. 중앙 카드(최대 120px) · 빈 상태 CTA 「첫 일지 작성하기」
+
+### 문서
+
+1. 검색바 + 칩(전체/내 문서/공유/북마크)
+2. 좌측 폴더 트리(카테고리 2depth)
+3. 카드 그리드 → 클릭 시 에디터 · **목록**으로 복귀
+4. 가져오기/내보내기/템플릿은 **더보기** 드로어
+
+모바일: 필터·정렬은 하단 시트(`filter-drawer`).
 
 ## 알림 / 메시지 시스템 사용법 (P61)
 
@@ -965,13 +989,14 @@ npm run runbook:backup
 - **v3.3** ✅ — 문서 버전 관리 (스냅샷 · Diff · 복원) · **3.3.0**
 - **v3.4** ✅ — 내보내기/공유 고도화 (PDF · HTML · 공유 · 임베드) · **3.4.0**
 - **v3.5** ✅ — 알림/메시지 시스템 고도화 · **3.5.0**
+- **v3.6** 🔄 — 일지 보기/문서 탭 단순화 · **3.6.0-wip**
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 33 완료** (v**3.5.0**)
-- 진행 중: —
-- 완료: Phase 1~33 · P61 알림/메시지 시스템
-- 다음: Phase 34
+- 현재 Phase: **Phase 34 진행 중** (v**3.6.0-wip**)
+- 진행 중: **P62** 일지 보기/문서 탭 단순화
+- 완료: Phase 1~33 · P61
+- 다음: Phase 34 완료 · 3.6.0 정식
 - 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md) · [docs/NOTIFICATIONS.md](docs/NOTIFICATIONS.md))
 
 ---
@@ -985,4 +1010,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · v3.5.0
+**Folio** — 프로젝트의 기록, 한 곳에서. · v3.6.0-wip
