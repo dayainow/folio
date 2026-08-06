@@ -105,8 +105,8 @@ const CollabPanel = dynamic(
 
 const NotificationCenterButton = dynamic(
   () =>
-    import('@/components/notification-center').then((m) => ({
-      default: m.NotificationCenterButton,
+    import('@/components/notification-hub').then((m) => ({
+      default: m.NotificationHubButton,
     })),
   { ssr: false },
 );

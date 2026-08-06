@@ -1,10 +1,12 @@
 /**
- * 브라우저 푸시 · 로컬 Notification (P26)
- * VAPID 미설정 시 Notification API만 사용
+ * P61 — rich push 페이로드 · 소리/진동 커스텀
  */
 'use client'
 
 import { csrfHeaders } from '@/lib/csrf'
+import { getNotificationPrefs, shouldPushGroup } from '@/lib/notification-prefs'
+import type { NotificationGroup } from '@/lib/notification-center'
+import { groupForKind, type NotificationKind } from '@/lib/notification-center'
 
 const CONSENT_KEY = 'folio_push_consent'
 const SUB_KEY = 'folio_push_subscription'
@@ -57,7 +59,6 @@ async function getRegistration(): Promise<ServiceWorkerRegistration | null> {
   }
 }
 
-/** 사용자 동의 후 Notification + (가능하면) Push 구독 */
 export async function requestPushSubscription(): Promise<{
   ok: boolean
   permission: NotificationPermission | 'unsupported'
@@ -118,11 +119,24 @@ export async function unsubscribePush(): Promise<void> {
   }
 }
 
+export type FolioPushAction = { action: string; title: string }
+
 export type FolioPushPayload = {
   title: string
   body: string
   url?: string
   tag?: string
+  /** rich */
+  image?: string
+  icon?: string
+  actions?: FolioPushAction[]
+  /** 그룹화 / 스레드 */
+  group?: string
+  thread?: string
+  renotify?: boolean
+  vibrate?: number[]
+  silent?: boolean
+  kind?: NotificationKind
 }
 
 /** 동의된 경우 로컬/SW 알림 표시 (+ 서버 푸시 시도) */
@@ -131,13 +145,45 @@ export async function showFolioPush(payload: FolioPushPayload): Promise<void> {
   if (!('Notification' in window) || Notification.permission !== 'granted') return
   if (getPushConsent() === 'denied') return
 
+  const prefs = getNotificationPrefs()
+  if (payload.kind) {
+    const g = groupForKind(payload.kind) as NotificationGroup
+    if (!shouldPushGroup(g)) return
+  }
+
   const reg = await getRegistration()
-  const options: NotificationOptions = {
+  const tag =
+    payload.tag ??
+    (payload.thread ? `folio-thread-${payload.thread}` : payload.group ? `folio-${payload.group}` : 'folio')
+
+  const options: NotificationOptions & {
+    image?: string
+    renotify?: boolean
+    vibrate?: number[]
+  } = {
     body: payload.body,
-    icon: '/icons/icon-192.png',
+    icon: payload.icon ?? '/icons/icon-192.png',
     badge: '/icons/icon-192.png',
-    tag: payload.tag ?? 'folio',
-    data: { url: payload.url ?? '/' },
+    tag,
+    renotify: payload.renotify ?? Boolean(payload.thread || payload.group),
+    data: {
+      url: payload.url ?? '/',
+      group: payload.group,
+      thread: payload.thread,
+      actions: payload.actions ?? [],
+    },
+    silent: payload.silent ?? !prefs.pushSound,
+  }
+
+  if (payload.image) options.image = payload.image
+  if (prefs.pushVibrate) {
+    options.vibrate = payload.vibrate ?? prefs.vibratePattern
+  }
+  if (payload.actions?.length) {
+    ;(options as NotificationOptions & { actions?: FolioPushAction[] }).actions = payload.actions.slice(
+      0,
+      2,
+    )
   }
 
   try {
@@ -154,10 +200,21 @@ export async function showFolioPush(payload: FolioPushPayload): Promise<void> {
     }
   }
 
-  // 서버 Web Push (구독·VAPID 있을 때)
   void fetch('/api/push/send', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      title: payload.title,
+      body: payload.body,
+      url: payload.url,
+      tag,
+      image: payload.image,
+      actions: payload.actions,
+      group: payload.group,
+      thread: payload.thread,
+      renotify: options.renotify,
+      vibrate: options.vibrate,
+      silent: options.silent,
+    }),
   }).catch(() => undefined)
 }

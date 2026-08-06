@@ -28,13 +28,21 @@ function vapidConfigured(): boolean {
   return Boolean(pub && priv && subject)
 }
 
-/** POST /api/push/send — Web Push 브로드캐스트 (VAPID 필요) */
+/** POST /api/push/send — Web Push 브로드캐스트 (rich payload) */
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as {
       title?: string
       body?: string
       url?: string
+      tag?: string
+      image?: string
+      actions?: Array<{ action: string; title: string }>
+      group?: string
+      thread?: string
+      renotify?: boolean
+      vibrate?: number[]
+      silent?: boolean
     }
     const title = body.title?.trim() || 'Folio'
     const text = body.body?.trim() || ''
@@ -62,6 +70,14 @@ export async function POST(request: Request) {
       title,
       body: text,
       url: body.url || '/',
+      tag: body.tag,
+      image: body.image,
+      actions: body.actions,
+      group: body.group,
+      thread: body.thread,
+      renotify: body.renotify,
+      vibrate: body.vibrate,
+      silent: body.silent,
     })
 
     let sent = 0

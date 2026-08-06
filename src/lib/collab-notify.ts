@@ -46,6 +46,13 @@ export async function broadcastTeamNotify(payload: TeamNotifyPayload): Promise<v
     body: payload.body,
     url: payload.url ?? '/',
     tag: payload.tag ?? `folio-${payload.kind}`,
+    group: payload.kind === 'gate' ? 'gate' : payload.kind === 'invite' ? 'invite' : 'collab',
+    thread: payload.teamId ?? payload.kind,
+    actions: [
+      { action: 'open', title: '열기' },
+      { action: 'dismiss', title: '닫기' },
+    ],
+    kind: payload.kind,
   })
 }
 
@@ -81,6 +88,13 @@ export function subscribeTeamNotify(
       body: data.body,
       url: data.url ?? '/',
       tag: data.tag ?? `folio-${data.kind}`,
+      group: data.kind === 'gate' ? 'gate' : data.kind === 'invite' ? 'invite' : 'collab',
+      thread: data.teamId ?? data.kind,
+      actions: [
+        { action: 'open', title: '열기' },
+        { action: 'dismiss', title: '닫기' },
+      ],
+      kind: data.kind,
     })
   }
   bc.addEventListener('message', onMsg)

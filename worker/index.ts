@@ -1,6 +1,7 @@
 /**
  * Folio custom service worker (push · notification · Background Sync)
  * @ducanh2912/next-pwa customWorkerSrc
+ * P61 — rich notification (image · actions · group/thread · vibrate)
  */
 /// <reference lib="webworker" />
 
@@ -12,18 +13,51 @@ declare const self: ServiceWorkerGlobalScope & {
 
 const SYNC_TAG = 'folio-sync-queue'
 
+type PushJson = {
+  title?: string
+  body?: string
+  message?: string
+  url?: string
+  tag?: string
+  image?: string
+  icon?: string
+  actions?: Array<{ action: string; title: string }>
+  group?: string
+  thread?: string
+  renotify?: boolean
+  vibrate?: number[]
+  silent?: boolean
+}
+
 self.addEventListener('push', (event) => {
   let title = 'Folio'
   let body = '새 알림이 있습니다'
   let url = '/'
+  let tag = 'folio'
+  let image: string | undefined
+  let icon = '/icons/icon-192.png'
+  let actions: Array<{ action: string; title: string }> = []
+  let renotify = false
+  let vibrate: number[] | undefined
+  let silent = false
+  let group: string | undefined
+  let thread: string | undefined
+
   try {
-    const raw = event.data?.json() as
-      | { title?: string; body?: string; url?: string; message?: string }
-      | undefined
+    const raw = event.data?.json() as PushJson | undefined
     if (raw) {
       title = raw.title ?? title
       body = raw.body ?? raw.message ?? body
       url = raw.url ?? url
+      tag = raw.tag ?? (raw.thread ? `folio-thread-${raw.thread}` : raw.group ? `folio-${raw.group}` : tag)
+      image = raw.image
+      icon = raw.icon ?? icon
+      actions = Array.isArray(raw.actions) ? raw.actions.slice(0, 2) : []
+      renotify = Boolean(raw.renotify)
+      vibrate = raw.vibrate
+      silent = Boolean(raw.silent)
+      group = raw.group
+      thread = raw.thread
     } else {
       const text = event.data?.text()
       if (text) body = text
@@ -33,19 +67,40 @@ self.addEventListener('push', (event) => {
     if (text) body = text
   }
 
-  event.waitUntil(
-    self.registration.showNotification(title, {
-      body,
-      icon: '/icons/icon-192.png',
-      badge: '/icons/icon-192.png',
-      data: { url },
-    }),
-  )
+  const options: NotificationOptions & {
+    image?: string
+    renotify?: boolean
+    vibrate?: number[]
+    actions?: Array<{ action: string; title: string }>
+  } = {
+    body,
+    icon,
+    badge: '/icons/icon-192.png',
+    tag,
+    renotify,
+    silent,
+    data: { url, group, thread, actions },
+  }
+  if (image) options.image = image
+  if (vibrate?.length) options.vibrate = vibrate
+  if (actions.length) options.actions = actions
+
+  event.waitUntil(self.registration.showNotification(title, options))
 })
 
 self.addEventListener('notificationclick', (event) => {
+  const data = (event.notification.data ?? {}) as {
+    url?: string
+    actions?: Array<{ action: string; title: string }>
+  }
+  const action = (event as NotificationEvent).action
   event.notification.close()
-  const target = (event.notification.data as { url?: string } | undefined)?.url || '/'
+
+  let target = data.url || '/'
+  if (action === 'dismiss') return
+  if (action === 'open' || action === 'view') target = data.url || '/'
+  if (action === 'reply') target = (data.url || '/') + (String(data.url || '').includes('?') ? '&' : '?') + 'compose=1'
+
   event.waitUntil(
     (async () => {
       const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
@@ -67,14 +122,12 @@ self.addEventListener('notificationclick', (event) => {
   )
 })
 
-/** P42 — Background Sync: 클라이언트가 큐를 flush 하도록 메시지 */
 self.addEventListener('sync', (event) => {
   const syncEvent = event as Event & { tag: string; waitUntil: (p: Promise<unknown>) => void }
   if (syncEvent.tag !== SYNC_TAG) return
   syncEvent.waitUntil(notifyClientsToFlush())
 })
 
-/** P57 — Periodic Background Sync */
 self.addEventListener('periodicsync', (event) => {
   const pe = event as Event & { tag: string; waitUntil: (p: Promise<unknown>) => void }
   if (pe.tag !== 'folio-periodic-sync') return
@@ -92,7 +145,11 @@ async function notifyClientsToFlush() {
       icon: '/icons/icon-192.png',
       data: { url: '/' },
       tag: 'folio-sync',
-    })
+      actions: [
+        { action: 'open', title: '열기' },
+        { action: 'dismiss', title: '닫기' },
+      ],
+    } as NotificationOptions)
   }
 }
 

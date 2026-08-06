@@ -48,10 +48,22 @@ export async function maybeAlertConsecutiveSaveFailures(opts: {
 
   try {
     const { showFolioPush } = await import('@/lib/push-notifications')
+    const { pushSaveNotification } = await import('@/lib/notification-center')
+    pushSaveNotification(
+      '저장 연속 실패',
+      `${streak}회 연속 실패 · ${opts.mode}/${opts.type}`,
+    )
     void showFolioPush({
       title: '저장 연속 실패',
       body: `${streak}회 연속 실패 · ${opts.mode}/${opts.type}`,
       tag: 'folio-storage-alert',
+      group: 'save',
+      thread: 'storage-alert',
+      actions: [
+        { action: 'open', title: '열기' },
+        { action: 'dismiss', title: '닫기' },
+      ],
+      kind: 'save',
     })
   } catch {
     /* ignore */
