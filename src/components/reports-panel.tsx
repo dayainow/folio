@@ -712,6 +712,11 @@ export function ReportsPanel({ open, onClose }: { open: boolean; onClose: () => 
 
 export function ReportsButton() {
   const [open, setOpen] = useState(false)
+  useEffect(() => {
+    const openPanel = () => setOpen(true)
+    window.addEventListener('folio:open-reports', openPanel)
+    return () => window.removeEventListener('folio:open-reports', openPanel)
+  }, [])
   return (
     <>
       <Button

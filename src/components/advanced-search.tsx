@@ -68,6 +68,11 @@ export function AdvancedSearchButton({
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const panelId = useId()
+  useEffect(() => {
+    const openPanel = () => setOpen(true)
+    window.addEventListener('folio:open-advanced-search', openPanel)
+    return () => window.removeEventListener('folio:open-advanced-search', openPanel)
+  }, [])
   return (
     <>
       <Button

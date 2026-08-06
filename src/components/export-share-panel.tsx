@@ -509,6 +509,11 @@ export function ExportSharePanel({
 
 export function ExportShareButton() {
   const [open, setOpen] = useState(false)
+  useEffect(() => {
+    const openPanel = () => setOpen(true)
+    window.addEventListener('folio:open-export', openPanel)
+    return () => window.removeEventListener('folio:open-export', openPanel)
+  }, [])
   return (
     <>
       <Button

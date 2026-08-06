@@ -6,7 +6,7 @@
  * · 타이핑 표시
  * · Undo/Redo · 이력 스냅샷
  */
-import { useCallback, useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { createCollabSession, type CollabSession } from '@/lib/collab-yjs'
@@ -18,6 +18,12 @@ import {
 } from '@/lib/presence'
 import { pushCollabSnapshot } from '@/lib/collab-history'
 import { CollabHistoryPanel } from '@/components/collab-history-panel'
+import { SlashCommandMenu } from '@/components/slash-command-menu'
+import {
+  applySlashCommand,
+  detectSlashQuery,
+  filterSlashCommands,
+} from '@/lib/slash-commands'
 import { cn } from '@/lib/utils'
 import { Redo2, Undo2, History } from 'lucide-react'
 
@@ -104,6 +110,19 @@ export function CollabTextarea({
   const presenceRef = useRef<ReturnType<typeof joinPresenceRoom> | null>(null)
   const [peers, setPeers] = useState<PresenceUser[]>([])
   const [showHistory, setShowHistory] = useState(false)
+  const [cursor, setCursor] = useState(0)
+  const [slashActive, setSlashActive] = useState(0)
+  const [slashDismissed, setSlashDismissed] = useState(false)
+
+  const slashInfo = useMemo(() => {
+    if (slashDismissed) return null
+    return detectSlashQuery(value, cursor)
+  }, [value, cursor, slashDismissed])
+
+  const slashItems = useMemo(
+    () => (slashInfo ? filterSlashCommands(slashInfo.query) : []),
+    [slashInfo],
+  )
   const [canUndo, setCanUndo] = useState(false)
   const [canRedo, setCanRedo] = useState(false)
   const [cursorOverlays, setCursorOverlays] = useState<
@@ -235,14 +254,31 @@ export function CollabTextarea({
 
   const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     markTyping()
+    setCursor(e.target.selectionStart ?? 0)
+    setSlashDismissed(false)
+    setSlashActive(0)
     onChange(e.target.value)
   }
 
   const pushSelection = () => {
+    if (taRef.current) setCursor(taRef.current.selectionStart ?? 0)
     if (!shareSelection || !taRef.current || !presenceRef.current) return
     const el = taRef.current
     presenceRef.current.updateMeta({
       cursor: { anchor: el.selectionStart, head: el.selectionEnd },
+    })
+  }
+
+  const applySlash = (cmd: (typeof slashItems)[number]) => {
+    if (!slashInfo || !taRef.current) return
+    const el = taRef.current
+    const { next, caret } = applySlashCommand(value, cursor, slashInfo.start, cmd)
+    onChange(next)
+    setSlashDismissed(true)
+    requestAnimationFrame(() => {
+      el.focus()
+      el.setSelectionRange(caret, caret)
+      setCursor(caret)
     })
   }
 
@@ -275,9 +311,34 @@ export function CollabTextarea({
     if (mod && e.key.toLowerCase() === 'z' && !e.shiftKey) {
       e.preventDefault()
       applyUndo()
-    } else if (mod && (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey))) {
+      return
+    }
+    if (mod && (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey))) {
       e.preventDefault()
       applyRedo()
+      return
+    }
+    if (slashInfo && slashItems.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setSlashActive((i) => Math.min(slashItems.length - 1, i + 1))
+        return
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setSlashActive((i) => Math.max(0, i - 1))
+        return
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault()
+        const pick = slashItems[slashActive]
+        if (pick) applySlash(pick)
+        return
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setSlashDismissed(true)
+      }
     }
   }
 
@@ -358,7 +419,7 @@ export function CollabTextarea({
           onKeyDown={onKeyDown}
           onClick={pushSelection}
           onBlur={() => presenceRef.current?.updateMeta({ cursor: null, typing: false })}
-          placeholder={placeholder}
+          placeholder={placeholder ?? '작성… `/` 로 슬래시 명령'}
           className={cn(className)}
           disabled={disabled}
           aria-describedby={ariaDescribedBy}
@@ -366,6 +427,13 @@ export function CollabTextarea({
           autoCapitalize="sentences"
           autoCorrect="on"
           spellCheck
+        />
+        <SlashCommandMenu
+          open={Boolean(slashInfo && slashItems.length)}
+          items={slashItems}
+          activeIndex={slashActive}
+          onPick={applySlash}
+          onHover={setSlashActive}
         />
         {cursorOverlays.map((item) => (
           <span

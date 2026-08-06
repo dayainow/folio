@@ -129,16 +129,6 @@ export function GlobalSearch({ onNavigate, variant = 'default' }: GlobalSearchPr
     results.journals.length + results.docs.length + results.tasks.length;
 
   useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent | globalThis.KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        setExpanded(true);
-        window.setTimeout(() => {
-          inputRef.current?.focus();
-          setOpen(true);
-        }, 0);
-      }
-    };
     const onFocusSearch = () => {
       setExpanded(true);
       window.setTimeout(() => {
@@ -146,10 +136,9 @@ export function GlobalSearch({ onNavigate, variant = 'default' }: GlobalSearchPr
         setOpen(true);
       }, 0);
     };
-    window.addEventListener('keydown', onKeyDown);
+    // P64 — 통합 검색은 Cmd/Ctrl+Shift+F (단축키 호스트) → folio:focus-search
     window.addEventListener('folio:focus-search', onFocusSearch);
     return () => {
-      window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('folio:focus-search', onFocusSearch);
     };
   }, []);

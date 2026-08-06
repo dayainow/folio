@@ -100,7 +100,7 @@ describe('bookmarks (P56)', () => {
   })
 })
 
-describe('shortcuts (P56)', () => {
+describe('shortcuts (P56/P64)', () => {
   it('resolves mod+shift keys', () => {
     const ev = {
       metaKey: true,
@@ -109,6 +109,7 @@ describe('shortcuts (P56)', () => {
       key: 'n',
     } as KeyboardEvent
     expect(matchesModShift(ev, 'n')).toBe(true)
-    expect(resolveShortcut(ev)).toBe('quick-journal')
+    // P64: Cmd+Shift+N = 새 문서 (이전 quick-journal은 Cmd+N)
+    expect(resolveShortcut(ev)).toBe('new-doc')
   })
 })

@@ -37,6 +37,12 @@ export function PluginsButton() {
   const [open, setOpen] = useState(false)
   const panelId = useId()
 
+  useEffect(() => {
+    const openPanel = () => setOpen(true)
+    window.addEventListener('folio:open-plugins', openPanel)
+    return () => window.removeEventListener('folio:open-plugins', openPanel)
+  }, [])
+
   return (
     <>
       <Button

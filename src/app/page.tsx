@@ -12,6 +12,7 @@ import { LanguageToggle } from '@/components/language-toggle';
 import { useI18n } from '@/components/i18n-provider';
 import { ThemeToggle } from '@/components/theme-toggle'
 import { HelpTipsButton } from '@/components/help-tips';
+import { ShortcutSettingsButton } from '@/components/shortcut-settings';
 import { StorageModeToggle } from '@/components/storage-mode-toggle';
 import { CollabModeToggle } from '@/components/collab-mode-toggle';
 import { HealthStatus } from '@/components/health-status';
@@ -437,6 +438,7 @@ export default function Home() {
         <CollabModeToggle />
         <ThemeToggle />
         <HelpTipsButton />
+        <ShortcutSettingsButton />
       </div>
       <Separator className="my-1" />
       <div className="flex flex-wrap items-center gap-2">
@@ -528,6 +530,9 @@ export default function Home() {
       <WelcomeModal />
       <ProductivityHost
         onOpenJournalTab={() => setTab('journal')}
+        onOpenDocsTab={() => setTab('docs')}
+        onOpenBoardTab={() => setTab('board')}
+        onOpenProcessTab={() => setTab('process')}
         onJournalSaved={(date) => {
           setTab('journal');
           setFocusJournalDate(date);
