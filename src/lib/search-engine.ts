@@ -32,6 +32,8 @@ export type AdvancedSearchFilters = {
   priority?: Task['priority'][]
   author?: string
   sort?: SearchSort
+  /** P67 — 로컬 임베딩 의미 검색 병합 */
+  semantic?: boolean
 }
 
 export type UnifiedSearchHit = {

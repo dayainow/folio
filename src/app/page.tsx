@@ -187,6 +187,11 @@ const PerfObservabilityButton = dynamic(
   { ssr: false, loading: () => null },
 );
 
+const AiToolsButton = dynamic(
+  () => import('@/components/ai-tools-panel').then((m) => ({ default: m.AiToolsButton })),
+  { ssr: false, loading: () => null },
+);
+
 type TabValue = 'journal' | 'docs' | 'board' | 'process';
 
 const TAB_ORDER: TabValue[] = ['journal', 'docs', 'board', 'process'];
@@ -496,6 +501,7 @@ export default function Home() {
         <HealthStatus />
         <StorageObservabilityButton />
         <PerfObservabilityButton />
+        <AiToolsButton />
         <PluginsButton />
         <OfflineStatusBadge />
         <BeaconChangeBadge />

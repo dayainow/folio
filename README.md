@@ -2,7 +2,7 @@
 
 ![Dashboard](screenshots/dashboard.png)
 
-**프로젝트의 기록, 한 곳에서.** · **v4.0.0**
+**프로젝트의 기록, 한 곳에서.** · **v4.1.0-wip**
 
 Folio는 개발자의 일지·문서·일정·프로세스를 하나로 묶는 워크스페이스입니다.
 Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정을 tracking하는 흐름을,
@@ -111,7 +111,9 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **36** | **3.8.0** | 키보드 단축키·커맨드 팔레트·슬래시 명령 | ✅ |
 | **37** | **3.9.0** | 테마/다크/고대비/커스텀 프리셋·접근성 | ✅ |
 | **38** | **4.0.0** | 성능 최적화 · 테스트 강화 | ✅ |
+| **39** | **4.1.0-wip** | AI 자동완성 · 의미검색 · 편집 · 분석 | 🔄 |
 
+Phase 39 상세: **P67** OpenAI/Anthropic/Gemini · 의미검색 · 편집/분석 — [docs/AI.md](docs/AI.md)  
 Phase 38 상세: **P66** 번들/예산 · Web Vitals · Vitest 80% · Playwright · Storybook/Chromatic · 가상화 — `542a006` · [docs/PERFORMANCE.md](docs/PERFORMANCE.md)  
 Phase 37 상세: **P65** Light/Dark/System · 고대비 · 프리셋 · 글자/포커스/모션 — `d6400a1` · [docs/THEMES.md](docs/THEMES.md)  
 Phase 36 상세: **P64** ⌘K 팔레트 · 단축키 커스터마이징 · `/` 슬래시 — `86745f8` · [docs/SHORTCUTS.md](docs/SHORTCUTS.md)  
@@ -175,6 +177,7 @@ npm run bundle:size     # 번들 사이즈 · 성능 예산
 | **키보드 UX** | 커맨드 팔레트 · 단축키 · 슬래시 명령 (P64) | ✅ 3.8.0 |
 | **테마/접근성** | Light/Dark/System · 고대비 · 커스텀 프리셋 (P65) | ✅ 3.9.0 |
 | **성능/테스트** | 번들 · Web Vitals · E2E · Storybook · 가상화 (P66) | ✅ 4.0.0 |
+| **AI** | 자동완성 · 의미검색 · 편집 · 분석 (P67) | 🔄 4.1.0-wip |
 | **DX** | 성능 예산 · 기여/테스트 가이드 | ✅ |
 
 상세: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/PERFORMANCE.md](docs/PERFORMANCE.md) · [VERSION.md](VERSION.md)
@@ -882,6 +885,19 @@ Phase 30 마감 시 반영된 UI/UX 5건입니다.
 
 예제: countdown · mood-tracker · estimate-points · sandbox-echo
 
+## AI 사용법 (P67)
+
+사이드바 **AI** 버튼. 상세: [docs/AI.md](docs/AI.md)
+
+1. **작성** — 문장 제안 · 완성 · 태그 · 요약 · 키워드 · 관련 문서/일지 추천
+2. **편집** — 선택 요약/확장/재작성 · 문법 · 번역(ko/en/ja)
+3. **의미검색** — 자연어 질문 · 로컬 임베딩 · 관련성 순
+4. **분석** — 감정 · 키워드 트렌드 · 프로젝트 진행 요약
+
+환경변수: `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` · `FOLIO_AI_MODEL`(gpt-4, claude-3, gemini-pro 등). 키 없으면 로컬 폴백.
+
+고급 검색 **의미 검색** 체크 → Lunr + 임베딩 하이브리드.
+
 ## 성능 최적화 / 테스트 사용법 (P66)
 
 상세: [docs/PERFORMANCE.md](docs/PERFORMANCE.md) · [docs/TESTING.md](docs/TESTING.md)
@@ -1129,14 +1145,15 @@ npm run runbook:backup
 - **v3.8** ✅ — 키보드 단축키·커맨드 팔레트 · **3.8.0**
 - **v3.9** ✅ — 테마/다크/고대비/접근성 · **3.9.0**
 - **v4.0** ✅ — 성능 최적화 · 테스트 강화 · **4.0.0**
+- **v4.1** 🔄 — AI 기능 · **4.1.0-wip**
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 38 완료** (v**4.0.0**)
-- 진행 중: —
+- 현재 Phase: **Phase 39** (v**4.1.0-wip**)
+- 진행 중: **P67** AI 자동완성 · 의미검색 · 편집 · 분석
 - 완료: Phase 1~38 · P66
-- 다음: Phase 39
-- 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md) · [docs/PERFORMANCE.md](docs/PERFORMANCE.md))
+- 다음: Phase 39 마무리 · 4.1.0 정식
+- 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md) · [docs/AI.md](docs/AI.md))
 
 ---
 
@@ -1149,4 +1166,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · v4.0.0
+**Folio** — 프로젝트의 기록, 한 곳에서. · v4.1.0-wip

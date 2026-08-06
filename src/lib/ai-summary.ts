@@ -1,6 +1,7 @@
 import { JournalEntry } from '@/lib/journal';
 import { DocEntry } from '@/lib/docs';
 import { Task } from '@/lib/board';
+import { callLlmJson, hasAiCredentials } from '@/lib/ai-llm';
 
 export type AiSummaryType = 'journal' | 'docs' | 'board' | 'weekly' | 'all';
 
@@ -19,25 +20,6 @@ export interface AiSummaryResponse {
   actionItems: string[];
   source: 'ai' | 'rule-based';
   generatedAt: string;
-}
-
-/**
- * Safe JSON Parser: LLM이 백틱이나 마크다운 코드 블록으로 감싸 반환하더라도 정규식으로 순수 JSON 추출
- */
-function cleanAndParseJson(rawText: string): Record<string, unknown> {
-  const cleaned = rawText
-    .replace(/^```(json)?\s*/i, '')
-    .replace(/\s*```$/, '')
-    .trim();
-
-  // 만약 텍스트 내에 첫 '{'와 마지막 '}'가 있다면 그 구간만 추출
-  const startIdx = cleaned.indexOf('{');
-  const endIdx = cleaned.lastIndexOf('}');
-  if (startIdx !== -1 && endIdx !== -1 && startIdx <= endIdx) {
-    const jsonStr = cleaned.slice(startIdx, endIdx + 1);
-    return JSON.parse(jsonStr) as Record<string, unknown>;
-  }
-  return JSON.parse(cleaned) as Record<string, unknown>;
 }
 
 /**
@@ -165,13 +147,10 @@ export function generateRuleBasedSummary(req: AiSummaryRequest): AiSummaryRespon
 }
 
 /**
- * AI 요약 생성 핸들러 (Gemini LLM 호출 + 안전 파서 + 로컬 룰 엔진 폴백)
+ * AI 요약 생성 핸들러 (멀티 프로바이더 LLM + 로컬 룰 엔진 폴백)
  */
 export async function generateAiSummary(req: AiSummaryRequest): Promise<AiSummaryResponse> {
-  const geminiApiKey = process.env.GEMINI_API_KEY;
-  const modelName = process.env.GEMINI_MODEL_NAME || 'gemini-1.5-flash';
-
-  if (!geminiApiKey) {
+  if (!hasAiCredentials()) {
     return generateRuleBasedSummary(req);
   }
 
@@ -192,31 +171,16 @@ JSON 응답 포맷:
 문서 목록(상위 10개): ${JSON.stringify((req.docEntries || []).slice(0, 10).map((d) => ({ title: d.title, category: d.category })))}
 보드 카드 목록(상위 15개): ${JSON.stringify((req.boardCards || []).slice(0, 15).map((c) => ({ title: c.title, status: c.status, priority: c.priority, tags: c.tags })))}`;
 
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiApiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            responseMimeType: 'application/json',
-            temperature: 0.3,
-          },
-        }),
-      }
-    );
+    const result = await callLlmJson<{
+      summary?: string
+      highlights?: string[]
+      keywords?: string[]
+      actionItems?: string[]
+    }>(prompt)
 
-    if (!res.ok) {
-      throw new Error(`Gemini API error: ${res.status}`);
-    }
+    if (!result) return generateRuleBasedSummary(req)
 
-    const data = await res.json();
-    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!rawText) throw new Error('Empty AI response');
-
-    const parsed = cleanAndParseJson(rawText);
-
+    const parsed = result.data
     return {
       summary: typeof parsed.summary === 'string' ? parsed.summary : '요약을 생성할 수 없습니다.',
       highlights: Array.isArray(parsed.highlights) ? (parsed.highlights as string[]) : [],

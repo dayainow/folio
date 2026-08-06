@@ -196,7 +196,7 @@ export async function searchAll(query: string): Promise<SearchAllResult> {
   };
 }
 
-/** P52 — Lunr 고급 검색 + 필터 */
+/** P52 — Lunr 고급 검색 + 필터 · P67 의미 검색 병합 */
 export async function advancedSearchAll(
   query: string,
   filters: AdvancedSearchFilters = {},
@@ -206,7 +206,62 @@ export async function advancedSearchAll(
     loadDocsWithFallback(),
     loadTasksWithFallback(),
   ]);
-  return runAdvancedSearch(query, journals, docs, tasks, filters);
+  const base = runAdvancedSearch(query, journals, docs, tasks, filters);
+  if (!filters.semantic || !query.trim()) return base;
+
+  const { semanticSearchLocal } = await import('@/lib/ai-semantic');
+  const corpus = [
+    ...Object.entries(journals).map(([date, e]) => ({
+      id: `journal:${date}`,
+      source: 'journal' as const,
+      title: date,
+      text: e.content ?? '',
+      updatedAt: e.updatedAt,
+      tags: e.tags,
+    })),
+    ...docs.map((d) => ({
+      id: `docs:${d.id}`,
+      source: 'doc' as const,
+      title: d.title,
+      text: d.content ?? '',
+      updatedAt: d.updatedAt,
+      tags: d.category ? [d.category] : [],
+    })),
+    ...tasks.map((t) => ({
+      id: `board:${t.id}`,
+      source: 'task' as const,
+      title: t.title,
+      text: t.description ?? '',
+      updatedAt: t.updatedAt,
+      tags: t.tags,
+    })),
+  ];
+  const sem = semanticSearchLocal(query, corpus, 24);
+  const byId = new Map(base.unified.map((h) => [h.id, h]));
+  for (const hit of sem) {
+    const source =
+      hit.source === 'journal' ? 'journal' : hit.source === 'doc' ? 'docs' : 'board';
+    const id = hit.id.includes(':') ? hit.id : `${source}:${hit.id}`;
+    const existing = byId.get(id) ?? byId.get(hit.id.replace(/^(journal|docs|board|j|d|t):/, ''));
+    const score = Math.max(existing?.score ?? 0, hit.score * 12);
+    byId.set(existing?.id ?? id, {
+      source,
+      id: existing?.id ?? id.replace(/^(journal|docs|board):/, ''),
+      title: hit.title,
+      preview: hit.preview,
+      score,
+      matched: 'content',
+      updatedAt: hit.updatedAt ?? existing?.updatedAt ?? '',
+      tags: hit.tags,
+    });
+  }
+  const unified = [...byId.values()].sort((a, b) => b.score - a.score);
+  return {
+    ...base,
+    unified,
+    total: unified.length,
+    parsedQuery: `${base.parsedQuery || query} · semantic`,
+  };
 }
 
 /** 간단 검색을 Lunr 경로로 (선택) */

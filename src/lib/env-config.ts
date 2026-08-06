@@ -33,6 +33,11 @@ const SERVER_OPTIONAL = [
   'FOLIO_MCP_WEBHOOK_SECRET',
   'AUDIT_LOG_RETENTION_DAYS',
   'STORAGE_ALERT_THRESHOLD',
+  'OPENAI_API_KEY',
+  'ANTHROPIC_API_KEY',
+  'GEMINI_API_KEY',
+  'FOLIO_AI_PROVIDER',
+  'FOLIO_AI_MODEL',
 ] as const
 
 function hasValue(key: string): boolean {

@@ -78,6 +78,24 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     hint: 'Keep / Problem / Try',
     insert: '## Keep\n\n- \n\n## Problem\n\n- \n\n## Try\n\n- \n',
   },
+  {
+    id: 'ai-summary',
+    label: 'AI · 요약 자리표시',
+    hint: '선택 후 AI 패널에서 요약',
+    insert: '<!-- ai:summarize -->\n',
+  },
+  {
+    id: 'ai-expand',
+    label: 'AI · 확장 자리표시',
+    hint: '선택 후 AI 패널에서 확장',
+    insert: '<!-- ai:expand -->\n',
+  },
+  {
+    id: 'ai-rewrite',
+    label: 'AI · 재작성 자리표시',
+    hint: '선택 후 AI 패널에서 재작성',
+    insert: '<!-- ai:rewrite -->\n',
+  },
 ]
 
 /** `/query` 감지 — 줄 시작 또는 공백 뒤의 `/` */

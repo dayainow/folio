@@ -466,6 +466,14 @@ export function AdvancedSearchPanel({
                   <option value="date">날짜</option>
                   <option value="priority">우선순위</option>
                 </select>
+                <label className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(filters.semantic)}
+                    onChange={(e) => setFilters((f) => ({ ...f, semantic: e.target.checked }))}
+                  />
+                  의미 검색
+                </label>
                 <select
                   className="h-7 rounded-md border border-border bg-background px-1 text-[11px]"
                   value={(filters.status ?? [])[0] ?? ''}
