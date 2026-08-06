@@ -2,7 +2,7 @@
 
 ![Dashboard](screenshots/dashboard.png)
 
-**프로젝트의 기록, 한 곳에서.** · **v3.5.0-wip**
+**프로젝트의 기록, 한 곳에서.** · **v3.5.0**
 
 Folio는 개발자의 일지·문서·일정·프로세스를 하나로 묶는 워크스페이스입니다.
 Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정을 tracking하는 흐름을,
@@ -105,13 +105,13 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **30** | **3.2.0** | 일지 트리·캘린더·목록·통계 + UI/UX 개선 5건 | ✅ |
 | **31** | **3.3.0** | 문서 버전 관리 (스냅샷 · Diff · 복원/체크아웃) | ✅ |
 | **32** | **3.4.0** | 내보내기/공유 고도화 (PDF · HTML · 공유 링크 · 임베드 · 클라우드) | ✅ |
-| **33** | **3.5.0-wip** | 알림/메시지 시스템 고도화 (허브 · 인앱 · 이메일 · rich 푸시) | 🔄 |
+| **33** | **3.5.0** | 알림/메시지 시스템 고도화 (허브 · 인앱 · 이메일 · rich 푸시) | ✅ |
 
-Phase 33 상세: **P61** 알림 허브 · 인앱 메시지 · 이메일 다이제스트 · rich 푸시 — [docs/NOTIFICATIONS.md](docs/NOTIFICATIONS.md)  
+Phase 33 상세: **P61** 알림 허브 · 인앱 메시지 · 이메일 다이제스트 · rich 푸시 — `de0ff3a` · [docs/NOTIFICATIONS.md](docs/NOTIFICATIONS.md)  
 Phase 32 상세: **P60** PDF/HTML/MD · 공유 링크(암호·만료·추적) · iframe 임베드 · Storage 백업 — `7acbd2c` · [docs/EXPORT-SHARE.md](docs/EXPORT-SHARE.md)  
 Phase 31 상세: **P59** 문서 스냅샷 · Diff · 복원/체크아웃 · 5분 자동 · `8abaf92`  
 Phase 30 상세: **P58** 폴더/트리 · 캘린더 · 목록 · 통계 · 작성/보기 · bulk · UI/UX(에디터·웰컴·버튼·사이드바)  
-이력: [VERSION.md](VERSION.md) · 내보내기/공유: [docs/EXPORT-SHARE.md](docs/EXPORT-SHARE.md) · 문서 버전: [docs/DOC-VERSIONS.md](docs/DOC-VERSIONS.md)
+이력: [VERSION.md](VERSION.md) · 알림: [docs/NOTIFICATIONS.md](docs/NOTIFICATIONS.md) · 내보내기/공유: [docs/EXPORT-SHARE.md](docs/EXPORT-SHARE.md)
 
 ---
 
@@ -159,7 +159,7 @@ npm run bundle:size     # 번들 사이즈 · 성능 예산
 | **일지 트리** | 폴더 · 캘린더 · 목록 · 통계 · bulk · UI/UX (P58) | ✅ 3.2.0 |
 | **문서 버전** | 스냅샷 · diff · 복원 · 체크아웃 (P59) | ✅ 3.3.0 |
 | **내보내기/공유** | PDF · HTML · 공유 링크 · 임베드 · 클라우드 백업 (P60) | ✅ 3.4.0 |
-| **알림/메시지** | 허브 · 인앱 · 이메일 · rich 푸시 (P61) | 🔄 3.5.0-wip |
+| **알림/메시지** | 허브 · 인앱 · 이메일 · rich 푸시 (P61) | ✅ 3.5.0 |
 | **DX** | 성능 예산 · 기여/테스트 가이드 | ✅ |
 
 상세: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/PERFORMANCE.md](docs/PERFORMANCE.md) · [VERSION.md](VERSION.md)
@@ -411,27 +411,44 @@ npm run dev
 | **스캔** | `npm run audit` · `npm run security:scan` |
 
 
-## 알림 / 메시지 사용법 (P61)
+## 알림 / 메시지 시스템 사용법 (P61)
 
-헤더 벨 → **알림 허브**. 상세: [docs/NOTIFICATIONS.md](docs/NOTIFICATIONS.md)
+헤더 벨 → **알림 허브**에서 알림·인앱 메시지·구독을 한곳에서 관리합니다.  
+상세: [docs/NOTIFICATIONS.md](docs/NOTIFICATIONS.md)
 
 ### 알림 허브
 
-1. **알림** 탭 — 저장 / 협업 / Gate / 팀 초대 / 시스템 그룹 필터 · 안 읽음 · 검색
-2. 항목 클릭 시 읽음 처리 후 URL로 이동
-3. **모두 읽음** / 그룹별 **비우기**
+| 기능 | 설명 |
+|------|------|
+| **그룹** | 저장 · 협업 · Gate · 팀 초대 · 시스템 |
+| **필터** | 전체 / 안 읽음 · 검색 |
+| **읽음** | 항목 클릭 · **모두 읽음** · 그룹 **비우기** |
+
+1. 벨 아이콘으로 허브 열기
+2. **알림** 탭에서 그룹 칩으로 필터
+3. 항목 선택 시 읽음 처리 후 관련 URL로 이동
 
 ### 인앱 메시지
 
-1. **메시지** 탭 — 문서·프로젝트 채널 선택
-2. 전송 · 이모지 반응 · 읽음 수 · 채널 내 검색
+1. **메시지** 탭 — 문서·프로젝트·일반 채널
+2. 메시지 전송 · 이모지 반응(👍👀🎉❤️) · 읽음 수 표시
+3. 채널 내 키워드 검색
 
-### 이메일 · 푸시 설정
+채널 저장소: `folio_message_channels_v1` · `folio_messages_v1`
 
-1. **설정** 탭 — 수신 이메일 · 중요 즉시 메일 · 일일/주간 요약
-2. 유형별 앱/메일/푸시 구독 토글
-3. 푸시 소리·진동 패턴 · rich 푸시 테스트
-4. `RESEND_API_KEY` 미설정 시 `.data/email-outbox`에 기록
+### 이메일 알림 · 요약
+
+1. **설정** 탭 — 수신 이메일 주소
+2. 중요 알림 즉시 메일 · **일일 / 주간** 다이제스트
+3. 유형별 앱 / 메일 / 푸시 구독 토글
+4. `RESEND_API_KEY` + `FOLIO_EMAIL_FROM` 있으면 Resend 발송, 없으면 `.data/email-outbox/`에 기록
+
+### rich 푸시
+
+1. 브라우저 알림 권한 허용
+2. 설정에서 진동 패턴 · 소리 옵션
+3. rich 페이로드: 이미지 · 액션 버튼 · 그룹/스레드 ID
+4. 허브 설정에서 **rich 푸시 테스트**로 확인
 
 ## 내보내기 / 공유 사용법 (P60)
 
@@ -947,14 +964,14 @@ npm run runbook:backup
 - **v3.2** ✅ — 일지 트리·캘린더·목록·통계 · UI/UX 개선 · **3.2.0**
 - **v3.3** ✅ — 문서 버전 관리 (스냅샷 · Diff · 복원) · **3.3.0**
 - **v3.4** ✅ — 내보내기/공유 고도화 (PDF · HTML · 공유 · 임베드) · **3.4.0**
-- **v3.5** 🔄 — 알림/메시지 시스템 고도화 · **3.5.0-wip**
+- **v3.5** ✅ — 알림/메시지 시스템 고도화 · **3.5.0**
 
 ## 작업 관리
 
-- 현재 Phase: **Phase 33 진행 중** (v**3.5.0-wip**)
-- 진행 중: **P61** 알림/메시지 시스템 고도화
-- 완료: Phase 1~32 · P60
-- 다음: Phase 33 완료 · 3.5.0 정식
+- 현재 Phase: **Phase 33 완료** (v**3.5.0**)
+- 진행 중: —
+- 완료: Phase 1~33 · P61 알림/메시지 시스템
+- 다음: Phase 34
 - 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md) · [docs/NOTIFICATIONS.md](docs/NOTIFICATIONS.md))
 
 ---
@@ -968,4 +985,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · v3.5.0-wip
+**Folio** — 프로젝트의 기록, 한 곳에서. · v3.5.0

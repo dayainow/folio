@@ -10,7 +10,7 @@ services:
       args:
         NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-https://placeholder.supabase.co}
         NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-placeholder-anon-key}
-        FOLIO_VERSION: ${FOLIO_VERSION:-3.5.0-wip}
+        FOLIO_VERSION: ${FOLIO_VERSION:-3.5.0}
     image: folio:local
     container_name: folio
     ports:
@@ -21,7 +21,7 @@ services:
       NODE_ENV: production
       PORT: 3000
       HOSTNAME: 0.0.0.0
-      FOLIO_VERSION: ${FOLIO_VERSION:-3.5.0-wip}
+      FOLIO_VERSION: ${FOLIO_VERSION:-3.5.0}
       NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
       JIRA_API_TOKEN: ${JIRA_API_TOKEN:-}
