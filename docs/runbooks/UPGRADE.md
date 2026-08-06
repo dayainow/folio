@@ -8,8 +8,16 @@
 
 | 구분 | 예 | 의미 |
 |------|----|------|
-| WIP | `3.8.0-wip` | Phase 36 P64 커맨드 팔레트·단축키 |
-| 정식 | `3.8.0` | (예정) Phase 36 완료 |
+| 정식 | `3.8.0` | Phase 36 완료 릴리즈 (커맨드 팔레트 · 단축키 · 슬래시) |
+| Patch | `3.8.1` | 버그픽스 · 문서 |
+| WIP | `3.x.0-wip` | 다음 Phase 진행 중 |
+
+체크리스트:
+
+- [ ] `npm run runbook:backup`
+- [ ] ⌘/Ctrl+K 팔레트 · 단축키 도움말(⌘/) · 슬래시 `/` · 단축키 설정
+- [ ] `npm ci` · `npm run lint && npm run typecheck && npm run test && npm run qa:smoke`
+- [ ] Preview/스테이징 스모크 후 Production
 
 ---
 
