@@ -66,8 +66,8 @@ describe('report templates', () => {
 })
 
 describe('pdf-layout', () => {
-  it('buildSectionedPdf returns a blob', () => {
-    const blob = buildSectionedPdf(
+  it('buildSectionedPdf returns a blob', async () => {
+    const blob = await buildSectionedPdf(
       'Test',
       [{ heading: 'One', lines: ['hello', 'world'] }],
       { cover: true, toc: true, pageNumbers: true, paper: 'a4', marginMm: 12 },

@@ -14,6 +14,9 @@ import {
   loadAppearance,
   saveAppearance,
   applyAppearance,
+  cycleThemePreference,
+  withThemeTransition,
+  bootstrapTheme,
 } from '@/lib/theme'
 import {
   createThemePreset,
@@ -80,6 +83,33 @@ describe('theme (P55/P65)', () => {
     expect(document.documentElement.classList.contains('folio-bold-text')).toBe(true)
     expect(document.documentElement.classList.contains('folio-strong-focus')).toBe(true)
     expect(document.documentElement.classList.contains('folio-reduce-motion')).toBe(true)
+  })
+
+  it('cycles preference light → dark → system', () => {
+    setStoredThemePreference('light')
+    expect(cycleThemePreference()).toBe('dark')
+    expect(cycleThemePreference()).toBe('system')
+    expect(cycleThemePreference()).toBe('light')
+  })
+
+  it('withThemeTransition applies animating class when motion allowed', () => {
+    vi.useFakeTimers()
+    document.documentElement.classList.remove('folio-reduce-motion')
+    withThemeTransition(() => applyTheme('dark'))
+    expect(document.documentElement.classList.contains('theme-animating')).toBe(true)
+    vi.advanceTimersByTime(300)
+    expect(document.documentElement.classList.contains('theme-animating')).toBe(false)
+    vi.useRealTimers()
+  })
+
+  it('bootstrapTheme applies and cleans up listener', () => {
+    setStoredThemePreference('dark')
+    setHighContrast(true)
+    const cleanup = bootstrapTheme()
+    expect(document.documentElement.classList.contains('dark')).toBe(true)
+    expect(document.documentElement.classList.contains('high-contrast')).toBe(true)
+    expect(typeof cleanup).toBe('function')
+    cleanup()
   })
 })
 

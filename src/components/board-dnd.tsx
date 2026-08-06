@@ -2,7 +2,7 @@
 
 import { csrfHeaders } from '@/lib/csrf';
 
-import { useState, useEffect, useMemo, type ReactNode } from 'react';
+import { memo, useState, useEffect, useMemo, type ReactNode } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -78,7 +78,7 @@ function resolveDropStatus(overId: string | number, tasks: Task[]): Task['status
   return tasks.find(t => t.id === id)?.status ?? null;
 }
 
-function TaskCardBody({
+const TaskCardBody = memo(function TaskCardBody({
   task,
   showActions = true,
   favorite = false,
@@ -269,7 +269,7 @@ function TaskCardBody({
       )}
     </>
   );
-}
+});
 
 function DraggableTaskCard({
   task,

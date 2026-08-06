@@ -1,10 +1,26 @@
 # 업그레이드 런북 (Upgrade)
 
-버전 업그레이드 · 마이그레이션 · 다운타임 최소화. (P22 · **v3.7 갱신**)
+버전 업그레이드 · 마이그레이션 · 다운타임 최소화. (P22 · **v4.0 갱신**)
 
 ---
 
-## 0. v3.9 (3.8 → 3.9)
+## 0. v4.0 (3.9 → 4.0-wip)
+
+| 구분 | 예 | 의미 |
+|------|----|------|
+| WIP | `4.0.0-wip` | Phase 38 · P66 성능/테스트 진행 중 |
+| 정식 | `4.0.0` | Phase 38 완료 예정 |
+
+체크리스트:
+
+- [ ] `npm run runbook:backup`
+- [ ] `npm ci` · `npm run lint && npm run typecheck && npm run test && npm run test:coverage && npm run qa:smoke`
+- [ ] `npm run build && npm run bundle:size`
+- [ ] Preview에서 성능 대시보드 · 일지 목록 가상화 스모크
+
+---
+
+## 0b. v3.9 (3.8 → 3.9)
 
 | 구분 | 예 | 의미 |
 |------|----|------|

@@ -5,7 +5,7 @@
  */
 import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { Activity, Gauge, Loader2, RefreshCw, Trash2, X, Zap } from 'lucide-react'
+import { Activity, Gauge, Loader2, RefreshCw, Trash2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   clearPerfMetrics,
@@ -18,6 +18,8 @@ import {
   type PerfStats,
   type WebVitalName,
 } from '@/lib/perf-metrics'
+import { computePerfHealthScore } from '@/lib/perf-score'
+import { SpriteIcon } from '@/components/icon-sprite'
 import { cn } from '@/lib/utils'
 
 const Charts = dynamic(() => import('@/components/perf-observability-charts'), {
@@ -118,6 +120,8 @@ export function PerfObservabilityPanel({
     })
   }, [stats])
 
+  const health = useMemo(() => computePerfHealthScore(stats), [stats])
+
   return (
     <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/40 p-3 sm:items-center">
       <div
@@ -128,10 +132,10 @@ export function PerfObservabilityPanel({
         className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-xl"
       >
         <header className="flex items-center gap-2 border-b border-border px-4 py-3">
-          <Zap className="h-4 w-4 text-teal-600" />
+          <SpriteIcon name="perf-gauge" className="size-4 text-teal-600" />
           <div>
             <h2 className="text-sm font-semibold">성능 관측</h2>
-            <p className="text-[11px] text-muted-foreground">Web Vitals · API · 렌더 · P50</p>
+            <p className="text-[11px] text-muted-foreground">Web Vitals · API · 렌더 · P66</p>
           </div>
           <div className="ml-auto flex items-center gap-1">
             {(['24h', '7d', '30d'] as PerfRange[]).map((r) => (
@@ -167,7 +171,18 @@ export function PerfObservabilityPanel({
         </header>
 
         <div className="space-y-4 overflow-y-auto p-4">
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+            <StatPill
+              label="종합 스코어"
+              value={health.score === null ? '—' : `${health.score}`}
+              tone={
+                health.label === 'excellent' || health.label === 'good'
+                  ? 'ok'
+                  : health.label === 'fair' || health.label === 'poor'
+                    ? 'warn'
+                    : 'neutral'
+              }
+            />
             <StatPill
               label="LCP p75"
               value={

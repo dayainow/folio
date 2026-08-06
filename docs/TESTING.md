@@ -1,67 +1,80 @@
-# Folio 테스트 가이드 (v2.0)
+# Folio 테스트 가이드 (v4.0 / P66)
 
 ## 실행
 
 ```bash
-npm run test          # vitest run (CI)
-npm run test:watch    # 감시 모드
-npm run qa:smoke      # 핵심 로직 스모크 (단위 테스트와 별개)
+npm run test              # vitest run (CI)
+npm run test:watch        # 감시 모드
+npm run test:coverage     # 커버리지 + 80% 게이트
+npm run test:e2e          # Playwright (빌드/서버 필요 · webServer 자동)
+npm run test:visual       # Playwright 시각 스냅샷
+npm run qa:smoke          # 핵심 로직 스모크
+npm run storybook         # Storybook UI
+npm run build-storybook   # 정적 스토리 빌드
+npm run chromatic         # Chromatic 시각 회귀 (토큰 필요)
+npm run lhci              # Lighthouse CI
 ```
 
 ## 스택
 
 | 도구 | 용도 |
 |------|------|
-| Vitest 3 | 러너 |
+| Vitest 3 + coverage-v8 | 단위 · 커버리지 게이트 |
 | happy-dom | DOM/localStorage |
-| @testing-library/* | 컴포넌트/DOM (필요 시) |
+| @testing-library/* | 컴포넌트/DOM |
+| Playwright | E2E · 시각 스냅샷 |
+| Storybook 8 + Chromatic | 컴포넌트 카탈로그 · 시각 회귀 |
+| Lighthouse CI | 성능 회귀 |
 
-설정: `vitest.config.ts` · `vitest.setup.ts`
+설정: `vitest.config.ts` · `vitest.setup.ts` · `playwright.config.ts` · `.storybook/` · `.lighthouserc.cjs`
 
 ## 파일 위치
 
 ```
 src/lib/__tests__/*.test.ts
 src/components/__tests__/*.test.tsx
+src/**/*.stories.tsx
+e2e/*.spec.ts
 ```
 
-권장: 순수 유틸은 lib, UI 동작은 components.
+## 커버리지 (P66)
 
-## 무엇을 테스트하나
+- 게이트 대상 코어 모듈(`vitest.config.ts` `COVERAGE_CORE`) 평균 **lines/statements ≥ 80%** (현재 ~91%)
+- 대상: theme · errors · perf-* · jspdf-loader · debounce · sanitize · shortcuts · plugins 등
+- 전체 `src/lib`은 점진 확대 (외부 연동·브라우저 I/O 제외)
+- CI: `npm run test:coverage` **hard gate**
 
-**우선**
+## E2E (Playwright)
 
-- storage 모드 · env 검증
-- collab diff / Yjs 병합
-- analytics 스코어
-- export MD/CSV/JSON/ZIP
-- journal/board 로컬 저장·상태 이동
-- sanitize / deep link / wiki-link
+| 스펙 | 범위 |
+|------|------|
+| `e2e/a11y-smoke.spec.ts` | landmark · ⌘K · 고대비 |
+| `e2e/core-flows.spec.ts` | 로그인 진입점 · 일지 · 문서 · 보드 DnD 컬럼 · 팔레트 |
+| `e2e/visual-regression.spec.ts` | 홈 배너 스냅샷 (Chromatic 병행) |
 
-**나중 (모킹)**
+```bash
+npm run build && npm run test:e2e
+# 스냅샷 갱신
+npx playwright test e2e/visual-regression.spec.ts --update-snapshots
+```
 
-- Supabase 네트워크
-- Realtime Presence 세션
-- 전체 `JournalPanel` E2E (Playwright 등)
+## Storybook / Chromatic
+
+```bash
+npm run storybook
+CHROMATIC_PROJECT_TOKEN=... npm run chromatic
+```
+
+GitHub Actions는 `CHROMATIC_PROJECT_TOKEN` 시크릿이 있을 때만 실행.
 
 ## 작성 규칙
 
 1. 외부 I/O는 mock (`vi.stubEnv`, `localStorage.clear`)
 2. 테스트 이름은 동작/기대 결과를 드러냄
 3. flaky timer는 `vi.useFakeTimers`
-4. `console.error`를 검증하는 테스트는 spy로 소음 억제 가능
-5. PR에 `npm run test` 통과를 적음
+4. E2E는 인증 없이도 통과하도록 soft 폴백 허용
+5. PR에 `npm run test` · `test:coverage` 통과를 적음
 
 ## CI
 
-- `.github/workflows/test.yml` — unit
-- `.github/workflows/lint.yml` — lint + typecheck
-- `.github/workflows/ci.yml` — 통합 품질 게이트 (lint · typecheck · test · qa:smoke · build)
-
-## 커버리지 (선택)
-
-```bash
-npx vitest run --coverage
-```
-
-(추가 설정 시 `@vitest/coverage-v8` 필요)
+- `.github/workflows/ci.yml` — lint · typecheck · test · **coverage** · qa:smoke · build · bundle-size · (optional) e2e/lhci/chromatic

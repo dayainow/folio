@@ -1,10 +1,11 @@
 /**
  * P63 — PDF 레이아웃 (표지 · 목차 · 쪽 번호 · 여백 · A4/Letter)
+ * P66 — jspdf dynamic import
  */
 'use client'
 
-import { jsPDF } from 'jspdf'
 import type { ProgressFn } from '@/lib/export'
+import { loadJsPdf } from '@/lib/jspdf-loader'
 
 export type PaperSize = 'a4' | 'letter'
 
@@ -49,12 +50,12 @@ function mmToPt(mm: number): number {
 /**
  * 표지/목차/쪽번호가 있는 멀티 섹션 PDF 생성
  */
-export function buildSectionedPdf(
+export async function buildSectionedPdf(
   title: string,
   sections: PdfSection[],
   opts: PdfLayoutOptions = {},
   onProgress?: ProgressFn,
-): Blob {
+): Promise<Blob> {
   const paper = opts.paper ?? DEFAULTS.paper
   const marginMm = opts.marginMm ?? DEFAULTS.marginMm
   const withCover = opts.cover ?? DEFAULTS.cover
@@ -64,6 +65,7 @@ export function buildSectionedPdf(
   const coverSubtitle = opts.coverSubtitle ?? `Folio · ${new Date().toISOString().slice(0, 10)}`
   const footerLabel = opts.footerLabel ?? 'Folio'
 
+  const jsPDF = await loadJsPdf()
   const doc = new jsPDF({ unit: 'pt', format: paper })
   const margin = mmToPt(marginMm)
   const pageW = doc.internal.pageSize.getWidth()

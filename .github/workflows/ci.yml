@@ -14,7 +14,7 @@ concurrency:
 
 env:
   NEXT_TELEMETRY_DISABLED: "1"
-  FOLIO_VERSION: "3.9.0"
+  FOLIO_VERSION: "4.0.0-wip"
 
 jobs:
   quality:
@@ -41,9 +41,8 @@ jobs:
       - name: Unit tests
         run: npm run test
 
-      - name: Coverage (P55, optional gate)
+      - name: Coverage (P66 · 80% gate)
         run: npm run test:coverage
-        continue-on-error: true
 
       - name: Dependency audit (high+)
         run: npm audit --omit=dev --audit-level=high
@@ -65,8 +64,9 @@ jobs:
         env:
           BUNDLE_BUDGET_FAIL: "1"
           FOLIO_BUNDLE_BUDGET_MB: "8"
+          FOLIO_INITIAL_JS_BUDGET_KB: "900"
 
-      - name: Playwright a11y smoke (optional)
+      - name: Playwright E2E (P66)
         run: npx playwright install chromium --with-deps && npm run test:e2e
         continue-on-error: true
         env:
@@ -78,13 +78,24 @@ jobs:
         env:
           FOLIO_VERSION: ${{ env.FOLIO_VERSION }}
 
+      - name: Chromatic (optional)
+        continue-on-error: true
+        env:
+          CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+        run: |
+          if [ -z "$CHROMATIC_PROJECT_TOKEN" ]; then
+            echo "CHROMATIC_PROJECT_TOKEN 없음 — skip"
+            exit 0
+          fi
+          npx chromatic --project-token="$CHROMATIC_PROJECT_TOKEN" --exit-zero-on-changes
+
       - name: Summary
         if: always()
         run: |
           {
-            echo "## CI (v2.9 P55)"
+            echo "## CI (v4.0 P66)"
             echo "- ref: \`${{ github.sha }}\`"
-            echo "- required: lint · typecheck · test · qa:smoke · build · bundle-size(budget)"
-            echo "- optional: coverage · playwright e2e · lighthouse CI"
+            echo "- required: lint · typecheck · test · coverage(80%) · qa:smoke · build · bundle-size"
+            echo "- optional: playwright e2e · lighthouse CI · chromatic"
             echo "- FOLIO_VERSION=\`${{ env.FOLIO_VERSION }}\`"
           } >> "$GITHUB_STEP_SUMMARY"

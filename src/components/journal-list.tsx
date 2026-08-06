@@ -2,13 +2,13 @@
 
 /**
  * P58 — 일지 목록 뷰 (시간순 · 미리보기 · 필터 · bulk)
+ * P66 — 긴 목록 react-window 가상화 · 행 memo
  */
-import { useMemo, useState, type MouseEvent } from 'react'
+import { memo, useCallback, useMemo, useState, type CSSProperties, type MouseEvent } from 'react'
 import { Download, Tag, Trash2, FolderInput } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import type { JournalEntry } from '@/lib/journal'
@@ -20,6 +20,8 @@ import {
   loadJournalTree,
 } from '@/lib/journal-tree'
 import { downloadText } from '@/lib/export'
+import { VirtualList } from '@/components/virtual-list'
+import { useRenderMark } from '@/lib/render-profiler'
 
 export type JournalListProps = {
   journals: Record<string, JournalEntry>
@@ -36,6 +38,53 @@ function preview(content: string): string {
   return t.slice(0, 100) + (t.length > 100 ? '…' : '')
 }
 
+const JournalRow = memo(function JournalRow({
+  date,
+  entry,
+  selected,
+  isActive,
+  onToggle,
+  onSelect,
+}: {
+  date: string
+  entry: JournalEntry
+  selected: boolean
+  isActive: boolean
+  onToggle: (date: string, e: MouseEvent) => void
+  onSelect: (date: string) => void
+}) {
+  return (
+    <div
+      className={cn(
+        'flex gap-2 px-3 py-2 hover:bg-muted/40',
+        isActive && 'bg-primary/5',
+      )}
+    >
+      <input
+        type="checkbox"
+        className="mt-1 h-3.5 w-3.5"
+        checked={selected}
+        onChange={() => {}}
+        onClick={(e) => onToggle(date, e)}
+        aria-label={`${date} 선택`}
+      />
+      <button type="button" className="min-w-0 flex-1 text-left" onClick={() => onSelect(date)}>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium tabular-nums">{date}</span>
+          {(entry.tags ?? []).slice(0, 4).map((t) => (
+            <Badge key={t} variant="secondary" className="h-4 px-1 text-[9px]">
+              {t}
+            </Badge>
+          ))}
+        </div>
+        <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
+          {preview(entry.content) || '(빈 일지)'}
+        </p>
+      </button>
+    </div>
+  )
+})
+
 export function JournalList({
   journals,
   selectedDate,
@@ -45,6 +94,7 @@ export function JournalList({
   onJournalsChange,
   className,
 }: JournalListProps) {
+  useRenderMark('JournalList')
   const [q, setQ] = useState('')
   const [tag, setTag] = useState<string | null>(null)
   const [from, setFrom] = useState('')
@@ -75,7 +125,7 @@ export function JournalList({
 
   const dates = rows.map(([d]) => d)
 
-  const toggle = (date: string, e: MouseEvent) => {
+  const toggle = useCallback((date: string, e: MouseEvent) => {
     e.stopPropagation()
     setSelected((prev) => {
       const next = new Set(prev)
@@ -93,7 +143,33 @@ export function JournalList({
       return next
     })
     setLastClicked(date)
-  }
+  }, [dates, lastClicked])
+
+  const selectDate = useCallback(
+    (date: string) => {
+      onSelectDate?.(date)
+    },
+    [onSelectDate],
+  )
+
+  const renderRow = useCallback(
+    (row: [string, JournalEntry], _index: number, style: CSSProperties) => {
+      const [date, entry] = row
+      return (
+        <div style={style} key={date}>
+          <JournalRow
+            date={date}
+            entry={entry}
+            selected={selected.has(date)}
+            isActive={selectedDate === date}
+            onToggle={toggle}
+            onSelect={selectDate}
+          />
+        </div>
+      )
+    },
+    [selected, selectedDate, toggle, selectDate],
+  )
 
   const selectedList = Array.from(selected)
 
@@ -214,49 +290,19 @@ export function JournalList({
         )}
       </div>
 
-      <ScrollArea className="h-[min(28rem,60vh)]">
-        <ul className="divide-y divide-gray-50 dark:divide-gray-800">
-          {rows.map(([date, entry]) => (
-            <li key={date}>
-              <div
-                className={cn(
-                  'flex gap-2 px-3 py-2 hover:bg-muted/40',
-                  selectedDate === date && 'bg-primary/5',
-                )}
-              >
-                <input
-                  type="checkbox"
-                  className="mt-1 h-3.5 w-3.5"
-                  checked={selected.has(date)}
-                  onChange={() => {}}
-                  onClick={(e) => toggle(date, e)}
-                  aria-label={`${date} 선택`}
-                />
-                <button
-                  type="button"
-                  className="min-w-0 flex-1 text-left"
-                  onClick={() => onSelectDate?.(date)}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium tabular-nums">{date}</span>
-                    {(entry.tags ?? []).slice(0, 4).map((t) => (
-                      <Badge key={t} variant="secondary" className="h-4 px-1 text-[9px]">
-                        {t}
-                      </Badge>
-                    ))}
-                  </div>
-                  <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
-                    {preview(entry.content) || '(빈 일지)'}
-                  </p>
-                </button>
-              </div>
-            </li>
-          ))}
-          {rows.length === 0 && (
-            <li className="px-3 py-8 text-center text-xs text-muted-foreground">일지가 없습니다</li>
-          )}
-        </ul>
-      </ScrollArea>
+      <div className="h-[min(28rem,60vh)]">
+        <VirtualList
+          items={rows}
+          height={448}
+          itemHeight={64}
+          threshold={36}
+          getItemKey={([date]) => date}
+          renderItem={renderRow}
+          empty={
+            <p className="px-3 py-8 text-center text-xs text-muted-foreground">일지가 없습니다</p>
+          }
+        />
+      </div>
     </Card>
   )
 }

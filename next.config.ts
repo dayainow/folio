@@ -158,11 +158,14 @@ const nextConfig: NextConfig = {
       '@supabase/ssr',
       'yjs',
       'idb',
+      'react-window',
+      'jspdf',
     ],
   },
   images: {
-    // P44 — 원격/로컬 이미지 lazy 기본
+    // P44/P66 — 원격/로컬 이미지 lazy 기본 · next/image 자동 최적화
     dangerouslyAllowSVG: false,
+    formats: ['image/avif', 'image/webp'],
   },
   webpack: (config, { isServer, webpack }) => {
     if (!isServer) {

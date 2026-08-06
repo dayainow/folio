@@ -6,8 +6,7 @@ import Link from 'next/link';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { GlobalSearch, type SearchNavigatePayload } from '@/components/global-search';
-import { AdvancedSearchButton } from '@/components/advanced-search';
+import type { SearchNavigatePayload } from '@/components/global-search';
 import { LanguageToggle } from '@/components/language-toggle';
 import { useI18n } from '@/components/i18n-provider';
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -18,16 +17,11 @@ import { CollabModeToggle } from '@/components/collab-mode-toggle';
 import { HealthStatus } from '@/components/health-status';
 import { BeaconChangeBadge } from '@/components/beacon-change-badge';
 import { OfflineStatusBadge } from '@/components/offline-status';
-import { StorageObservabilityButton } from '@/components/storage-observability';
-import { PerfObservabilityButton } from '@/components/perf-observability';
 import { WebVitalsReporter } from '@/components/web-vitals-reporter';
 import { PerfProfiler } from '@/lib/render-profiler';
 import { MobileNav } from '@/components/mobile-nav';
-import { FullExportButton } from '@/components/full-export-button';
-import { ExportShareButton } from '@/components/export-share-panel';
-import { ReportsButton } from '@/components/reports-panel';
-import { DataMigrationButton } from '@/components/data-migration-panel';
 import { McpSyncButton } from '@/components/mcp-sync-button';
+import { SpriteIcon } from '@/components/icon-sprite';
 import { getActiveTeamId } from '@/lib/team';
 import { parseFolioDeepLink } from '@/lib/folio-links';
 import { useSwipe } from '@/hooks/use-swipe';
@@ -141,6 +135,55 @@ const WelcomeModal = dynamic(
 
 const ProductivityHost = dynamic(
   () => import('@/components/productivity-host').then((m) => ({ default: m.ProductivityHost })),
+  { ssr: false, loading: () => null },
+);
+
+/** P66 — 무거운 사이드바/툴바 청크 분리 */
+const GlobalSearch = dynamic(
+  () => import('@/components/global-search').then((m) => ({ default: m.GlobalSearch })),
+  { ssr: false, loading: () => null },
+);
+
+const AdvancedSearchButton = dynamic(
+  () =>
+    import('@/components/advanced-search').then((m) => ({ default: m.AdvancedSearchButton })),
+  { ssr: false, loading: () => null },
+);
+
+const FullExportButton = dynamic(
+  () => import('@/components/full-export-button').then((m) => ({ default: m.FullExportButton })),
+  { ssr: false, loading: () => null },
+);
+
+const ExportShareButton = dynamic(
+  () => import('@/components/export-share-panel').then((m) => ({ default: m.ExportShareButton })),
+  { ssr: false, loading: () => null },
+);
+
+const ReportsButton = dynamic(
+  () => import('@/components/reports-panel').then((m) => ({ default: m.ReportsButton })),
+  { ssr: false, loading: () => null },
+);
+
+const DataMigrationButton = dynamic(
+  () =>
+    import('@/components/data-migration-panel').then((m) => ({ default: m.DataMigrationButton })),
+  { ssr: false, loading: () => null },
+);
+
+const StorageObservabilityButton = dynamic(
+  () =>
+    import('@/components/storage-observability').then((m) => ({
+      default: m.StorageObservabilityButton,
+    })),
+  { ssr: false, loading: () => null },
+);
+
+const PerfObservabilityButton = dynamic(
+  () =>
+    import('@/components/perf-observability').then((m) => ({
+      default: m.PerfObservabilityButton,
+    })),
   { ssr: false, loading: () => null },
 );
 
@@ -557,9 +600,10 @@ export default function Home() {
         <div className="mx-auto flex h-12 max-w-[1600px] items-center gap-2 sm:gap-3">
           <div className="flex shrink-0 items-center gap-2">
             <span
-              className="relative inline-block text-lg font-bold tracking-[-0.07em] text-foreground"
+              className="relative inline-flex items-center gap-1.5 text-lg font-bold tracking-[-0.07em] text-foreground"
               style={{ fontFamily: 'var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif' }}
             >
+              <SpriteIcon name="folio-mark" className="size-5 text-teal-700 dark:text-teal-400" />
               Folio
               <span
                 aria-hidden

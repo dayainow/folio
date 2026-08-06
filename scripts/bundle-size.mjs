@@ -49,9 +49,11 @@ const PACKAGES = [
   'sql.js',
   'lucide-react',
   'web-vitals',
+  'jspdf',
+  'react-window',
 ]
 
-console.log('=== Folio bundle-size (P50) ===\n')
+console.log('=== Folio bundle-size (P66) ===\n')
 console.log('주요 의존성 (node_modules):')
 for (const name of PACKAGES) {
   const size = dirSize(path.join(root, 'node_modules', ...name.split('/')))
@@ -61,6 +63,8 @@ for (const name of PACKAGES) {
 const nextStatic = path.join(root, '.next', 'static')
 const BUDGET_STATIC_MB = Number(process.env.FOLIO_BUNDLE_BUDGET_MB ?? 8)
 const CHUNK_BUDGET_KB = Number(process.env.FOLIO_CHUNK_BUDGET_KB ?? 500)
+/** 초기 앱 라우트 관련 메인 chunk 합(대략) — gzip 전 원시 바이트 */
+const INITIAL_JS_BUDGET_KB = Number(process.env.FOLIO_INITIAL_JS_BUDGET_KB ?? 900)
 const failOnBudget =
   process.env.BUNDLE_BUDGET_FAIL === '1' ||
   process.env.BUNDLE_BUDGET_FAIL === 'true' ||
@@ -72,6 +76,8 @@ const report = {
   budgetMb: BUDGET_STATIC_MB,
   topChunks: [],
   chunkBudgetKb: CHUNK_BUDGET_KB,
+  initialJsKb: null,
+  initialJsBudgetKb: INITIAL_JS_BUDGET_KB,
   ok: true,
 }
 
@@ -89,9 +95,9 @@ if (existsSync(nextStatic)) {
         return { f, s }
       })
       .sort((a, b) => b.s - a.s)
-      .slice(0, 8)
+    const top = files.slice(0, 8)
     console.log('\n  top chunks:')
-    for (const { f, s } of files) {
+    for (const { f, s } of top) {
       const kb = s / 1024
       const flag = kb > CHUNK_BUDGET_KB ? ' ⚠' : ''
       console.log(`    ${f.padEnd(40)} ${fmt(s)}${flag}`)
@@ -100,6 +106,28 @@ if (existsSync(nextStatic)) {
         console.warn(`    → chunk 예산 초과 (${kb.toFixed(0)} > ${CHUNK_BUDGET_KB} KB): ${f}`)
         // chunk는 경고만 (webpack 분할 특성) — static total만 fail 기준
       }
+    }
+    // P66 — 초기 라우트 추정: main-app + 상위 프레임워크/공유 청크 합
+    const initialLike = files.filter(
+      (x) =>
+        /main-app|webpack|framework|polyfills|main-|app\/page|layout/i.test(x.f) ||
+        x.f.startsWith('main-'),
+    )
+    const initialBytes =
+      initialLike.length > 0
+        ? initialLike.reduce((sum, x) => sum + x.s, 0)
+        : files.slice(0, 3).reduce((sum, x) => sum + x.s, 0)
+    const initialKb = initialBytes / 1024
+    report.initialJsKb = Math.round(initialKb * 10) / 10
+    console.log(
+      `\n  초기 JS 추정: ${fmt(initialBytes)} (예산 ≤ ${INITIAL_JS_BUDGET_KB} KB)`,
+    )
+    if (initialKb > INITIAL_JS_BUDGET_KB) {
+      violated = true
+      report.ok = false
+      console.warn(
+        `⚠ 초기 JS 예산 초과 (${initialKb.toFixed(0)} > ${INITIAL_JS_BUDGET_KB} KB)`,
+      )
     }
   }
   const mb = totalBytes / (1024 * 1024)

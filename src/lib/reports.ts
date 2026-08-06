@@ -444,7 +444,7 @@ export async function downloadReport(
     downloadHtml(html, `${base}.html`)
     return
   }
-  const blob = buildSectionedPdf(bundle.title, bundle.sections, {
+  const blob = await buildSectionedPdf(bundle.title, bundle.sections, {
     cover: true,
     toc: true,
     pageNumbers: true,

@@ -1,13 +1,14 @@
 /**
  * P60 — HTML / PDF / Markdown(frontmatter) 내보내기
+ * P66 — jspdf는 함수 내부 dynamic import
  */
 'use client'
 
-import { jsPDF } from 'jspdf'
 import type { JournalEntry } from '@/lib/journal'
 import type { DocEntry } from '@/lib/docs'
 import type { Task } from '@/lib/board'
 import { downloadBlob, downloadText, safeFilename, type ProgressFn } from '@/lib/export'
+import { loadJsPdf } from '@/lib/jspdf-loader'
 
 function escHtml(s: string): string {
   return s
@@ -242,11 +243,12 @@ export function downloadHtml(html: string, filename: string) {
   downloadText(html, filename, 'text/html;charset=utf-8')
 }
 
-function pdfFromLines(
+async function pdfFromLines(
   title: string,
   lines: string[],
   onProgress?: ProgressFn,
-): Blob {
+): Promise<Blob> {
+  const jsPDF = await loadJsPdf()
   const doc = new jsPDF({ unit: 'pt', format: 'a4' })
   const margin = 48
   const pageW = doc.internal.pageSize.getWidth()
