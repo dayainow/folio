@@ -60,11 +60,12 @@ export function loadJournals(): Record<string, JournalEntry> {
 /**
  * 로컬 즉시 저장(flush 포함). UI 수동 저장 버튼에서 원격 대기 없이 호출한다.
  */
-export function saveJournal(date: string, content: string, tags: string[]) {
+export function saveJournal(date: string, content: string, tags: string[], entryId = date) {
   const all = loadJournals();
-  const prev = all[date];
-  all[date] = {
+  const prev = all[entryId];
+  all[entryId] = {
     ...prev,
+    id: entryId,
     date,
     content,
     tags,
@@ -201,10 +202,16 @@ export async function saveJournalSupabase(date: string, content: string, tags: s
 }
 
 /** 저장 모드(local/cloud/beacon)에 따라 분기 — `storage.ts` */
-export async function saveJournalWithFallback(date: string, content: string, tags: string[]) {
-  const prev = loadJournals()[date];
+export async function saveJournalWithFallback(
+  date: string,
+  content: string,
+  tags: string[],
+  entryId = date,
+) {
+  const prev = loadJournals()[entryId];
   const entry: JournalEntry = {
     ...prev,
+    id: entryId,
     date,
     content,
     tags,
@@ -215,11 +222,11 @@ export async function saveJournalWithFallback(date: string, content: string, tag
   // 로컬 저장 시점에 최신 map과 merge — 수동/자동 저장 경쟁 시 stale 스냅샷 덮어쓰기 방지
   const result = await saveWithFallback(entry, 'journal', {
     localSave: () => {
-      const next = { ...loadJournals(), [date]: entry };
+      const next = { ...loadJournals(), [entryId]: entry };
       setLocalJson(STORAGE_KEY, next);
       flushLocalJson(STORAGE_KEY);
     },
-    resolveRemoteData: () => ({ ...loadJournals(), [date]: entry }),
+    resolveRemoteData: () => ({ ...loadJournals(), [entryId]: entry }),
     cloudSave: async () => {
       await saveJournalSupabase(date, content, tags);
     },

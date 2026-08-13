@@ -86,8 +86,9 @@ export const JournalPanel = memo(function JournalPanel({
   const [rangeEnd, setRangeEnd] = useState('');
   const [boardTagSources, setBoardTagSources] = useState<Array<{ tags: string[] }>>([]);
 
-  type Day = { content: string; tags: string[] };
+  type Day = { date: string; content: string; tags: string[] };
   const [days, setDays] = useState<Record<string, Day>>({});
+  const [entryKey, setEntryKey] = useState(todayStr);
   const [draft, setDraft] = useState('');
   const [tagsInput, setTagsInput] = useState('');
   const [tagDraft, setTagDraft] = useState('');
@@ -110,25 +111,34 @@ export const JournalPanel = memo(function JournalPanel({
   const vv = useVisualViewport();
   const mobileEditorPx = editorHeightFromViewport(vv, 200);
 
-  const selectDate = useCallback((nextDate: string, map?: Record<string, Day>) => {
+  const selectDate = useCallback((nextRef: string, map?: Record<string, Day>) => {
     // 날짜 이탈 전 현재 초안을 days·local에 반영 (자동저장 대기 없이 유지)
     const leavingTags = parseTags(tagsInput);
     const base = map ?? days;
     const merged: Record<string, Day> = {
       ...base,
-      [date]: { content: draft, tags: leavingTags },
+      [entryKey]: { date, content: draft, tags: leavingTags },
     };
 
-    if (nextDate !== date && (draft.trim() || leavingTags.length > 0 || Boolean(days[date]))) {
-      void saveJournalWithFallback(date, draft, leavingTags);
+    if (nextRef !== entryKey && (draft.trim() || leavingTags.length > 0 || Boolean(days[entryKey]))) {
+      void saveJournalWithFallback(date, draft, leavingTags, entryKey);
     }
 
+    const direct = merged[nextRef];
+    const nextDate = direct?.date ?? nextRef;
+    const nextKey = direct
+      ? nextRef
+      : Object.entries(merged)
+          .filter(([, day]) => day.date === nextDate)
+          .sort((a, b) => b[0].localeCompare(a[0]))[0]?.[0] ?? nextDate;
+    const next = merged[nextKey];
     setDays(merged);
+    setEntryKey(nextKey);
     setDate(nextDate);
-    setDraft(merged[nextDate]?.content ?? '');
-    setTagsInput(joinTags(merged[nextDate]?.tags ?? []));
+    setDraft(next?.content ?? '');
+    setTagsInput(joinTags(next?.tags ?? []));
     setTagDraft('');
-  }, [date, draft, tagsInput, days]);
+  }, [date, draft, tagsInput, days, entryKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -140,13 +150,17 @@ export const JournalPanel = memo(function JournalPanel({
       ]);
       if (cancelled) return;
       const map: Record<string, Day> = {};
-      for (const k in entries) map[k] = { content: entries[k].content, tags: entries[k].tags };
+      for (const k in entries) map[k] = { date: entries[k].date, content: entries[k].content, tags: entries[k].tags };
       const today = todayStr();
+      const todayKey = Object.entries(map)
+        .filter(([, day]) => day.date === today)
+        .sort((a, b) => b[0].localeCompare(a[0]))[0]?.[0] ?? today;
       setDays(map);
       setBoardTagSources(tasks.map(t => ({ tags: t.tags })));
       setDate(today);
-      setDraft(map[today]?.content ?? '');
-      setTagsInput(joinTags(map[today]?.tags ?? []));
+      setEntryKey(todayKey);
+      setDraft(map[todayKey]?.content ?? '');
+      setTagsInput(joinTags(map[todayKey]?.tags ?? []));
       setReady(true);
     })();
 
@@ -249,9 +263,9 @@ export const JournalPanel = memo(function JournalPanel({
     if (saveFeedbackTimer.current) clearTimeout(saveFeedbackTimer.current);
     setSaveState('saving');
     setSaveError(null);
-    setDays(prev => ({ ...prev, [date]: { content: draft, tags } }));
+    setDays(prev => ({ ...prev, [entryKey]: { date, content: draft, tags } }));
     try {
-      saveJournal(date, draft, tags);
+      saveJournal(date, draft, tags, entryKey);
       setSaveState('saved');
       void import('@/lib/push-notifications').then(({ showFolioPush }) =>
         showFolioPush({
@@ -270,7 +284,7 @@ export const JournalPanel = memo(function JournalPanel({
         targetId: date,
         summary: `일지 저장 · ${date}`,
       });
-      void saveJournalWithFallback(date, draft, tags)
+      void saveJournalWithFallback(date, draft, tags, entryKey)
         .then((result) => {
           if (result.usedFallback) {
             setSaveState('error');
@@ -316,7 +330,7 @@ export const JournalPanel = memo(function JournalPanel({
     } catch {
       /* 알림 실패는 저장 UX를 막지 않음 */
     }
-  }, [date, draft, tagsInput, hasNotifyChannel, collabUser]);
+  }, [date, draft, tagsInput, hasNotifyChannel, collabUser, entryKey]);
 
   useEffect(() => {
     setToastRetryHandler(() => {
@@ -341,9 +355,9 @@ export const JournalPanel = memo(function JournalPanel({
     if (!ready) return;
     const t = setInterval(() => {
       const tags = parseTags(tagsInput);
-      void saveJournalWithFallback(date, draft, tags)
+      void saveJournalWithFallback(date, draft, tags, entryKey)
         .then((result) => {
-          setDays(prev => ({ ...prev, [date]: { content: draft, tags } }));
+          setDays(prev => ({ ...prev, [entryKey]: { date, content: draft, tags } }));
           if (result.usedFallback) {
             setSaveState('error');
             setSaveError('자동 저장: 원격 동기화 실패 · 로컬에는 저장됨');
@@ -374,7 +388,7 @@ export const JournalPanel = memo(function JournalPanel({
         });
     }, 3000);
     return () => clearInterval(t);
-  }, [date, draft, tagsInput, ready]);
+  }, [date, draft, tagsInput, ready, entryKey]);
 
   const allTags = useMemo(() => getAllTags(days), [days]);
 
@@ -409,10 +423,10 @@ export const JournalPanel = memo(function JournalPanel({
   const recentEntries = useMemo(() => {
     return Object.entries(days)
       .sort((a, b) => b[0].localeCompare(a[0]))
-      .filter(([d]) => {
-        if (filterTag && !days[d].tags?.includes(filterTag)) return false;
-        if (rangeStart && d < rangeStart) return false;
-        if (rangeEnd && d > rangeEnd) return false;
+      .filter(([, day]) => {
+        if (filterTag && !day.tags?.includes(filterTag)) return false;
+        if (rangeStart && day.date < rangeStart) return false;
+        if (rangeEnd && day.date > rangeEnd) return false;
         return true;
       });
   }, [days, filterTag, rangeStart, rangeEnd]);
@@ -435,6 +449,21 @@ export const JournalPanel = memo(function JournalPanel({
     const d = new Date(date);
     d.setDate(d.getDate() + 1);
     selectDate(d.toISOString().slice(0, 10));
+  };
+
+  const createMemo = () => {
+    const tags = parseTags(tagsInput);
+    if (draft.trim() || tags.length > 0) {
+      saveJournal(date, draft, tags, entryKey);
+      void saveJournalWithFallback(date, draft, tags, entryKey);
+    }
+    const nextKey = `${date}--${Date.now()}`;
+    setDays(prev => ({ ...prev, [nextKey]: { date, content: '', tags: [] } }));
+    setEntryKey(nextKey);
+    setDraft('');
+    setTagsInput('');
+    setTagDraft('');
+    setSaveState('idle');
   };
 
   useSwipe(dateSwipeRef, {
@@ -461,21 +490,21 @@ export const JournalPanel = memo(function JournalPanel({
           noDate += 1;
           continue;
         }
-        const existing = nextMap[note.date];
+        const existing = Object.values(nextMap).find((day) => day.date === note.date);
         if (existing?.content?.trim()) {
           skipped += 1;
           continue;
         }
         const tags = note.tags;
         await saveJournalWithFallback(note.date, note.content, tags);
-        nextMap[note.date] = { content: note.content, tags };
+        nextMap[note.date] = { date: note.date, content: note.content, tags };
         imported += 1;
       }
 
       setDays(nextMap);
-      if (nextMap[date]) {
-        setDraft(nextMap[date].content);
-        setTagsInput(joinTags(nextMap[date].tags));
+      if (nextMap[entryKey]) {
+        setDraft(nextMap[entryKey].content);
+        setTagsInput(joinTags(nextMap[entryKey].tags));
       }
       setImportMsg(
         notes.length === 0
@@ -505,6 +534,11 @@ export const JournalPanel = memo(function JournalPanel({
           : 'grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6'
       }
     >
+      <div className="col-span-full mb-3 flex justify-end">
+        <Button type="button" variant="outline" size="sm" onClick={createMemo}>
+          + 새 메모
+        </Button>
+      </div>
       <JournalEditor
         writingFirst={writingFirst}
         date={date}
@@ -526,7 +560,8 @@ export const JournalPanel = memo(function JournalPanel({
             run: async (setProgress) => {
               setProgress(0.2, '일지 수집…')
               const asEntries: Record<string, JournalEntry> = {}
-              for (const [d, day] of Object.entries(days)) {
+              for (const [, day] of Object.entries(days)) {
+                const d = day.date
                 asEntries[d] = {
                   date: d,
                   content: day.content,

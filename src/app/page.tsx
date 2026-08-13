@@ -786,8 +786,8 @@ export default function Home() {
                         setFocusJournalDate(null);
                         setFocusJournalFolder(null);
                       }}
-                      onOpenWrite={(date) => {
-                        setFocusJournalDate(date);
+                      onOpenWrite={(date, entryKey) => {
+                        setFocusJournalDate(entryKey ?? date);
                         setJournalSubTab('journal-write');
                       }}
                     />
