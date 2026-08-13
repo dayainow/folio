@@ -34,8 +34,8 @@ describe('templates (P56)', () => {
 
   it('lists builtin journal/doc/board templates', () => {
     expect(listTemplates('journal').length).toBeGreaterThanOrEqual(4)
-    expect(listTemplates('doc').some((t) => t.name === 'Retrospective')).toBe(true)
-    expect(listTemplates('board').some((t) => t.name === '버그')).toBe(true)
+    expect(listTemplates('doc').some((t) => t.id === 'd-retro' && t.name === '스프린트 회고')).toBe(true)
+    expect(listTemplates('board').some((t) => t.id === 'b-bug' && t.name === '버그 티켓')).toBe(true)
   })
 
   it('creates and deletes custom templates', () => {

@@ -31,7 +31,7 @@ import {
   setMobileFullscreen,
   subscribeMobileFullscreen,
 } from '@/lib/mobile-actions';
-import { Activity, BookOpen, Maximize2, Minimize2, PanelRight, Users, X } from 'lucide-react';
+import { Activity, BookOpen, Maximize2, Minimize2, PanelRight, Sparkles, Users, X } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 
@@ -52,6 +52,14 @@ const SidebarSkeleton = () => (
 const JournalPanel = dynamic(
   () => import('@/components/journal').then((m) => ({ default: m.JournalPanel })),
   { ssr: false, loading: () => <PanelFallback label="일지" /> },
+);
+
+const PersonalAssistantHome = dynamic(
+  () =>
+    import('@/components/personal-assistant-home').then((m) => ({
+      default: m.PersonalAssistantHome,
+    })),
+  { ssr: false, loading: () => <PanelFallback label="오늘의 기록 비서" /> },
 );
 
 const JournalBrowsePanel = dynamic(
@@ -192,16 +200,16 @@ const AiToolsButton = dynamic(
   { ssr: false, loading: () => null },
 );
 
-type TabValue = 'journal' | 'docs' | 'board' | 'process';
+type TabValue = 'assistant' | 'journal' | 'docs' | 'board' | 'process';
 
-const TAB_ORDER: TabValue[] = ['journal', 'docs', 'board', 'process'];
+const TAB_ORDER: TabValue[] = ['assistant', 'journal', 'docs', 'board', 'process'];
 
 export default function Home() {
   const { t } = useI18n();
   const [email, setEmail] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [authReady, setAuthReady] = useState(false);
-  const [tab, setTab] = useState<TabValue>('journal');
+  const [tab, setTab] = useState<TabValue>('assistant');
   const [focusJournalDate, setFocusJournalDate] = useState<string | null>(null);
   const [focusJournalFolder, setFocusJournalFolder] = useState<string | null>(null);
   const [journalSubTab, setJournalSubTab] = useState<'journal-write' | 'journal-view'>(
@@ -622,6 +630,7 @@ export default function Home() {
             <ul className="flex items-center gap-0.5">
               {(
                 [
+                  { value: 'assistant' as const, labelKey: 'nav.assistant', assistantIcon: true },
                   { value: 'journal' as const, labelKey: 'nav.journal' },
                   { value: 'docs' as const, labelKey: 'nav.docs' },
                   { value: 'board' as const, labelKey: 'nav.board' },
@@ -640,6 +649,7 @@ export default function Home() {
                         : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground',
                     )}
                   >
+                    {'assistantIcon' in item && item.assistantIcon ? <Sparkles className="h-3 w-3" /> : null}
                     {'icon' in item && item.icon ? <Activity className="h-3 w-3" /> : null}
                     {t(item.labelKey)}
                   </button>
@@ -748,6 +758,23 @@ export default function Home() {
           <div ref={panelFocusRef} className="folio-tab-panel" key={tab}>
             <div ref={swipeRef} className="touch-pan-y">
             <Tabs value={tab} onValueChange={handleTabChange} className="w-full">
+              <TabsContent value="assistant" className="mt-0">
+                <PersonalAssistantHome
+                  onOpenJournal={(entryKey) => {
+                    setFocusJournalDate(entryKey);
+                    setJournalSubTab('journal-write');
+                    handleTabChange('journal');
+                  }}
+                  onOpenDocs={(docId) => {
+                    setFocusDocId(docId ?? null);
+                    handleTabChange('docs');
+                  }}
+                  onOpenBoard={(taskId) => {
+                    setFocusTaskId(taskId ?? null);
+                    handleTabChange('board');
+                  }}
+                />
+              </TabsContent>
               <TabsContent value="journal" className="mt-0">
                 <Tabs
                   value={journalSubTab}

@@ -8,6 +8,7 @@
   },
   "nav": {
     "main": "メインパネル",
+    "assistant": "今日",
     "journal": "日誌",
     "docs": "ドキュメント",
     "board": "ボード",

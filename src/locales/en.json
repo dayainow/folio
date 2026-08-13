@@ -8,6 +8,7 @@
   },
   "nav": {
     "main": "Main panels",
+    "assistant": "Today",
     "journal": "Journal",
     "docs": "Docs",
     "board": "Board",

@@ -8,6 +8,7 @@
   },
   "nav": {
     "main": "주요 패널",
+    "assistant": "오늘",
     "journal": "일지",
     "docs": "문서",
     "board": "일정",

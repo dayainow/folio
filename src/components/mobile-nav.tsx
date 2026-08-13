@@ -4,23 +4,23 @@
  * P44/P57 — 하단 네비 + FAB · 동기화 뱃지 · 햅틱 · 활성 인디케이터
  */
 import { useEffect, useState } from 'react'
-import { BookOpen, FileText, Kanban, Activity, PenLine, Save, Plus } from 'lucide-react'
+import { BookOpen, FileText, Kanban, PenLine, Save, Plus, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useI18n } from '@/components/i18n-provider'
 import { hapticTap } from '@/lib/haptics'
 import { countSyncQueue } from '@/lib/offline-db'
 
-export type MobileTab = 'journal' | 'docs' | 'board' | 'process'
+export type MobileTab = 'assistant' | 'journal' | 'docs' | 'board' | 'process'
 
 const SIDE_ITEMS: Array<{
   value: MobileTab
   labelKey: string
   icon: typeof BookOpen
 }> = [
+  { value: 'assistant', labelKey: 'nav.assistant', icon: Sparkles },
   { value: 'journal', labelKey: 'nav.journal', icon: BookOpen },
   { value: 'docs', labelKey: 'nav.docs', icon: FileText },
   { value: 'board', labelKey: 'nav.board', icon: Kanban },
-  { value: 'process', labelKey: 'nav.process', icon: Activity },
 ]
 
 /** P42/P44/P57 — 하단 네비 + 중앙 FAB 클러스터 */

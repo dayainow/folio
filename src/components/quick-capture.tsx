@@ -8,7 +8,8 @@ import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/components/i18n-provider'
 import { useEscapeToClose, useFocusTrap, announceToScreenReader } from '@/lib/a11y'
-import { loadJournals, saveJournalWithFallback } from '@/lib/journal'
+import { saveJournalWithFallback } from '@/lib/journal'
+import { createJournalEntryKey, localDateKey } from '@/lib/personal-assistant'
 import { listTemplates, type FolioTemplate } from '@/lib/templates'
 import { cn } from '@/lib/utils'
 
@@ -19,7 +20,7 @@ export function QuickCaptureModal({
 }: {
   open: boolean
   onClose: () => void
-  onSaved?: (date: string) => void
+  onSaved?: (entryKey: string) => void
 }) {
   const { t } = useI18n()
   const titleId = useId()
@@ -54,18 +55,15 @@ export function QuickCaptureModal({
     const content = text.trim()
     if (!content || saving) return
     setSaving(true)
-    const date = new Date().toISOString().slice(0, 10)
+    const date = localDateKey()
     try {
-      const existing = loadJournals()[date]
-      const merged = existing?.content?.trim()
-        ? `${existing.content.trim()}\n\n---\n\n${content}`
-        : content
-      const tags = existing?.tags ?? []
       const tpl = templates.find((x) => x.id === templateId)
-      const nextTags = Array.from(new Set([...tags, ...(tpl?.tags ?? [])]))
-      await saveJournalWithFallback(date, merged, nextTags)
+      const nextTags = Array.from(new Set(tpl?.tags ?? []))
+      const entryKey = createJournalEntryKey(date)
+      await saveJournalWithFallback(date, content, nextTags, entryKey)
+      window.dispatchEvent(new CustomEvent('folio-journals-changed'))
       announceToScreenReader(t('capture.saved'))
-      onSaved?.(date)
+      onSaved?.(entryKey)
       setText('')
       setTemplateId('')
       onClose()
