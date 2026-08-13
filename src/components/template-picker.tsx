@@ -4,7 +4,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronUp, Plus, Sparkles, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/components/i18n-provider'
 import {
@@ -26,13 +26,21 @@ export function TemplatePicker({
 }) {
   const { t } = useI18n()
   const [templates, setTemplates] = useState(() => listTemplates(kind))
+  const [expanded, setExpanded] = useState(false)
 
   const reload = () => setTemplates(listTemplates(kind))
+  const builtin = templates.filter((template) => template.builtin)
+  const custom = templates.filter((template) => !template.builtin)
+  const visible = expanded ? templates : [...builtin.slice(0, 5), ...custom]
 
   return (
     <div className={className}>
       <div className="mb-1 flex items-center justify-between gap-2">
-        <p className="text-[11px] font-medium text-muted-foreground">{t('templates.label')}</p>
+        <p className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+          <Sparkles className="h-3 w-3" aria-hidden />
+          {t('templates.label')}
+          <span className="font-normal">{templates.length}개</span>
+        </p>
         <Button
           type="button"
           size="sm"
@@ -51,13 +59,14 @@ export function TemplatePicker({
         </Button>
       </div>
       <div className="flex flex-wrap gap-1">
-        {templates.map((tpl) => (
+        {visible.map((tpl) => (
           <div key={tpl.id} className="inline-flex items-center gap-0.5">
             <Button
               type="button"
               size="sm"
               variant="outline"
               className="h-7 px-2 text-[11px]"
+              title={[tpl.category, ...(tpl.tags ?? [])].filter(Boolean).join(' · ')}
               onClick={() => onApply(tpl)}
             >
               {tpl.name}
@@ -80,6 +89,19 @@ export function TemplatePicker({
             ) : null}
           </div>
         ))}
+        {builtin.length > 5 && (
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="h-7 gap-1 px-2 text-[10px] text-muted-foreground"
+            aria-expanded={expanded}
+            onClick={() => setExpanded((value) => !value)}
+          >
+            {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            {expanded ? '접기' : `더 보기 +${builtin.length - 5}`}
+          </Button>
+        )}
       </div>
     </div>
   )
