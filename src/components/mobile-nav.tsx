@@ -110,7 +110,7 @@ export function MobileNav({
           )
         })}
 
-        <li className="relative flex justify-center pb-1">
+        <li className="relative flex h-14 justify-center pb-1">
           <div className="absolute -top-7 flex items-end gap-2">
             {onSave && (
               <button
