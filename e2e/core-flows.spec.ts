@@ -10,6 +10,7 @@ test.describe('Folio core flows (P66)', () => {
       localStorage.setItem('folio_locale', 'ko')
       localStorage.setItem('workspace_tasks', '[]')
       localStorage.removeItem('folio_weekly_plans_v1')
+      localStorage.removeItem('folio_daily_plans_v1')
     })
   })
 
@@ -127,5 +128,28 @@ test.describe('Folio core flows (P66)', () => {
       return tasks.filter((task) => task.title === '고객 피드백 정리' && task.tags.includes('weekly-focus')).length
     })).toBe(1)
     await expect(page.getByRole('button', { name: '고객 피드백 정리 업무 열기' })).toBeVisible()
+  })
+
+  test('daily top three can be reordered and confirmed explicitly', async ({ page }) => {
+    await page.addInitScript(() => {
+      const base = { description: '', tags: [], createdAt: '2026-08-14T00:00:00.000Z', updatedAt: '2026-08-14T00:00:00.000Z' }
+      localStorage.setItem('workspace_tasks', JSON.stringify([
+        { ...base, id: 'due', title: '오늘 마감 업무', status: 'backlog', priority: 'high', dueDate: '2026-08-14' },
+        { ...base, id: 'focus', title: '주간 핵심 업무', status: 'backlog', priority: 'low', tags: ['weekly-focus'] },
+        { ...base, id: 'active', title: '진행 중 업무', status: 'in_progress', priority: 'low' },
+      ]))
+    })
+    await page.goto('/')
+    const dailyPlan = page.getByRole('region', { name: '오늘의 Top 3' })
+    await expect(dailyPlan).toBeVisible()
+    await expect(dailyPlan.getByText('오늘 마감 업무', { exact: true })).toBeVisible()
+    await expect.poll(async () => page.evaluate(() => localStorage.getItem('folio_daily_plans_v1'))).toBeNull()
+    await dailyPlan.getByRole('button', { name: '진행 중 업무 순서 올리기' }).click()
+    await dailyPlan.getByRole('button', { name: 'Top 3 확정' }).click()
+    await expect(dailyPlan.getByText('오늘의 Top 3를 확정했습니다.')).toBeVisible()
+    await expect.poll(async () => page.evaluate(() => {
+      const plans = JSON.parse(localStorage.getItem('folio_daily_plans_v1') || '{}') as Record<string, { taskIds: string[] }>
+      return Object.values(plans)[0]?.taskIds
+    })).toEqual(['due', 'active', 'focus'])
   })
 })

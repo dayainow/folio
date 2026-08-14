@@ -37,6 +37,7 @@ import { DailyReviewCard } from '@/components/daily-review-card'
 import { loadDailyReview } from '@/lib/daily-review'
 import { WeeklyReviewCard } from '@/components/weekly-review-card'
 import { WeeklyFocusCard } from '@/components/weekly-focus-card'
+import { DailyPlanCard } from '@/components/daily-plan-card'
 
 type CaptureMode = 'memo' | 'idea' | 'decision'
 
@@ -333,6 +334,8 @@ export function PersonalAssistantHome({
       </section>
 
       <WeeklyFocusCard date={today} tasks={data.tasks} onOpenBoard={onOpenBoard} />
+
+      <DailyPlanCard date={today} tasks={data.tasks} onOpenBoard={onOpenBoard} />
 
       <section aria-labelledby="context-title" className="flex flex-col gap-3 rounded-[1.4rem] border border-foreground/10 bg-card/55 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
