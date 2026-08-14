@@ -6,11 +6,11 @@ import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
 const DB_NAME = 'folio-offline'
 const DB_VERSION = 1
 
-export type OfflineDataType = 'journal' | 'docs' | 'board' | 'kv'
+export type OfflineDataType = 'journal' | 'docs' | 'board' | 'projects' | 'kv'
 
 export type SyncQueueItem = {
   id: string
-  type: 'journal' | 'docs' | 'board'
+  type: 'journal' | 'docs' | 'board' | 'projects'
   /** 직렬화된 페이로드 힌트 */
   label: string
   payload: unknown

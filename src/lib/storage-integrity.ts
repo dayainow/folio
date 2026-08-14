@@ -38,12 +38,14 @@ const LOCAL_KEYS: Record<StorageDataType, string> = {
   journal: 'workspace_journals',
   docs: 'workspace_docs',
   board: 'workspace_tasks',
+  projects: 'workspace_projects',
 }
 
 const CLOUD_CACHE_KEYS: Record<StorageDataType, string> = {
   journal: 'supabase:journals',
   docs: 'supabase:docs',
   board: 'supabase:boards',
+  projects: 'supabase:projects',
 }
 
 /** FNV-1a 32-bit — 빠른 클라이언트 checksum */
@@ -103,7 +105,7 @@ function parseMaybeJson(raw: string | null): unknown {
  * localStorage / Supabase 캐시 / Beacon 캐시 checksum 비교
  */
 export async function verifyStorageIntegrity(
-  types: StorageDataType[] = ['journal', 'docs', 'board'],
+  types: StorageDataType[] = ['journal', 'docs', 'board', 'projects'],
 ): Promise<IntegrityReport> {
   const mode = getStorageMode()
   const items: IntegrityCheckItem[] = []
@@ -205,7 +207,13 @@ function suggestRecovery(
   checksums: Partial<Record<IntegritySource, string | null>>,
 ): string {
   const label =
-    type === 'journal' ? '일지' : type === 'docs' ? '문서' : '일정'
+    type === 'journal'
+      ? '일지'
+      : type === 'docs'
+        ? '문서'
+        : type === 'projects'
+          ? '프로젝트'
+          : '일정'
   if (mode === 'beacon' && checksums.beacon && checksums.local && checksums.beacon !== checksums.local) {
     return `${label}: Beacon ↔ 로컬 불일치. 저장 모드를 Beacon으로 유지한 채 다시 저장하거나, 로컬 내보내기 후 Beacon 캐시를 덮어쓰세요.`
   }

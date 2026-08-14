@@ -46,6 +46,7 @@ function sample(version = 0): FolioDataset {
         updatedAt: '2026-08-01T00:00:00.000Z',
       },
     ],
+    projects: [],
   }
 }
 
@@ -62,6 +63,7 @@ describe('data-migration', () => {
     expect(report.counts.journals).toBe(1)
     expect(report.counts.docs).toBe(1)
     expect(report.counts.tasks).toBe(1)
+    expect(report.counts.projects).toBe(0)
     expect(report.checksum).toMatch(/^[0-9a-f]{8}$/)
   })
 
@@ -89,6 +91,22 @@ describe('data-migration', () => {
 
   it('merges with conflict strategies', () => {
     const a = sample(1)
+    a.projects = [
+      {
+        id: 'p1',
+        name: '기존 프로젝트',
+        description: '',
+        status: 'active',
+        color: 'teal',
+        startDate: null,
+        dueDate: null,
+        journalKeys: [],
+        docIds: [],
+        taskIds: [],
+        createdAt: '2026-08-01T00:00:00.000Z',
+        updatedAt: '2026-08-01T00:00:00.000Z',
+      },
+    ]
     const b: FolioDataset = {
       schemaVersion: 2,
       journals: {
@@ -107,14 +125,23 @@ describe('data-migration', () => {
       },
       docs: [],
       tasks: [],
+      projects: [
+        {
+          ...a.projects[0]!,
+          name: '최신 프로젝트',
+          updatedAt: '2026-08-02T00:00:00.000Z',
+        },
+      ],
     }
     const merged = mergeDatasets(a, b, 'merge')
     expect(merged.journals['2026-08-01']?.content).toBe('newer')
     expect(merged.journals['2026-08-03']?.content).toBe('extra')
+    expect(merged.projects[0]?.name).toBe('최신 프로젝트')
 
     const skipped = mergeDatasets(a, b, 'skip')
     expect(skipped.journals['2026-08-01']?.content).toBe('hello')
     expect(skipped.journals['2026-08-03']?.content).toBe('extra')
+    expect(skipped.projects[0]?.name).toBe('기존 프로젝트')
 
     const over = mergeDatasets(a, b, 'overwrite')
     expect(Object.keys(over.journals)).toHaveLength(2)

@@ -31,7 +31,7 @@ import {
   setMobileFullscreen,
   subscribeMobileFullscreen,
 } from '@/lib/mobile-actions';
-import { Activity, BookOpen, Maximize2, Minimize2, PanelRight, Sparkles, Users, X } from 'lucide-react';
+import { Activity, BookOpen, FolderKanban, Maximize2, Minimize2, PanelRight, Sparkles, Users, X } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 
@@ -60,6 +60,11 @@ const PersonalAssistantHome = dynamic(
       default: m.PersonalAssistantHome,
     })),
   { ssr: false, loading: () => <PanelFallback label="오늘의 기록 비서" /> },
+);
+
+const ProjectHub = dynamic(
+  () => import('@/components/project-hub').then((m) => ({ default: m.ProjectHub })),
+  { ssr: false, loading: () => <PanelFallback label="프로젝트" /> },
 );
 
 const JournalBrowsePanel = dynamic(
@@ -200,9 +205,9 @@ const AiToolsButton = dynamic(
   { ssr: false, loading: () => null },
 );
 
-type TabValue = 'assistant' | 'journal' | 'docs' | 'board' | 'process';
+type TabValue = 'assistant' | 'projects' | 'journal' | 'docs' | 'board' | 'process';
 
-const TAB_ORDER: TabValue[] = ['assistant', 'journal', 'docs', 'board', 'process'];
+const TAB_ORDER: TabValue[] = ['assistant', 'projects', 'journal', 'docs', 'board', 'process'];
 
 export default function Home() {
   const { t } = useI18n();
@@ -259,7 +264,7 @@ export default function Home() {
       await ensureBackgroundSync();
       if (cancelled || navigator.onLine) return;
       const { getLocalJson, setLocalJson, flushLocalJson } = await import('@/lib/local-cache');
-      const pairs: Array<{ type: 'journal' | 'docs' | 'board'; key: string; empty: (v: unknown) => boolean }> = [
+      const pairs: Array<{ type: 'journal' | 'docs' | 'board' | 'projects'; key: string; empty: (v: unknown) => boolean }> = [
         {
           type: 'journal',
           key: 'workspace_journals',
@@ -273,6 +278,11 @@ export default function Home() {
         {
           type: 'board',
           key: 'workspace_tasks',
+          empty: (v) => !Array.isArray(v) || v.length === 0,
+        },
+        {
+          type: 'projects',
+          key: 'workspace_projects',
           empty: (v) => !Array.isArray(v) || v.length === 0,
         },
       ];
@@ -631,6 +641,7 @@ export default function Home() {
               {(
                 [
                   { value: 'assistant' as const, labelKey: 'nav.assistant', assistantIcon: true },
+                  { value: 'projects' as const, labelKey: 'nav.projects', projectIcon: true },
                   { value: 'journal' as const, labelKey: 'nav.journal' },
                   { value: 'docs' as const, labelKey: 'nav.docs' },
                   { value: 'board' as const, labelKey: 'nav.board' },
@@ -650,6 +661,7 @@ export default function Home() {
                     )}
                   >
                     {'assistantIcon' in item && item.assistantIcon ? <Sparkles className="h-3 w-3" /> : null}
+                    {'projectIcon' in item && item.projectIcon ? <FolderKanban className="h-3 w-3" /> : null}
                     {'icon' in item && item.icon ? <Activity className="h-3 w-3" /> : null}
                     {t(item.labelKey)}
                   </button>
@@ -771,6 +783,24 @@ export default function Home() {
                   }}
                   onOpenBoard={(taskId) => {
                     setFocusTaskId(taskId ?? null);
+                    handleTabChange('board');
+                  }}
+                  onOpenProjects={() => handleTabChange('projects')}
+                />
+              </TabsContent>
+              <TabsContent value="projects" className="mt-0">
+                <ProjectHub
+                  onOpenJournal={(entryKey) => {
+                    setFocusJournalDate(entryKey);
+                    setJournalSubTab('journal-write');
+                    handleTabChange('journal');
+                  }}
+                  onOpenDoc={(docId) => {
+                    setFocusDocId(docId);
+                    handleTabChange('docs');
+                  }}
+                  onOpenTask={(taskId) => {
+                    setFocusTaskId(taskId);
                     handleTabChange('board');
                   }}
                 />

@@ -9,6 +9,7 @@
   "nav": {
     "main": "Main panels",
     "assistant": "Today",
+    "projects": "Projects",
     "journal": "Journal",
     "docs": "Docs",
     "board": "Board",

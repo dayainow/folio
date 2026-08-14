@@ -6,7 +6,7 @@ import { defaultBeaconRoot, readBeaconProjectJson } from '@/lib/beacon'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const TYPES = new Set(['journals', 'docs', 'boards'])
+const TYPES = new Set(['journals', 'docs', 'boards', 'projects'])
 
 function cachePath(root: string, type: string): string {
   return path.join(root, '.beacon', 'cache', `folio-${type}.json`)
@@ -17,7 +17,7 @@ async function ensureBeacon(root: string): Promise<boolean> {
   return project != null
 }
 
-/** GET /api/beacon/folio?type=journals|docs|boards */
+/** GET /api/beacon/folio?type=journals|docs|boards|projects */
 export async function GET(request: Request) {
   const root = defaultBeaconRoot()
   const type = new URL(request.url).searchParams.get('type') ?? ''

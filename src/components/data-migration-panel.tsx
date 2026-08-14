@@ -72,7 +72,7 @@ function ReportBlock({ title, report }: { title: string; report: ValidationRepor
       </p>
       <p className="text-muted-foreground tabular-nums">
         v{report.schemaVersion} · j{report.counts.journals} · d{report.counts.docs} · t
-        {report.counts.tasks}
+        {report.counts.tasks} · p{report.counts.projects}
       </p>
       <p className="mt-0.5 font-mono text-[10px] text-muted-foreground">Σ {report.checksum}</p>
       {report.issues.length > 0 ? (

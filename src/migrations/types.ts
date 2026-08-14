@@ -4,12 +4,14 @@
 import type { JournalEntry } from '@/lib/journal'
 import type { DocEntry } from '@/lib/docs'
 import type { Task } from '@/lib/board'
+import type { WorkProject } from '@/lib/projects'
 
 export type FolioDataset = {
   schemaVersion: number
   journals: Record<string, JournalEntry>
   docs: DocEntry[]
   tasks: Task[]
+  projects: WorkProject[]
 }
 
 export type Migration = {
@@ -33,7 +35,7 @@ export type ValidationReport = {
   at: string
   ok: boolean
   schemaVersion: number
-  counts: { journals: number; docs: number; tasks: number }
+  counts: { journals: number; docs: number; tasks: number; projects: number }
   checksum: string
   issues: string[]
 }

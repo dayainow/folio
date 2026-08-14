@@ -5,6 +5,7 @@ import JSZip from 'jszip'
 import type { JournalEntry } from '@/lib/journal'
 import type { DocEntry } from '@/lib/docs'
 import type { Task } from '@/lib/board'
+import type { WorkProject } from '@/lib/projects'
 
 export type ProgressFn = (ratio: number, label?: string) => void
 
@@ -151,6 +152,10 @@ export function tasksToJson(tasks: Task[]): string {
   return `${JSON.stringify({ exportedAt: new Date().toISOString(), count: tasks.length, tasks }, null, 2)}\n`
 }
 
+export function projectsToJson(projects: WorkProject[]): string {
+  return `${JSON.stringify({ exportedAt: new Date().toISOString(), count: projects.length, projects }, null, 2)}\n`
+}
+
 async function yieldTick(): Promise<void> {
   await new Promise((r) => setTimeout(r, 0))
 }
@@ -189,17 +194,18 @@ export interface FullExportInput {
   journals: Record<string, JournalEntry>
   docs: DocEntry[]
   tasks: Task[]
+  projects: WorkProject[]
   version?: string
 }
 
-/** 전체 ZIP: journals/ docs/ boards/ metadata.json */
+/** 전체 ZIP: journals/ docs/ boards/ projects/ metadata.json */
 export async function zipFullExport(
   input: FullExportInput,
   onProgress?: ProgressFn,
 ): Promise<Blob> {
   const zip = new JSZip()
   const journalEntries = Object.values(input.journals).sort((a, b) => a.date.localeCompare(b.date))
-  const totalSteps = journalEntries.length + input.docs.length + 3
+  const totalSteps = journalEntries.length + input.docs.length + 4
   let step = 0
   const tick = (label: string) => {
     step += 1
@@ -241,6 +247,10 @@ export async function zipFullExport(
   boardsFolder?.file('tasks.json', tasksToJson(input.tasks))
   tick('보드 CSV/JSON')
 
+  const projectsFolder = zip.folder('projects')
+  projectsFolder?.file('projects.json', projectsToJson(input.projects))
+  tick('프로젝트 JSON')
+
   const metadata = {
     exportedAt: new Date().toISOString(),
     version: input.version ?? process.env.npm_package_version ?? '4.1.0-wip',
@@ -248,8 +258,9 @@ export async function zipFullExport(
       journals: journalEntries.length,
       docs: input.docs.length,
       tasks: input.tasks.length,
+      projects: input.projects.length,
     },
-    structure: ['journals/', 'docs/', 'boards/', 'metadata.json'],
+    structure: ['journals/', 'docs/', 'boards/', 'projects/', 'metadata.json'],
   }
   zip.file('metadata.json', `${JSON.stringify(metadata, null, 2)}\n`)
   tick('metadata')

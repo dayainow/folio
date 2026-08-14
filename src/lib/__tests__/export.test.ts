@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import JSZip from 'jszip'
 import {
   docToMarkdown,
   filterJournalsByRange,
@@ -123,9 +124,30 @@ describe('ZIP generation', () => {
       journals: {},
       docs: [],
       tasks: [],
+      projects: [
+        {
+          id: 'p1',
+          name: 'Folio 업무 OS',
+          description: '',
+          status: 'active',
+          color: 'teal',
+          startDate: null,
+          dueDate: null,
+          journalKeys: ['j1'],
+          docIds: [],
+          taskIds: [],
+          createdAt: '2026-08-14T00:00:00.000Z',
+          updatedAt: '2026-08-14T00:00:00.000Z',
+        },
+      ],
       version: '2.0.0',
     })
     expect(blob).toBeInstanceOf(Blob)
     expect(blob.size).toBeGreaterThan(20)
+    const zip = await JSZip.loadAsync(await blob.arrayBuffer())
+    const projects = await zip.file('projects/projects.json')?.async('string')
+    const metadata = await zip.file('metadata.json')?.async('string')
+    expect(projects).toContain('Folio 업무 OS')
+    expect(metadata).toContain('"projects": 1')
   })
 })

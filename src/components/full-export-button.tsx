@@ -7,6 +7,7 @@ import { ExportMenu } from '@/components/export-menu'
 import { loadDocsWithFallback } from '@/lib/docs'
 import { loadJournalsWithFallback } from '@/lib/journal'
 import { loadTasksWithFallback } from '@/lib/board'
+import { loadProjectsWithFallback } from '@/lib/projects'
 import {
   downloadBlob,
   fullExportFilename,
@@ -22,13 +23,14 @@ export function FullExportButton() {
         {
           id: 'zip-all',
           label: 'ZIP 번들',
-          description: 'journals/ · docs/ · boards/ · metadata.json',
+          description: 'journals/ · docs/ · boards/ · projects/ · metadata.json',
           run: async (setProgress) => {
             setProgress(0.05, '데이터 로드…')
-            const [journals, docs, tasks] = await Promise.all([
+            const [journals, docs, tasks, projects] = await Promise.all([
               loadJournalsWithFallback(),
               loadDocsWithFallback(),
               loadTasksWithFallback(),
+              loadProjectsWithFallback(),
             ])
             setProgress(0.15, 'ZIP 구성…')
             const blob = await zipFullExport(
@@ -36,6 +38,7 @@ export function FullExportButton() {
                 journals,
                 docs,
                 tasks,
+                projects,
                 version: process.env.NEXT_PUBLIC_FOLIO_VERSION ?? process.env.npm_package_version ?? '4.1.0-wip',
               },
               (r, label) => setProgress(0.15 + r * 0.85, label),
@@ -45,7 +48,7 @@ export function FullExportButton() {
               recordSecurityAudit({
                 action: 'export',
                 resource: 'full-zip',
-                detail: `j=${Object.keys(journals).length} d=${docs.length} b=${tasks.length}`,
+                detail: `j=${Object.keys(journals).length} d=${docs.length} b=${tasks.length} p=${projects.length}`,
               }),
             )
           },

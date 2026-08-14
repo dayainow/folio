@@ -9,6 +9,8 @@ import { loadDocs } from '@/lib/docs'
 import type { DocEntry } from '@/lib/docs'
 import { loadTasks } from '@/lib/board'
 import type { Task } from '@/lib/board'
+import { loadProjects } from '@/lib/projects'
+import type { WorkProject } from '@/lib/projects'
 import { setLocalJson, flushLocalJson } from '@/lib/local-cache'
 import { checksumData } from '@/lib/storage-integrity'
 import { downloadBlob } from '@/lib/export'
@@ -40,6 +42,7 @@ const SNAPSHOT_KEY = 'folio_migration_last_snapshot'
 const JOURNALS_KEY = 'workspace_journals'
 const DOCS_KEY = 'workspace_docs'
 const TASKS_KEY = 'workspace_tasks'
+const PROJECTS_KEY = 'workspace_projects'
 
 export type ProgressFn = (p: MigrationProgress) => void
 
@@ -73,6 +76,7 @@ export function loadDataset(): FolioDataset {
     journals: loadJournals(),
     docs: loadDocs(),
     tasks: loadTasks(),
+    projects: loadProjects(),
   }
 }
 
@@ -83,6 +87,8 @@ export function persistDataset(data: FolioDataset) {
   flushLocalJson(DOCS_KEY)
   setLocalJson(TASKS_KEY, data.tasks)
   flushLocalJson(TASKS_KEY)
+  setLocalJson(PROJECTS_KEY, data.projects)
+  flushLocalJson(PROJECTS_KEY)
   writeSchemaVersion(data.schemaVersion)
 }
 
@@ -93,6 +99,7 @@ export function validateDataset(data: FolioDataset): ValidationReport {
   }
   if (!Array.isArray(data.docs)) issues.push('docs 배열이 아닙니다')
   if (!Array.isArray(data.tasks)) issues.push('tasks 배열이 아닙니다')
+  if (!Array.isArray(data.projects)) issues.push('projects 배열이 아닙니다')
 
   for (const [date, entry] of Object.entries(data.journals ?? {})) {
     if (!entry || typeof entry !== 'object') {
@@ -107,17 +114,22 @@ export function validateDataset(data: FolioDataset): ValidationReport {
   for (const task of data.tasks ?? []) {
     if (!task?.id) issues.push('task: id 누락')
   }
+  for (const project of data.projects ?? []) {
+    if (!project?.id) issues.push('project: id 누락')
+  }
 
   const counts = {
     journals: Object.keys(data.journals ?? {}).length,
     docs: (data.docs ?? []).length,
     tasks: (data.tasks ?? []).length,
+    projects: (data.projects ?? []).length,
   }
   const checksum = checksumData({
     schemaVersion: data.schemaVersion,
     journals: data.journals,
     docs: data.docs,
     tasks: data.tasks,
+    projects: data.projects,
   })
 
   return {
@@ -393,6 +405,20 @@ export async function exportDatasetSqlite(
       created_at TEXT,
       updated_at TEXT
     );
+    CREATE TABLE projects (
+      id TEXT PRIMARY KEY,
+      name TEXT,
+      description TEXT,
+      status TEXT,
+      color TEXT,
+      start_date TEXT,
+      due_date TEXT,
+      journal_keys TEXT,
+      doc_ids TEXT,
+      task_ids TEXT,
+      created_at TEXT,
+      updated_at TEXT
+    );
   `)
 
   db.run('INSERT INTO meta VALUES (?, ?)', ['schemaVersion', String(payload.schemaVersion)])
@@ -441,6 +467,28 @@ export async function exportDatasetSqlite(
     ])
   }
   tStmt.free()
+
+  onProgress?.({ phase: 'export', ratio: 0.92, label: '프로젝트 기록…' })
+  const pStmt = db.prepare(
+    'INSERT INTO projects VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+  )
+  for (const project of payload.projects) {
+    pStmt.run([
+      project.id,
+      project.name,
+      project.description,
+      project.status,
+      project.color,
+      project.startDate,
+      project.dueDate,
+      JSON.stringify(project.journalKeys),
+      JSON.stringify(project.docIds),
+      JSON.stringify(project.taskIds),
+      project.createdAt,
+      project.updatedAt,
+    ])
+  }
+  pStmt.free()
 
   const bytes = db.export()
   db.close()
@@ -546,8 +594,36 @@ export async function importDatasetSqlite(buffer: ArrayBuffer): Promise<FolioDat
     /* empty */
   }
 
+  const projects: WorkProject[] = []
+  try {
+    const rows = db.exec(
+      'SELECT id, name, description, status, color, start_date, due_date, journal_keys, doc_ids, task_ids, created_at, updated_at FROM projects',
+    )
+    for (const row of rows[0]?.values ?? []) {
+      const status = String(row[3] ?? 'active') as WorkProject['status']
+      projects.push({
+        id: String(row[0]),
+        name: String(row[1] ?? ''),
+        description: String(row[2] ?? ''),
+        status: ['planned', 'active', 'on_hold', 'completed'].includes(status)
+          ? status
+          : 'active',
+        color: String(row[4] ?? 'teal'),
+        startDate: row[5] != null ? String(row[5]) : null,
+        dueDate: row[6] != null ? String(row[6]) : null,
+        journalKeys: parseTags(row[7]),
+        docIds: parseTags(row[8]),
+        taskIds: parseTags(row[9]),
+        createdAt: String(row[10] ?? new Date().toISOString()),
+        updatedAt: String(row[11] ?? new Date().toISOString()),
+      })
+    }
+  } catch {
+    /* legacy dump without projects */
+  }
+
   db.close()
-  return { schemaVersion, journals, docs, tasks }
+  return { schemaVersion, journals, docs, tasks, projects }
 }
 
 export function parseDatasetJson(text: string): FolioDataset {
@@ -559,6 +635,7 @@ export function parseDatasetJson(text: string): FolioDataset {
     journals: (parsed.journals as Record<string, JournalEntry>) ?? {},
     docs: Array.isArray(parsed.docs) ? (parsed.docs as DocEntry[]) : [],
     tasks: Array.isArray(parsed.tasks) ? (parsed.tasks as Task[]) : [],
+    projects: Array.isArray(parsed.projects) ? (parsed.projects as WorkProject[]) : [],
   }
 }
 
@@ -573,6 +650,7 @@ export function mergeDatasets(
       journals: { ...incoming.journals },
       docs: [...incoming.docs],
       tasks: [...incoming.tasks],
+      projects: [...incoming.projects],
     }
   }
 
@@ -591,11 +669,17 @@ export function mergeDatasets(
       ...current.tasks,
       ...incoming.tasks.filter((t) => !taskIds.has(t.id)),
     ]
+    const projectIds = new Set(current.projects.map((project) => project.id))
+    const projects = [
+      ...current.projects,
+      ...incoming.projects.filter((project) => !projectIds.has(project.id)),
+    ]
     return {
       schemaVersion: Math.max(current.schemaVersion, incoming.schemaVersion),
       journals,
       docs,
       tasks,
+      projects,
     }
   }
 
@@ -621,11 +705,19 @@ export function mergeDatasets(
       taskMap.set(t.id, t)
     }
   }
+  const projectMap = new Map(current.projects.map((project) => [project.id, project]))
+  for (const project of incoming.projects) {
+    const currentProject = projectMap.get(project.id)
+    if (!currentProject || project.updatedAt >= currentProject.updatedAt) {
+      projectMap.set(project.id, project)
+    }
+  }
   return {
     schemaVersion: Math.max(current.schemaVersion, incoming.schemaVersion),
     journals,
     docs: [...docMap.values()],
     tasks: [...taskMap.values()],
+    projects: [...projectMap.values()],
   }
 }
 
@@ -717,12 +809,14 @@ export function buildMigrationReport(opts: {
     `- journals: ${opts.before.counts.journals}`,
     `- docs: ${opts.before.counts.docs}`,
     `- tasks: ${opts.before.counts.tasks}`,
+    `- projects: ${opts.before.counts.projects}`,
     '',
     '## After',
     `- checksum: ${opts.after.checksum}`,
     `- journals: ${opts.after.counts.journals}`,
     `- docs: ${opts.after.counts.docs}`,
     `- tasks: ${opts.after.counts.tasks}`,
+    `- projects: ${opts.after.counts.projects}`,
     '',
   ].filter(Boolean)
   if (opts.after.issues.length) {

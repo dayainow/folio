@@ -15,7 +15,7 @@ import { timedFetch } from '@/lib/timed-fetch'
 export type StorageMode = 'local' | 'cloud' | 'beacon'
 
 /** saveWithFallback / Beacon 캐시 키 */
-export type StorageDataType = 'journal' | 'docs' | 'board'
+export type StorageDataType = 'journal' | 'docs' | 'board' | 'projects'
 
 const MODE_KEY = 'folio_storage_mode'
 const MODE_EVENT = 'folio-storage-mode'
@@ -82,9 +82,10 @@ export type SaveWithFallbackResult = {
   usedFallback: boolean
 }
 
-function beaconFileType(type: StorageDataType): 'journals' | 'docs' | 'boards' {
+function beaconFileType(type: StorageDataType): 'journals' | 'docs' | 'boards' | 'projects' {
   if (type === 'journal') return 'journals'
   if (type === 'docs') return 'docs'
+  if (type === 'projects') return 'projects'
   return 'boards'
 }
 
@@ -125,6 +126,7 @@ export async function saveBeaconCache(type: StorageDataType, data: unknown): Pro
 function typeLabel(type: StorageDataType): string {
   if (type === 'journal') return '일지'
   if (type === 'docs') return '문서'
+  if (type === 'projects') return '프로젝트'
   return '일정'
 }
 

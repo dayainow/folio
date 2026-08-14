@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   Clock3,
   FileText,
+  FolderKanban,
   Lightbulb,
   ListTodo,
   RefreshCw,
@@ -71,10 +72,12 @@ export function PersonalAssistantHome({
   onOpenJournal,
   onOpenDocs,
   onOpenBoard,
+  onOpenProjects,
 }: {
   onOpenJournal: (entryKey: string, date: string) => void
   onOpenDocs: (docId?: string) => void
   onOpenBoard: (taskId?: string) => void
+  onOpenProjects: () => void
 }) {
   const { locale } = useI18n()
   const [now] = useState(() => new Date())
@@ -170,6 +173,10 @@ export function PersonalAssistantHome({
             <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
               오늘의 생각을 붙잡고, 해야 할 일을 살피고, 잊고 있던 기록을 다시 꺼내드릴게요.
             </p>
+            <Button variant="outline" size="sm" className="mt-4 gap-1.5 rounded-full bg-white/60 dark:bg-white/5" onClick={onOpenProjects}>
+              <FolderKanban className="size-3.5" />
+              프로젝트 허브 열기
+            </Button>
           </div>
 
           <div className="grid grid-cols-3 gap-2 sm:min-w-[24rem]">

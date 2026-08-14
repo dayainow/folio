@@ -10,7 +10,7 @@ import { useI18n } from '@/components/i18n-provider'
 import { hapticTap } from '@/lib/haptics'
 import { countSyncQueue } from '@/lib/offline-db'
 
-export type MobileTab = 'assistant' | 'journal' | 'docs' | 'board' | 'process'
+export type MobileTab = 'assistant' | 'projects' | 'journal' | 'docs' | 'board' | 'process'
 
 const SIDE_ITEMS: Array<{
   value: MobileTab

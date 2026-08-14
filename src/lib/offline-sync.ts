@@ -285,6 +285,25 @@ async function handleSyncItem(item: SyncQueueItem): Promise<boolean> {
     }
     return true
   }
+  if (item.type === 'projects') {
+    const { deleteProjectSupabase, saveProjectsSupabase, loadProjectsSupabase } = await import('@/lib/projects')
+    const operation = item.payload as { operation?: string; id?: string }
+    if (operation.operation === 'delete' && operation.id) {
+      await deleteProjectSupabase(operation.id)
+      return true
+    }
+    const local = item.payload as Parameters<typeof saveProjectsSupabase>[0]
+    if (!Array.isArray(local)) return false
+    try {
+      const remote = await loadProjectsSupabase()
+      const byId = new Map(remote.map((project) => [project.id, project]))
+      for (const project of local) byId.set(project.id, project)
+      await saveProjectsSupabase([...byId.values()])
+    } catch {
+      await saveProjectsSupabase(local)
+    }
+    return true
+  }
   return false
 }
 
