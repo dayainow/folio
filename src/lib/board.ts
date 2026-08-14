@@ -7,6 +7,7 @@ import { requireAuthUser } from '@/lib/supabase';
 import { getStorageMode, loadWithFallback, saveWithFallback } from '@/lib/storage';
 import { getLocalJson, setLocalJson, flushLocalJson } from '@/lib/local-cache';
 import { cachedQuery, invalidateQueryCache } from '@/lib/query-cache';
+import type { SourceMetadata } from '@/lib/provenance';
 
 export interface Task {
   id: string;
@@ -25,6 +26,8 @@ export interface Task {
   githubState?: string;
   githubAssignees?: string[];
   githubLabels?: string[];
+  /** Jira/GitHub 등 외부 업무 원문의 canonical metadata */
+  provenance?: SourceMetadata;
 }
 
 const STORAGE_KEY = 'workspace_tasks';

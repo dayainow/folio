@@ -25,15 +25,17 @@ import { loadJournalsWithFallback, saveJournalWithFallback } from '@/lib/journal
 import {
   appendIntakeHistory,
   buildIntakeCandidates,
+  canonicalIntakeTags,
   intakeFingerprintsFromTagSets,
-  intakeTags,
   loadIntakeHistory,
   type IntakeCandidate,
   type IntakeHistoryItem,
 } from '@/lib/intake'
 import { readObsidianMarkdownFiles, uniqueDocTitle } from '@/lib/obsidian'
+import { readNotionExport } from '@/lib/notion-import'
 import { createJournalEntryKey, localDateKey } from '@/lib/personal-assistant'
 import { cn } from '@/lib/utils'
+import { sourceSystemLabel, type SourceSystem } from '@/lib/provenance'
 
 export function IntakeCenter({
   onOpenJournal,
@@ -44,6 +46,7 @@ export function IntakeCenter({
 }) {
   const filesRef = useRef<HTMLInputElement>(null)
   const folderRef = useRef<HTMLInputElement>(null)
+  const notionRef = useRef<HTMLInputElement>(null)
   const [candidates, setCandidates] = useState<IntakeCandidate[]>([])
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [history, setHistory] = useState<IntakeHistoryItem[]>(() => loadIntakeHistory())
@@ -60,12 +63,13 @@ export function IntakeCenter({
     () => ({
       journal: candidates.filter((candidate) => candidate.route === 'journal').length,
       docs: candidates.filter((candidate) => candidate.route === 'docs').length,
-      warnings: candidates.filter((candidate) => candidate.warnings.length > 0).length,
+      duplicates: candidates.filter((candidate) => candidate.duplicate).length,
+      review: candidates.filter((candidate) => candidate.reviewState === 'needs_review').length,
     }),
     [candidates],
   )
 
-  const prepareFiles = async (files: FileList | File[]) => {
+  const prepareFiles = async (files: FileList | File[], sourceSystem: SourceSystem = 'obsidian') => {
     setParsing(true)
     setMessage('')
     try {
@@ -78,10 +82,34 @@ export function IntakeCenter({
         ...docs.map((doc) => doc.tags ?? []),
         ...Object.values(journals).map((entry) => entry.tags ?? []),
       ])
-      const next = buildIntakeCandidates(notes, history, new Date(), fingerprints)
+      const next = buildIntakeCandidates(notes, history, new Date(), fingerprints, sourceSystem)
       setCandidates(next)
-      setSelected(new Set(next.filter((candidate) => !candidate.duplicate).map((candidate) => candidate.fingerprint)))
+      setSelected(new Set(next.filter((candidate) => candidate.reviewState === 'ready').map((candidate) => candidate.fingerprint)))
       setMessage(next.length ? `${next.length}개 원본을 분석했습니다.` : '가져올 Markdown 파일이 없습니다.')
+    } finally {
+      setParsing(false)
+    }
+  }
+
+  const prepareNotion = async (file: File) => {
+    setParsing(true)
+    setMessage('')
+    try {
+      const [{ notes, databases, attachments }, docs, journals] = await Promise.all([
+        readNotionExport(file),
+        loadDocsWithFallback(),
+        loadJournalsWithFallback(),
+      ])
+      const fingerprints = intakeFingerprintsFromTagSets([
+        ...docs.map((doc) => doc.tags ?? []),
+        ...Object.values(journals).map((entry) => entry.tags ?? []),
+      ])
+      const next = buildIntakeCandidates(notes, history, new Date(), fingerprints, 'notion')
+      setCandidates(next)
+      setSelected(new Set(next.filter((candidate) => candidate.reviewState === 'ready').map((candidate) => candidate.fingerprint)))
+      setMessage(`${next.length}개 Notion 항목을 분석했습니다.${databases ? ` 데이터베이스 ${databases}개를 표 문서로 변환했습니다.` : ''}${attachments ? ` 첨부파일 ${attachments}개는 경로만 보존하고 제외했습니다.` : ''}`)
+    } catch {
+      setMessage('Notion ZIP을 읽지 못했습니다. Markdown & CSV 형식으로 다시 내보내주세요.')
     } finally {
       setParsing(false)
     }
@@ -95,7 +123,7 @@ export function IntakeCenter({
   const preparePaste = () => {
     if (!pasted.trim()) return
     const file = new File([pasted], `${localDateKey()}-붙여넣기.md`, { type: 'text/markdown' })
-    void prepareFiles([file])
+    void prepareFiles([file], 'clipboard')
   }
 
   const importSelected = async () => {
@@ -116,8 +144,9 @@ export function IntakeCenter({
             await saveJournalWithFallback(
               candidate.resolvedDate,
               candidate.content,
-              intakeTags(candidate),
+              canonicalIntakeTags(candidate),
               targetId,
+              candidate.provenance,
             )
           } else {
             targetId = crypto.randomUUID()
@@ -131,8 +160,9 @@ export function IntakeCenter({
               category: candidate.category,
               source: candidate.source,
               noteType: candidate.noteType === 'log' ? 'doc' : candidate.noteType,
-              tags: intakeTags(candidate),
+              tags: canonicalIntakeTags(candidate),
               sourcePath: candidate.relativePath,
+              provenance: candidate.provenance,
               createdAt,
               updatedAt: new Date().toISOString(),
             }
@@ -147,6 +177,7 @@ export function IntakeCenter({
             targetId,
             date: candidate.resolvedDate,
             importedAt: new Date().toISOString(),
+            provenance: candidate.provenance,
           })
         } catch {
           failed += 1
@@ -159,7 +190,7 @@ export function IntakeCenter({
         const importedSet = new Set(imported.map((item) => item.fingerprint))
         setCandidates((current) =>
           current.map((candidate) =>
-            importedSet.has(candidate.fingerprint) ? { ...candidate, duplicate: true } : candidate,
+            importedSet.has(candidate.fingerprint) ? { ...candidate, duplicate: true, reviewState: 'duplicate' } : candidate,
           ),
         )
         setSelected(new Set())
@@ -198,7 +229,7 @@ export function IntakeCenter({
           <div className="grid grid-cols-3 gap-2 sm:min-w-[22rem]">
             <Metric label="일지" value={routeCounts.journal} icon={BookOpen} />
             <Metric label="문서" value={routeCounts.docs} icon={FileText} />
-            <Metric label="보완 필요" value={routeCounts.warnings} icon={AlertTriangle} />
+            <Metric label={routeCounts.duplicates ? `중복 ${routeCounts.duplicates}` : '검토 필요'} value={routeCounts.review} icon={AlertTriangle} />
           </div>
         </div>
       </section>
@@ -227,6 +258,9 @@ export function IntakeCenter({
                 <Button variant="outline" size="sm" className="gap-1.5" onClick={() => folderRef.current?.click()} disabled={parsing}>
                   <FolderOpen className="size-3.5" />볼트 폴더
                 </Button>
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => notionRef.current?.click()} disabled={parsing}>
+                  <FileArchive className="size-3.5" />Notion ZIP
+                </Button>
               </div>
               <input ref={filesRef} type="file" accept=".md,text/markdown" multiple className="hidden" onChange={onFiles} />
               <input
@@ -237,6 +271,17 @@ export function IntakeCenter({
                 className="hidden"
                 onChange={onFiles}
                 {...({ webkitdirectory: '', directory: '' } as Record<string, string>)}
+              />
+              <input
+                ref={notionRef}
+                type="file"
+                accept=".zip,application/zip"
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0]
+                  if (file) void prepareNotion(file)
+                  event.target.value = ''
+                }}
               />
             </div>
 
@@ -256,7 +301,7 @@ export function IntakeCenter({
           <CardContent className="space-y-3 px-5 text-sm">
             {[
               ['역할 비중복', 'log는 일지, research·meeting·knowledge는 문서로 분리'],
-              ['마이그레이션 우선', 'frontmatter의 출처·유형·날짜·태그를 그대로 보존'],
+              ['출처 보존', '원문 시스템·경로·수집 시각·지문·동기화 상태를 기록'],
               ['Append only', '동일 날짜가 있어도 새 항목으로 추가하고 원본을 덮어쓰지 않음'],
               ['중복 방지', '원본 지문을 기록해 같은 파일의 재수집을 차단'],
             ].map(([title, body]) => (
@@ -269,10 +314,18 @@ export function IntakeCenter({
       {candidates.length ? (
         <Card className="gap-0 overflow-hidden py-0">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3 sm:px-5">
-            <div><p className="text-sm font-semibold">분류 결과</p><p className="mt-0.5 text-[11px] text-muted-foreground">체크한 원본만 가져옵니다.</p></div>
-            <Button size="sm" onClick={() => void importSelected()} disabled={!selectedCandidates.length || importing} className="gap-1.5">
-              <Inbox className="size-3.5" />{importing ? '가져오는 중…' : `${selectedCandidates.length}개 가져오기`}
-            </Button>
+            <div><p className="text-sm font-semibold">분류 결과</p><p className="mt-0.5 text-[11px] text-muted-foreground">안전한 항목만 기본 선택합니다. 검토 항목은 확인 후 직접 선택하세요.</p></div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setSelected(new Set(candidates.filter((candidate) => candidate.reviewState === 'ready').map((candidate) => candidate.fingerprint)))} disabled={importing}>
+                안전 항목 선택
+              </Button>
+              {routeCounts.review ? <Button variant="ghost" size="sm" onClick={() => setSelected(new Set(candidates.filter((candidate) => candidate.reviewState !== 'duplicate').map((candidate) => candidate.fingerprint)))} disabled={importing}>
+                검토 항목도 선택
+              </Button> : null}
+              <Button size="sm" onClick={() => void importSelected()} disabled={!selectedCandidates.length || importing} className="gap-1.5">
+                <Inbox className="size-3.5" />{importing ? '가져오는 중…' : `${selectedCandidates.length}개 가져오기`}
+              </Button>
+            </div>
           </div>
           <ul className="divide-y">
             {candidates.map((candidate) => (
@@ -282,10 +335,10 @@ export function IntakeCenter({
                   <span className="min-w-0">
                     <span className="flex flex-wrap items-center gap-2"><span className="truncate text-sm font-medium">{candidate.title}</span>{candidate.duplicate ? <Badge variant="secondary">이미 수집됨</Badge> : null}</span>
                     <span className="mt-1 block truncate text-[11px] text-muted-foreground">{candidate.relativePath} · {candidate.resolvedDate}</span>
-                    {candidate.warnings.length ? <span className="mt-1.5 flex flex-wrap gap-1">{candidate.warnings.map((warning) => <Badge key={warning} variant="outline" className="text-[9px] text-amber-700 dark:text-amber-300">{warning}</Badge>)}</span> : null}
+                    {candidate.warnings.length ? <span className="mt-1.5 flex flex-wrap gap-1"><Badge variant="outline" className="text-[9px] text-amber-700 dark:text-amber-300">검토 필요</Badge>{candidate.warnings.map((warning) => <Badge key={warning} variant="outline" className="text-[9px] text-amber-700 dark:text-amber-300">{warning}</Badge>)}</span> : null}
                   </span>
                   <span className="flex items-center gap-2 text-[11px]">
-                    <Badge variant="outline">{candidate.source}</Badge><Badge>{candidate.noteType}</Badge><ArrowRight className="size-3" /><Badge variant="secondary">{candidate.route === 'journal' ? '일지' : candidate.category}</Badge>
+                    <Badge variant="outline">{sourceSystemLabel(candidate.provenance.system)}</Badge><Badge>{candidate.noteType}</Badge><ArrowRight className="size-3" /><Badge variant="secondary">{candidate.route === 'journal' ? '일지' : candidate.category}</Badge>
                   </span>
                 </label>
               </li>

@@ -1,8 +1,10 @@
 import type { ParsedObsidianNote } from '@/lib/obsidian'
+import { createSourceMetadata, provenanceTags, type SourceMetadata, type SourceSystem } from '@/lib/provenance'
 
 export type IntakeSource = 'manual' | 'hermes'
 export type IntakeNoteType = 'log' | 'doc' | 'research' | 'meeting' | 'knowledge'
 export type IntakeRoute = 'journal' | 'docs'
+export type IntakeReviewState = 'ready' | 'needs_review' | 'duplicate'
 
 export type IntakeCandidate = ParsedObsidianNote & {
   source: IntakeSource
@@ -13,6 +15,8 @@ export type IntakeCandidate = ParsedObsidianNote & {
   fingerprint: string
   warnings: string[]
   duplicate: boolean
+  provenance: SourceMetadata
+  reviewState: IntakeReviewState
 }
 
 export type IntakeHistoryItem = {
@@ -24,6 +28,7 @@ export type IntakeHistoryItem = {
   targetId: string
   date?: string
   importedAt: string
+  provenance?: SourceMetadata
 }
 
 const HISTORY_KEY = 'folio_intake_history_v1'
@@ -130,6 +135,7 @@ export function buildIntakeCandidates(
   history: IntakeHistoryItem[] = loadIntakeHistory(),
   now = new Date(),
   knownFingerprints: Iterable<string> = [],
+  sourceSystem: SourceSystem = 'obsidian',
 ): IntakeCandidate[] {
   const seen = new Set([
     ...history.map((item) => item.fingerprint),
@@ -166,8 +172,19 @@ export function buildIntakeCandidates(
       fingerprint,
       warnings,
       duplicate,
+      provenance: createSourceMetadata({
+        system: sourceSystem,
+        fingerprint,
+        path: note.relativePath,
+        now,
+      }),
+      reviewState: duplicate ? 'duplicate' : warnings.length ? 'needs_review' : 'ready',
     }
   })
+}
+
+export function canonicalIntakeTags(candidate: IntakeCandidate): string[] {
+  return Array.from(new Set([...intakeTags(candidate), ...provenanceTags(candidate.provenance)]))
 }
 
 export function __resetIntakeHistoryForTests(): void {

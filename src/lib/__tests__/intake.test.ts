@@ -33,6 +33,12 @@ describe('intake pipeline', () => {
     expect(candidate.source).toBe('manual')
     expect(candidate.noteType).toBe('log')
     expect(candidate.warnings).toEqual([])
+    expect(candidate.reviewState).toBe('ready')
+    expect(candidate.provenance).toMatchObject({
+      system: 'obsidian',
+      fingerprint: candidate.fingerprint,
+      syncState: 'imported',
+    })
     expect(intakeTags(candidate)).toEqual([
       'folio',
       'source:manual',
@@ -40,6 +46,17 @@ describe('intake pipeline', () => {
       `origin:${candidate.fingerprint}`,
       'imported',
     ])
+  })
+
+  it('tracks pasted text as local clipboard provenance', () => {
+    const candidate = buildIntakeCandidates([note()], [], new Date('2026-08-14T00:00:00.000Z'), [], 'clipboard')[0]!
+    expect(candidate.provenance).toEqual({
+      system: 'clipboard',
+      fingerprint: candidate.fingerprint,
+      path: candidate.relativePath,
+      importedAt: '2026-08-14T00:00:00.000Z',
+      syncState: 'local',
+    })
   })
 
   it('infers Hermes research metadata from the source path', () => {
@@ -58,6 +75,7 @@ describe('intake pipeline', () => {
     expect(candidate.category).toBe('Research')
     expect(candidate.resolvedDate).toBe('2026-08-14')
     expect(candidate.warnings).toHaveLength(4)
+    expect(candidate.reviewState).toBe('needs_review')
   })
 
   it('marks a previously imported original as a duplicate', () => {
@@ -73,7 +91,7 @@ describe('intake pipeline', () => {
         importedAt: '2026-08-14T00:00:00.000Z',
       },
     ])
-    expect(buildIntakeCandidates([note()])[0]?.duplicate).toBe(true)
+    expect(buildIntakeCandidates([note()])[0]).toMatchObject({ duplicate: true, reviewState: 'duplicate' })
   })
 
   it('detects duplicates from origin tags synced with records', () => {

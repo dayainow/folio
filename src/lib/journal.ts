@@ -7,6 +7,7 @@ import { requireAuthUser } from '@/lib/supabase';
 import { loadWithFallback, saveWithFallback } from '@/lib/storage';
 import { getLocalJson, setLocalJson, flushLocalJson } from '@/lib/local-cache';
 import { cachedQuery, invalidateQueryCache } from '@/lib/query-cache';
+import type { SourceMetadata } from '@/lib/provenance';
 
 /** P58 — 일지 발행 상태 */
 export type JournalStatus = 'draft' | 'published' | 'archived';
@@ -28,6 +29,8 @@ export interface JournalEntry {
   importance?: number;
   /** P58 — draft | published | archived */
   status?: JournalStatus;
+  /** 외부 원문에서 수집된 경우 출처와 동기화 상태 */
+  provenance?: SourceMetadata;
 }
 
 const STORAGE_KEY = 'workspace_journals';
@@ -215,6 +218,7 @@ export async function saveJournalWithFallback(
   content: string,
   tags: string[],
   entryId = date,
+  provenance?: SourceMetadata,
 ) {
   const prev = loadJournals()[entryId];
   const entry: JournalEntry = {
@@ -225,6 +229,7 @@ export async function saveJournalWithFallback(
     tags,
     updatedAt: new Date().toISOString(),
     createdAt: prev?.createdAt ?? new Date().toISOString(),
+    provenance: provenance ?? prev?.provenance,
   };
 
   // 로컬 저장 시점에 최신 map과 merge — 수동/자동 저장 경쟁 시 stale 스냅샷 덮어쓰기 방지

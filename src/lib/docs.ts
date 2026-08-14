@@ -7,6 +7,7 @@ import { requireAuthUser } from '@/lib/supabase';
 import { loadWithFallback, saveWithFallback } from '@/lib/storage';
 import { getLocalJson, setLocalJson, flushLocalJson } from '@/lib/local-cache';
 import { cachedQuery, invalidateQueryCache } from '@/lib/query-cache';
+import type { SourceMetadata } from '@/lib/provenance';
 
 export interface DocEntry {
   id: string;
@@ -19,6 +20,8 @@ export interface DocEntry {
   noteType?: 'doc' | 'research' | 'meeting' | 'knowledge';
   tags?: string[];
   sourcePath?: string;
+  /** 원문 출처·동기화 상태. 로컬 저장의 canonical metadata. */
+  provenance?: SourceMetadata;
   createdAt: string;
   updatedAt: string;
 }
