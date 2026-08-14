@@ -36,6 +36,7 @@ import { cn } from '@/lib/utils'
 import { DailyReviewCard } from '@/components/daily-review-card'
 import { loadDailyReview } from '@/lib/daily-review'
 import { WeeklyReviewCard } from '@/components/weekly-review-card'
+import { WeeklyFocusCard } from '@/components/weekly-focus-card'
 
 type CaptureMode = 'memo' | 'idea' | 'decision'
 
@@ -112,10 +113,12 @@ export function PersonalAssistantHome({
     const onDataChange = () => void refresh()
     window.addEventListener('focus', onFocus)
     window.addEventListener('folio-journals-changed', onDataChange)
+    window.addEventListener('folio-tasks-changed', onDataChange)
     return () => {
       window.clearTimeout(initialRefresh)
       window.removeEventListener('focus', onFocus)
       window.removeEventListener('folio-journals-changed', onDataChange)
+      window.removeEventListener('folio-tasks-changed', onDataChange)
     }
   }, [refresh])
 
@@ -328,6 +331,8 @@ export function PersonalAssistantHome({
           })}
         </div>
       </section>
+
+      <WeeklyFocusCard date={today} tasks={data.tasks} onOpenBoard={onOpenBoard} />
 
       <section aria-labelledby="context-title" className="flex flex-col gap-3 rounded-[1.4rem] border border-foreground/10 bg-card/55 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">

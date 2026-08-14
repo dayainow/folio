@@ -100,8 +100,32 @@ test.describe('Folio core flows (P66)', () => {
     await page.getByRole('button', { name: /주간 리뷰 완료/ }).click()
     await expect(page.getByText('이번 주를 정리하고 다음 주 초점을 확정했습니다.')).toBeVisible()
     await expect.poll(async () => page.evaluate(() => {
-      const plans = JSON.parse(localStorage.getItem('folio_weekly_plans_v1') || '{}')
+      const plans = JSON.parse(localStorage.getItem('folio_weekly_plans_v1') || '{}') as Record<string, { focus?: string[] }>
       return Object.values(plans)[0]?.focus?.[0]
     })).toBe('고객 피드백 정리')
+  })
+
+  test('weekly focus creates one executable backlog task', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('folio_weekly_plans_v1', JSON.stringify({
+        '2026-08-10': {
+          weekStart: '2026-08-10',
+          weekEnd: '2026-08-16',
+          focus: ['고객 피드백 정리'],
+          reflection: '',
+          completedAt: '2026-08-14T08:00:00.000Z',
+          updatedAt: '2026-08-14T08:00:00.000Z',
+        },
+      }))
+    })
+    await page.goto('/')
+    await expect(page.getByRole('heading', { name: '이번 주 집중할 것' })).toBeVisible()
+    await page.getByRole('button', { name: '고객 피드백 정리 실행 업무 만들기' }).click()
+    await expect(page.getByText(/실행 업무로 만들었습니다/)).toBeVisible()
+    await expect.poll(async () => page.evaluate(() => {
+      const tasks = JSON.parse(localStorage.getItem('workspace_tasks') || '[]') as Array<{ title: string; tags: string[] }>
+      return tasks.filter((task) => task.title === '고객 피드백 정리' && task.tags.includes('weekly-focus')).length
+    })).toBe(1)
+    await expect(page.getByRole('button', { name: '고객 피드백 정리 업무 열기' })).toBeVisible()
   })
 })

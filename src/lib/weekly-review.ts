@@ -55,6 +55,38 @@ export function loadWeeklyPlan(weekStart: string): WeeklyPlan | null {
   return loadWeeklyPlans()[weekStart] ?? null
 }
 
+export function findWeeklyPlanForDate(date: string, plans = loadWeeklyPlans()): WeeklyPlan | null {
+  const { from } = weekRangeOf(date)
+  const current = plans[from]
+  if (current?.focus.length) return current
+
+  const previous = new Date(`${from}T12:00:00`)
+  previous.setDate(previous.getDate() - 7)
+  const previousStart = [previous.getFullYear(), String(previous.getMonth() + 1).padStart(2, '0'), String(previous.getDate()).padStart(2, '0')].join('-')
+  const carried = plans[previousStart]
+  return carried?.completedAt && carried.focus.length ? carried : null
+}
+
+export function taskFromWeeklyFocus(focus: string, tasks: Task[], now = new Date()): { task: Task; created: boolean } {
+  const title = focus.trim()
+  const existing = tasks.find((task) => task.status !== 'done' && task.title.trim().toLocaleLowerCase() === title.toLocaleLowerCase())
+  if (existing) return { task: existing, created: false }
+  const timestamp = now.toISOString()
+  return {
+    created: true,
+    task: {
+      id: typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `weekly-${now.getTime()}`,
+      title,
+      description: '주간 핵심 초점에서 만든 실행 업무',
+      status: 'backlog',
+      priority: 'high',
+      tags: ['weekly-focus'],
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    },
+  }
+}
+
 export function saveWeeklyPlan(
   range: { from: string; to: string },
   input: { focus: string[]; reflection: string },

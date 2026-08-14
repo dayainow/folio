@@ -23,6 +23,7 @@ export function WeeklyReviewCard({ anchor, journals, tasks }: { anchor: string; 
     setFocus([...result.focus, '', '', ''].slice(0, 3))
     if (finish) setComplete(true)
     setMessage(finish ? '이번 주를 정리하고 다음 주 초점을 확정했습니다.' : '주간 계획을 저장했습니다.')
+    window.dispatchEvent(new CustomEvent('folio-weekly-plan-changed'))
   }
 
   return (

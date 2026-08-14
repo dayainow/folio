@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { buildWeeklySnapshot, loadWeeklyPlan, saveWeeklyPlan } from '@/lib/weekly-review'
+import { buildWeeklySnapshot, findWeeklyPlanForDate, loadWeeklyPlan, saveWeeklyPlan, taskFromWeeklyFocus } from '@/lib/weekly-review'
 import type { Task } from '@/lib/board'
 
 describe('weekly personal review', () => {
@@ -27,5 +27,17 @@ describe('weekly personal review', () => {
     expect(plan.focus).toEqual(['A', 'B', 'C'])
     expect(plan.completedAt).toBeTruthy()
     expect(loadWeeklyPlan('2026-08-10')?.reflection).toBe('keep')
+  })
+
+  it('carries a completed plan into the following week', () => {
+    const plan = saveWeeklyPlan({ from: '2026-08-10', to: '2026-08-16' }, { focus: ['고객 피드백 정리'], reflection: '' }, true)
+    expect(findWeeklyPlanForDate('2026-08-17')).toEqual(plan)
+    expect(findWeeklyPlanForDate('2026-08-24')).toBeNull()
+  })
+
+  it('turns focus into a high-priority task without duplicating open work', () => {
+    const first = taskFromWeeklyFocus(' 고객 피드백 정리 ', [], new Date('2026-08-14T00:00:00.000Z'))
+    expect(first).toMatchObject({ created: true, task: { title: '고객 피드백 정리', status: 'backlog', priority: 'high', tags: ['weekly-focus'] } })
+    expect(taskFromWeeklyFocus('고객 피드백 정리', [first.task]).created).toBe(false)
   })
 })
