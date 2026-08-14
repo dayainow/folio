@@ -83,8 +83,8 @@ export async function migrateLocalDataOnLogin(): Promise<{
   const tasks = loadTasks()
 
   let journalCount = 0
-  for (const entry of Object.values(journals)) {
-    await saveJournalSupabase(entry.date, entry.content, entry.tags)
+  for (const [entryKey, entry] of Object.entries(journals)) {
+    await saveJournalSupabase(entryKey, entry.date, entry.content, entry.tags)
     journalCount += 1
   }
 

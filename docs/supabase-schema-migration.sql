@@ -17,18 +17,31 @@ create index if not exists journals_user_id_idx on public.journals (user_id);
 create index if not exists docs_user_id_idx on public.docs (user_id);
 create index if not exists boards_user_id_idx on public.boards (user_id);
 
--- journals: (user_id, date) 유니크 (컬럼이 준비된 뒤)
+-- journals: 같은 날짜에 여러 기록을 허용하고 클라이언트 키로 동기화
+alter table if exists public.journals
+  add column if not exists client_key text;
+
+update public.journals
+set client_key = date::text
+where client_key is null or client_key = '';
+
+alter table if exists public.journals
+  alter column client_key set not null;
+
+alter table if exists public.journals
+  drop constraint if exists journals_user_id_date_key;
+
 do $$
 begin
   if not exists (
-    select 1 from pg_constraint where conname = 'journals_user_id_date_key'
+    select 1 from pg_constraint where conname = 'journals_user_id_client_key_key'
   ) then
     alter table public.journals
-      add constraint journals_user_id_date_key unique (user_id, date);
+      add constraint journals_user_id_client_key_key unique (user_id, client_key);
   end if;
 exception
   when others then
-    -- 기존 unique 이름/구성이 다를 수 있음 — 수동 확인
+    -- 기존 constraint 이름/구성이 다를 수 있음 — multi-journal migration으로 재확인
     null;
 end $$;
 

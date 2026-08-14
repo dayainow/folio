@@ -35,6 +35,7 @@ const SUPABASE_CACHE_KEY = 'supabase:journals';
 
 type JournalRow = {
   id: string;
+  client_key: string;
   date: string;
   content: string;
   tags: string[] | null;
@@ -44,7 +45,7 @@ type JournalRow = {
 
 function rowToEntry(row: JournalRow): JournalEntry {
   return {
-    id: row.id,
+    id: row.client_key || row.id,
     date: row.date,
     content: row.content ?? '',
     tags: row.tags ?? [],
@@ -168,7 +169,7 @@ export async function loadJournalsSupabase(): Promise<Record<string, JournalEntr
     const { supabase, userId } = await requireAuthUser();
     const { data, error } = await supabase
       .from('journals')
-      .select('id, date, content, tags, created_at, updated_at')
+      .select('id, client_key, date, content, tags, created_at, updated_at')
       .eq('user_id', userId)
       .order('date', { ascending: false });
 
@@ -176,25 +177,32 @@ export async function loadJournalsSupabase(): Promise<Record<string, JournalEntr
 
     const map: Record<string, JournalEntry> = {};
     for (const row of (data ?? []) as JournalRow[]) {
-      map[row.date] = rowToEntry(row);
+      const entry = rowToEntry(row);
+      map[entry.id ?? row.id] = entry;
     }
     return map;
   });
 }
 
 /** Supabase `journals` — user_id 포함 upsert */
-export async function saveJournalSupabase(date: string, content: string, tags: string[]) {
+export async function saveJournalSupabase(
+  entryKey: string,
+  date: string,
+  content: string,
+  tags: string[],
+) {
   const { supabase, userId } = await requireAuthUser();
   const now = new Date().toISOString();
   const { error } = await supabase.from('journals').upsert(
     {
       user_id: userId,
+      client_key: entryKey,
       date,
       content,
       tags,
       updated_at: now,
     },
-    { onConflict: 'user_id,date' },
+    { onConflict: 'user_id,client_key' },
   );
 
   if (error) throw error;
@@ -228,7 +236,7 @@ export async function saveJournalWithFallback(
     },
     resolveRemoteData: () => ({ ...loadJournals(), [entryId]: entry }),
     cloudSave: async () => {
-      await saveJournalSupabase(date, content, tags);
+      await saveJournalSupabase(entryId, date, content, tags);
     },
   });
 

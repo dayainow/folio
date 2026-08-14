@@ -185,19 +185,20 @@ export async function queueRemoteSync(
 
 /** P44 — 로컬 변경 우선, 원격에만 있는 키는 유지 */
 function mergeJournalLocalFirst(
-  local: Record<string, { content: string; tags: string[] }>,
-  remote: Record<string, { content: string; tags: string[] }>,
-): Record<string, { content: string; tags: string[] }> {
-  const out: Record<string, { content: string; tags: string[] }> = { ...remote }
-  for (const [date, entry] of Object.entries(local)) {
-    const remoteEntry = remote[date]
+  local: Record<string, { date: string; content: string; tags: string[] }>,
+  remote: Record<string, { date: string; content: string; tags: string[] }>,
+): Record<string, { date: string; content: string; tags: string[] }> {
+  const out: Record<string, { date: string; content: string; tags: string[] }> = { ...remote }
+  for (const [entryKey, entry] of Object.entries(local)) {
+    const remoteEntry = remote[entryKey]
     if (!remoteEntry) {
-      out[date] = entry
+      out[entryKey] = entry
       continue
     }
     // 로컬 본문 우선 · 태그는 합집합
     const tags = Array.from(new Set([...(entry.tags ?? []), ...(remoteEntry.tags ?? [])]))
-    out[date] = {
+    out[entryKey] = {
+      date: entry.date,
       content: entry.content,
       tags,
     }
@@ -233,17 +234,17 @@ async function handleSyncItem(item: SyncQueueItem): Promise<boolean> {
 
   if (item.type === 'journal') {
     const { saveJournalSupabase, loadJournalsSupabase } = await import('@/lib/journal')
-    const data = item.payload as Record<string, { content: string; tags: string[] }>
-    let remote: Record<string, { content: string; tags: string[] }> = {}
+    const data = item.payload as Record<string, { date: string; content: string; tags: string[] }>
+    let remote: Record<string, { date: string; content: string; tags: string[] }> = {}
     try {
       remote = await loadJournalsSupabase()
     } catch {
       remote = {}
     }
     const merged = mergeJournalLocalFirst(data, remote)
-    for (const [date, entry] of Object.entries(data)) {
-      const m = merged[date] ?? entry
-      await saveJournalSupabase(date, m.content, m.tags ?? [])
+    for (const [entryKey, entry] of Object.entries(data)) {
+      const m = merged[entryKey] ?? entry
+      await saveJournalSupabase(entryKey, m.date, m.content, m.tags ?? [])
     }
     return true
   }

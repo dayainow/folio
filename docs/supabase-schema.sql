@@ -8,17 +8,19 @@ create extension if not exists "pgcrypto";
 create table if not exists public.journals (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
+  client_key text not null,
   date date not null,
   content text not null default '',
   tags text[] not null default '{}',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  unique (user_id, date)
+  unique (user_id, client_key)
 );
 
 create index if not exists journals_date_idx on public.journals (date);
 create index if not exists journals_created_at_idx on public.journals (created_at);
 create index if not exists journals_user_id_idx on public.journals (user_id);
+create index if not exists journals_client_key_idx on public.journals (client_key);
 
 alter table public.journals enable row level security;
 
