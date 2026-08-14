@@ -42,6 +42,13 @@ const docs: DocEntry[] = [
     title: 'API Guide',
     content: 'REST API WIP draft',
     category: 'API',
+    provenance: {
+      system: 'notion',
+      fingerprint: 'notion-api',
+      path: 'Notion/API Guide.md',
+      importedAt: '2026-08-01T00:00:00.000Z',
+      syncState: 'imported',
+    },
     createdAt: '2026-08-01T00:00:00.000Z',
     updatedAt: '2026-08-02T00:00:00.000Z',
   },
@@ -110,6 +117,14 @@ describe('runAdvancedSearch', () => {
       sources: ['journal'],
     })
     expect(r.journals.some((h) => h.date === '2026-08-03')).toBe(true)
+  })
+
+  it('keeps source provenance on search hits', () => {
+    const result = runAdvancedSearch('API Guide', journals, docs, tasks)
+    expect(result.unified[0]?.provenance).toMatchObject({
+      system: 'notion',
+      path: 'Notion/API Guide.md',
+    })
   })
 
   it('highlights terms', () => {

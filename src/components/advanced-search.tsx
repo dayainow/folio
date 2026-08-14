@@ -57,6 +57,8 @@ import { cn } from '@/lib/utils'
 import { useI18n } from '@/components/i18n-provider'
 import type { SearchSource } from '@/lib/search'
 import type { Task } from '@/lib/board'
+import { sourceSystemLabel } from '@/lib/provenance'
+import { searchReason } from '@/lib/hybrid-search'
 
 const DEBOUNCE_MS = 150
 
@@ -472,7 +474,7 @@ export function AdvancedSearchPanel({
                     checked={Boolean(filters.semantic)}
                     onChange={(e) => setFilters((f) => ({ ...f, semantic: e.target.checked }))}
                   />
-                  의미 검색
+                  하이브리드 검색
                 </label>
                 <select
                   className="h-7 rounded-md border border-border bg-background px-1 text-[11px]"
@@ -661,11 +663,14 @@ export function AdvancedSearchPanel({
                                 </p>
                                 <p className="mt-1 text-[10px] tabular-nums text-muted-foreground">
                                   {h.updatedAt?.slice(0, 10)}
+                                  {h.provenance ? ` · ${sourceSystemLabel(h.provenance.system)}` : ''}
+                                  {h.provenance?.path ? ` · ${h.provenance.path}` : ''}
                                   {h.status ? ` · ${h.status}` : ''}
                                   {h.priority ? ` · ${h.priority}` : ''}
                                   {h.tags?.length ? ` · ${h.tags.slice(0, 3).join(', ')}` : ''}
                                   {` · score ${Math.round(h.score * 10) / 10}`}
                                 </p>
+                                {h.scoreSignals ? <p className="mt-1 text-[10px] font-medium text-teal-700 dark:text-teal-300">{searchReason({ scoreSignals: h.scoreSignals })}</p> : null}
                               </button>
                             </div>
                           </li>

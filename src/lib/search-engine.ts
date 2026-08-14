@@ -8,6 +8,7 @@ import lunr from 'lunr'
 import type { JournalEntry } from '@/lib/journal'
 import type { DocEntry } from '@/lib/docs'
 import type { Task } from '@/lib/board'
+import type { SourceMetadata } from '@/lib/provenance'
 import {
   type DocSearchHit,
   type JournalSearchHit,
@@ -51,6 +52,13 @@ export type UnifiedSearchHit = {
   category?: string
   highlights?: string[]
   raw?: JournalEntry | DocEntry | Task
+  provenance?: SourceMetadata
+  scoreSignals?: {
+    keyword?: number
+    semantic?: number
+    keywordRank?: number
+    semanticRank?: number
+  }
 }
 
 export type AdvancedSearchResult = {
@@ -74,6 +82,7 @@ type IndexDoc = {
   status: string
   priority: string
   updatedAt: string
+  provenance?: SourceMetadata
 }
 
 function firstLine(content: string): string {
@@ -211,6 +220,7 @@ function buildDocs(
       status: '',
       priority: '',
       updatedAt: entry.updatedAt,
+      provenance: entry.provenance,
     })
   }
   for (const doc of docs) {
@@ -225,6 +235,7 @@ function buildDocs(
       status: '',
       priority: '',
       updatedAt: doc.updatedAt,
+      provenance: doc.provenance,
     })
   }
   for (const task of tasks) {
@@ -239,6 +250,7 @@ function buildDocs(
       status: task.status,
       priority: task.priority,
       updatedAt: task.updatedAt,
+      provenance: task.provenance,
     })
   }
   return out
@@ -538,6 +550,7 @@ function toUnified(
     date: doc.date,
     category: doc.source === 'docs' ? doc.tags : undefined,
     highlights: extractHighlightTerms(query),
+    provenance: doc.provenance,
   }
 }
 

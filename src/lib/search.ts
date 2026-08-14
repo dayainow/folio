@@ -215,6 +215,7 @@ export async function advancedSearchAll(
   if (!filters.semantic || !query.trim()) return base;
 
   const { semanticSearchLocal } = await import('@/lib/ai-semantic');
+  const { mergeHybridSearchHits } = await import('@/lib/hybrid-search');
   const corpus = [
     ...Object.entries(journals).map(([date, e]) => ({
       id: `journal:${date}`,
@@ -242,25 +243,28 @@ export async function advancedSearchAll(
     })),
   ];
   const sem = semanticSearchLocal(query, corpus, 24);
-  const byId = new Map(base.unified.map((h) => [h.id, h]));
-  for (const hit of sem) {
+  const provenanceByKey = new Map([
+    ...Object.entries(journals).map(([id, entry]) => [`journal:${id}`, entry.provenance] as const),
+    ...docs.map((doc) => [`docs:${doc.id}`, doc.provenance] as const),
+    ...tasks.map((task) => [`board:${task.id}`, task.provenance] as const),
+  ]);
+  const semanticUnified = sem.map((hit) => {
     const source =
       hit.source === 'journal' ? 'journal' : hit.source === 'doc' ? 'docs' : 'board';
-    const id = hit.id.includes(':') ? hit.id : `${source}:${hit.id}`;
-    const existing = byId.get(id) ?? byId.get(hit.id.replace(/^(journal|docs|board|j|d|t):/, ''));
-    const score = Math.max(existing?.score ?? 0, hit.score * 12);
-    byId.set(existing?.id ?? id, {
+    const id = hit.id.replace(/^(journal|docs|board):/, '');
+    return {
       source,
-      id: existing?.id ?? id.replace(/^(journal|docs|board):/, ''),
+      id,
       title: hit.title,
       preview: hit.preview,
-      score,
+      score: hit.score,
       matched: 'content',
-      updatedAt: hit.updatedAt ?? existing?.updatedAt ?? '',
+      updatedAt: hit.updatedAt ?? '',
       tags: hit.tags,
-    });
-  }
-  const unified = [...byId.values()].sort((a, b) => b.score - a.score);
+      provenance: provenanceByKey.get(`${source}:${id}`),
+    } satisfies import('@/lib/search-engine').UnifiedSearchHit;
+  });
+  const unified = mergeHybridSearchHits(base.unified, semanticUnified);
   return {
     ...base,
     unified,

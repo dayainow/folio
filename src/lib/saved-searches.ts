@@ -214,6 +214,7 @@ export function defaultFilters(): AdvancedSearchFilters {
   return {
     sources: ['journal', 'docs', 'board'] as SearchSource[],
     sort: 'relevance',
+    semantic: true,
   }
 }
 

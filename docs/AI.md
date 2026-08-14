@@ -31,7 +31,10 @@ GEMINI_MODEL_NAME=gemini-1.5-flash
 | 의미검색 | 로컬 해시 임베딩 · 관련성 순 |
 | 분석 | 감정 · 키워드 · 트렌드 · 프로젝트 요약 |
 
-고급 검색의 **의미 검색** 체크박스로 Lunr + 임베딩 하이브리드.
+고급 검색은 기본적으로 Lunr 키워드 순위와 로컬 의미 순위를 Reciprocal Rank Fusion으로 결합합니다.
+결과마다 키워드/의미 일치 이유와 가져온 원문 시스템·경로를 표시합니다. 체크박스로 하이브리드 검색을 끌 수 있습니다.
+
+검색 품질 회귀는 `src/lib/search-evaluation.ts`의 고정 질문셋으로 Top-5 적중률과 MRR을 비교합니다.
 
 슬래시: `/ai-summary` · `/ai-expand` · `/ai-rewrite` 자리표시.
 
