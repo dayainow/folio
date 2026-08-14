@@ -4,14 +4,14 @@
  * P67 — AI 도구 패널 (자동완성 · 편집 · 분석 · 의미검색)
  */
 import { useCallback, useId, useMemo, useState } from 'react'
-import { Sparkles, Loader2, X, Wand2, Search, BarChart3 } from 'lucide-react'
+import { Sparkles, Loader2, X, Wand2, Search, BarChart3, ListChecks, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { csrfHeaders } from '@/lib/csrf'
 import { loadJournals } from '@/lib/journal'
 import { loadDocs } from '@/lib/docs'
-import { loadTasks } from '@/lib/board'
+import { loadTasks, loadTasksWithFallback, saveTasksWithFallback } from '@/lib/board'
 import {
   recommendRelated,
   semanticSearchLocal,
@@ -22,8 +22,9 @@ import { cn } from '@/lib/utils'
 import { advancedSearchAll } from '@/lib/search'
 import type { GroundedAnswer, GroundingSource } from '@/lib/ai-grounded'
 import { sourceSystemLabel } from '@/lib/provenance'
+import { proposalsToTasks, type ActionProposal, type ActionExtractionResult } from '@/lib/ai-action-items'
 
-type Tab = 'assist' | 'edit' | 'search' | 'analyze'
+type Tab = 'assist' | 'edit' | 'search' | 'actions' | 'analyze'
 
 function collectDocs(): SemanticDoc[] {
   const journals = loadJournals()
@@ -121,6 +122,8 @@ export function AiToolsPanel({
   const [hits, setHits] = useState<SemanticHit[]>([])
   const [targetLang, setTargetLang] = useState('en')
   const [grounded, setGrounded] = useState<GroundedAnswer | null>(null)
+  const [proposals, setProposals] = useState<ActionProposal[]>([])
+  const [selectedProposals, setSelectedProposals] = useState<Set<string>>(new Set())
 
   const corpus = useMemo(() => collectDocs(), [])
 
@@ -270,10 +273,57 @@ export function AiToolsPanel({
     }
   }, [])
 
+  const runActionExtraction = useCallback(async () => {
+    const notes = text.trim()
+    if (!notes || busy) return
+    setBusy(true)
+    setOutput('')
+    setProposals([])
+    try {
+      const response = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
+        body: JSON.stringify({ kind: 'actions', notes }),
+      })
+      const data = await response.json() as ActionExtractionResult & { error?: string }
+      if (!response.ok) throw new Error(data.error || '실행 항목 추출 실패')
+      setProposals(data.proposals)
+      setSelectedProposals(new Set(data.proposals.map((proposal) => proposal.id)))
+      setMeta(`${data.source}${data.provider ? ` · ${data.provider}` : ''} · 제안 ${data.proposals.length}개`)
+      if (!data.proposals.length) setOutput('명시적으로 합의된 후속 작업을 찾지 못했습니다.')
+    } catch (error) {
+      setOutput(error instanceof Error ? error.message : '실행 항목 추출 실패')
+    } finally {
+      setBusy(false)
+    }
+  }, [text, busy])
+
+  const approveActions = useCallback(async () => {
+    const approved = proposals.filter((proposal) => selectedProposals.has(proposal.id))
+    if (!approved.length || busy) return
+    setBusy(true)
+    try {
+      const existing = await loadTasksWithFallback()
+      const created = proposalsToTasks(approved, existing)
+      if (!created.length) {
+        setOutput('동일한 제목의 일정이 이미 있어 새로 추가하지 않았습니다.')
+        return
+      }
+      await saveTasksWithFallback([...existing, ...created])
+      setOutput(`${created.length}개 실행 항목을 Backlog에 추가했습니다. 승인하지 않은 항목은 저장하지 않았습니다.`)
+      setMeta('사용자 승인 완료')
+      setProposals([])
+      setSelectedProposals(new Set())
+    } finally {
+      setBusy(false)
+    }
+  }, [proposals, selectedProposals, busy])
+
   const tabs: Array<{ id: Tab; label: string; icon: typeof Wand2 }> = [
     { id: 'assist', label: '작성', icon: Wand2 },
     { id: 'edit', label: '편집', icon: Sparkles },
     { id: 'search', label: '질문', icon: Search },
+    { id: 'actions', label: '실행', icon: ListChecks },
     { id: 'analyze', label: '분석', icon: BarChart3 },
   ]
 
@@ -321,6 +371,14 @@ export function AiToolsPanel({
               placeholder={tab === 'edit' ? '편집할 텍스트 (또는 에디터 선택 영역)' : '작성 중인 텍스트'}
               className="min-h-[100px] text-sm"
             />
+          )}
+
+          {tab === 'actions' && (
+            <div className="space-y-2">
+              <Textarea value={text} onChange={(event) => setText(event.target.value)} placeholder={'회의 기록을 붙여넣으세요.\n예: 민수가 8/20까지 배포 체크리스트를 정리하기로 함.'} className="min-h-32 text-sm" />
+              <Button type="button" size="sm" className="h-7 gap-1.5 text-[11px]" disabled={busy || !text.trim()} onClick={() => void runActionExtraction()}><ListChecks className="size-3.5" />실행 항목 제안</Button>
+              <p className="text-[10px] text-muted-foreground">제안만 생성합니다. 아래에서 선택하고 승인하기 전에는 일정이 변경되지 않습니다.</p>
+            </div>
           )}
 
           {tab === 'assist' && (
@@ -440,6 +498,34 @@ export function AiToolsPanel({
                 </div>
               ))}
               <p className="text-[10px] text-muted-foreground">신뢰도 {grounded.confidence === 'high' ? '높음' : grounded.confidence === 'medium' ? '보통' : '낮음'} · 근거 없는 내용은 답변하지 않습니다.</p>
+            </section>
+          ) : null}
+
+          {tab === 'actions' && proposals.length ? (
+            <section aria-label="실행 항목 승인" className="space-y-2">
+              {proposals.map((proposal) => {
+                const selected = selectedProposals.has(proposal.id)
+                return (
+                  <div key={proposal.id} className={cn('rounded-xl border p-3', selected ? 'border-teal-300 bg-teal-50/40 dark:bg-teal-950/20' : 'border-border opacity-65')}>
+                    <label className="flex items-start gap-2">
+                      <input type="checkbox" className="mt-1" checked={selected} onChange={() => setSelectedProposals((current) => { const next = new Set(current); if (next.has(proposal.id)) next.delete(proposal.id); else next.add(proposal.id); return next })} />
+                      <span className="min-w-0 flex-1">
+                        <Input value={proposal.title} onChange={(event) => setProposals((current) => current.map((item) => item.id === proposal.id ? { ...item, title: event.target.value } : item))} className="h-8 text-xs font-medium" aria-label="실행 항목 제목" />
+                        <span className="mt-2 flex flex-wrap gap-2">
+                          <Input type="date" value={proposal.dueDate ?? ''} onChange={(event) => setProposals((current) => current.map((item) => item.id === proposal.id ? { ...item, dueDate: event.target.value || undefined } : item))} className="h-7 w-auto text-[10px]" aria-label="기한" />
+                          <select value={proposal.priority} onChange={(event) => setProposals((current) => current.map((item) => item.id === proposal.id ? { ...item, priority: event.target.value as ActionProposal['priority'] } : item))} className="h-7 rounded-md border bg-background px-2 text-[10px]" aria-label="우선순위"><option value="low">낮음</option><option value="medium">보통</option><option value="high">높음</option></select>
+                          {proposal.assignee ? <span className="self-center text-[10px] text-muted-foreground">담당 {proposal.assignee}</span> : null}
+                        </span>
+                        <span className="mt-2 block text-[10px] leading-4 text-muted-foreground">근거: {proposal.evidence}</span>
+                      </span>
+                    </label>
+                  </div>
+                )
+              })}
+              <div className="flex items-center justify-between gap-3 pt-1">
+                <span className="text-[10px] text-muted-foreground">{selectedProposals.size}개 선택</span>
+                <Button type="button" size="sm" className="h-8 gap-1.5 text-[11px]" disabled={!selectedProposals.size || busy} onClick={() => void approveActions()}><CheckCircle2 className="size-3.5" />선택 항목 승인 후 추가</Button>
+              </div>
             </section>
           ) : null}
 

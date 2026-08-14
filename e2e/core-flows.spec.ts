@@ -4,13 +4,24 @@ import { expect, test } from '@playwright/test'
  * P66 — 핵심 플로우 E2E (로컬 모드 · 인증 없이)
  */
 test.describe('Folio core flows (P66)', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('welcome_seen', '1')
+      localStorage.setItem('folio_locale', 'ko')
+      localStorage.setItem('workspace_tasks', '[]')
+    })
+  })
+
   test('login/auth affordance is reachable from home', async ({ page }) => {
     await page.goto('/')
     await expect(page.getByRole('banner')).toBeVisible()
-    // Supabase 미설정 시에도 보안/헬스/테마 등 설정 진입점이 존재
+    await page.getByRole('button', { name: /요약|summary/i }).click()
+    await page.getByRole('button', { name: /추가 위젯 더보기/ }).click()
+    // Supabase 미설정 시에도 로그인 또는 테마 설정 진입점이 존재
     const security = page.getByRole('button', { name: /보안|Security|セキュリティ/i })
     const theme = page.getByRole('button', { name: /테마|Theme|テーマ|다크|라이트/i })
-    const anyControl = security.or(theme)
+    const login = page.getByRole('link', { name: /로그인|Login/i })
+    const anyControl = security.or(theme).or(login)
     await expect(anyControl.first()).toBeVisible({ timeout: 8000 })
   })
 
@@ -57,13 +68,26 @@ test.describe('Folio core flows (P66)', () => {
     await expect(column.first()).toBeVisible({ timeout: 12000 })
   })
 
-  test('command palette opens with Ctrl/Meta+K', async ({ page }) => {
+  test('header search opens an accessible search field', async ({ page }) => {
     await page.goto('/')
-    await page.keyboard.press('ControlOrMeta+K')
-    const palette = page
-      .getByRole('dialog')
-      .or(page.getByRole('searchbox'))
-      .or(page.getByPlaceholder(/검색|Search|コマンド|명령/i))
-    await expect(palette.first()).toBeVisible({ timeout: 5000 })
+    await page.getByRole('button', { name: /통합 검색 열기|Open search/i }).click()
+    await expect(page.getByRole('textbox', { name: /검색|Search/i })).toBeVisible()
+  })
+
+  test('meeting actions require approval before appearing in backlog', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: /요약|summary/i }).click()
+    await page.getByRole('button', { name: /추가 위젯 더보기/ }).click()
+    await page.getByRole('button', { name: /^AI$/ }).click()
+    const dialog = page.getByRole('dialog', { name: /AI 도구/i })
+    await dialog.getByRole('button', { name: '실행' }).click()
+    await dialog.getByPlaceholder(/회의 기록/).fill('TODO: 배포 체크리스트를 8/20까지 정리하기')
+    await dialog.getByRole('button', { name: /실행 항목 제안/ }).click()
+    const title = dialog.getByRole('textbox', { name: /실행 항목 제목/ })
+    await expect(title).toHaveValue(/배포 체크리스트/)
+    await expect.poll(async () => page.evaluate(() => JSON.parse(localStorage.getItem('workspace_tasks') || '[]').length)).toBe(0)
+    await dialog.getByRole('button', { name: /선택 항목 승인 후 추가/ }).click()
+    await expect(dialog.getByText(/Backlog에 추가했습니다/)).toBeVisible()
+    await expect.poll(async () => page.evaluate(() => JSON.parse(localStorage.getItem('workspace_tasks') || '[]').length)).toBe(1)
   })
 })

@@ -26,6 +26,8 @@ export interface Task {
   githubState?: string;
   githubAssignees?: string[];
   githubLabels?: string[];
+  /** 사용자 또는 비서가 지정한 목표 기한 */
+  dueDate?: string;
   /** Jira/GitHub 등 외부 업무 원문의 canonical metadata */
   provenance?: SourceMetadata;
 }
@@ -184,6 +186,8 @@ export async function loadTasksWithFallback(): Promise<Task[]> {
           jiraUrl: t.jiraUrl ?? loc.jiraUrl,
           githubIssueNumber: loc.githubIssueNumber ?? t.githubIssueNumber,
           githubUrl: loc.githubUrl ?? t.githubUrl,
+          dueDate: loc.dueDate ?? t.dueDate,
+          provenance: loc.provenance ?? t.provenance,
         };
       });
     } catch {

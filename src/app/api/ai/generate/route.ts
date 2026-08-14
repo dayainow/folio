@@ -3,12 +3,14 @@ import { runAiComplete, type AiCompleteRequest } from '@/lib/ai-complete'
 import { runAiEdit, type AiEditRequest } from '@/lib/ai-edit'
 import { runAiAnalytics, type AiAnalyticsRequest } from '@/lib/ai-analytics'
 import { answerWithGrounding, type GroundingSource } from '@/lib/ai-grounded'
+import { extractActionItems } from '@/lib/ai-action-items'
 
 type Body =
   | ({ kind: 'complete' } & AiCompleteRequest)
   | ({ kind: 'edit' } & AiEditRequest)
   | ({ kind: 'analyze' } & AiAnalyticsRequest)
   | { kind: 'answer'; question: string; sources: GroundingSource[] }
+  | { kind: 'actions'; notes: string }
 
 /**
  * POST /api/ai/generate
@@ -41,6 +43,12 @@ export async function POST(req: Request) {
       }
       const result = await answerWithGrounding(body.question, body.sources)
       return NextResponse.json(result)
+    }
+    if (body.kind === 'actions') {
+      if (!body.notes?.trim()) {
+        return NextResponse.json({ error: 'actions requires notes' }, { status: 400 })
+      }
+      return NextResponse.json(await extractActionItems(body.notes))
     }
     return NextResponse.json({ error: 'Unknown kind' }, { status: 400 })
   } catch (err: unknown) {
