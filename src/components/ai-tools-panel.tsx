@@ -19,6 +19,9 @@ import {
   type SemanticHit,
 } from '@/lib/ai-semantic'
 import { cn } from '@/lib/utils'
+import { advancedSearchAll } from '@/lib/search'
+import type { GroundedAnswer, GroundingSource } from '@/lib/ai-grounded'
+import { sourceSystemLabel } from '@/lib/provenance'
 
 type Tab = 'assist' | 'edit' | 'search' | 'analyze'
 
@@ -117,6 +120,7 @@ export function AiToolsPanel({
   const [query, setQuery] = useState('')
   const [hits, setHits] = useState<SemanticHit[]>([])
   const [targetLang, setTargetLang] = useState('en')
+  const [grounded, setGrounded] = useState<GroundedAnswer | null>(null)
 
   const corpus = useMemo(() => collectDocs(), [])
 
@@ -181,6 +185,7 @@ export function AiToolsPanel({
     const q = query.trim()
     if (!q) return
     const local = semanticSearchLocal(q, corpus, 16)
+    setGrounded(null)
     setHits(local)
     setOutput(
       local.length
@@ -189,6 +194,39 @@ export function AiToolsPanel({
     )
     setMeta('local-embedding')
   }, [query, corpus])
+
+  const runQuestion = useCallback(async () => {
+    const q = query.trim()
+    if (!q || busy) return
+    setBusy(true)
+    setGrounded(null)
+    setOutput('')
+    try {
+      const result = await advancedSearchAll(q, { semantic: true, sort: 'relevance' })
+      const sources: GroundingSource[] = result.unified.slice(0, 6).map((hit) => ({
+        id: hit.id,
+        source: hit.source,
+        title: hit.title,
+        excerpt: hit.preview,
+        updatedAt: hit.updatedAt,
+        provenance: hit.provenance,
+      }))
+      const response = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
+        body: JSON.stringify({ kind: 'answer', question: q, sources }),
+      })
+      const data = await response.json() as GroundedAnswer & { error?: string }
+      if (!response.ok) throw new Error(data.error || '답변 생성 실패')
+      setGrounded(data)
+      setOutput(data.answer)
+      setMeta(`${data.source}${data.provider ? ` · ${data.provider}` : ''} · 근거 ${data.citations.length}개`)
+    } catch (error) {
+      setOutput(error instanceof Error ? error.message : '답변 생성 실패')
+    } finally {
+      setBusy(false)
+    }
+  }, [query, busy])
 
   const runRelated = useCallback(() => {
     const seed = (getSelection?.() || text || query).trim()
@@ -235,7 +273,7 @@ export function AiToolsPanel({
   const tabs: Array<{ id: Tab; label: string; icon: typeof Wand2 }> = [
     { id: 'assist', label: '작성', icon: Wand2 },
     { id: 'edit', label: '편집', icon: Sparkles },
-    { id: 'search', label: '의미검색', icon: Search },
+    { id: 'search', label: '질문', icon: Search },
     { id: 'analyze', label: '분석', icon: BarChart3 },
   ]
 
@@ -252,7 +290,7 @@ export function AiToolsPanel({
           <Sparkles className="h-4 w-4 text-violet-600" />
           <div>
             <h2 className="text-sm font-semibold">AI 도구</h2>
-            <p className="text-[11px] text-muted-foreground">자동완성 · 편집 · 의미검색 · 분석 (P67)</p>
+            <p className="text-[11px] text-muted-foreground">작성 · 편집 · 근거 답변 · 분석</p>
           </div>
           <Button type="button" size="icon" variant="ghost" className="ml-auto size-8" onClick={onClose}>
             <X className="size-4" />
@@ -347,14 +385,15 @@ export function AiToolsPanel({
               <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="자연어로 질문… 예: 지난주 배포 이슈"
+                placeholder="내 기록에 질문… 예: 다음 주 가장 먼저 할 일은?"
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') runSearch()
+                  if (e.key === 'Enter') void runQuestion()
                 }}
               />
-              <Button type="button" size="sm" className="h-7 text-[11px]" onClick={runSearch}>
-                의미 검색
+              <Button type="button" size="sm" className="h-7 text-[11px]" onClick={() => void runQuestion()} disabled={busy}>
+                근거로 답하기
               </Button>
+              <Button type="button" size="sm" variant="outline" className="h-7 text-[11px]" onClick={runSearch} disabled={busy}>검색 결과만 보기</Button>
             </div>
           )}
 
@@ -384,6 +423,25 @@ export function AiToolsPanel({
               <pre className="whitespace-pre-wrap text-xs leading-relaxed">{output}</pre>
             </div>
           )}
+
+          {grounded?.citations.length ? (
+            <section aria-label="답변 근거" className="space-y-1.5">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">답변 근거</p>
+              {grounded.citations.map((citation) => (
+                <div key={`${citation.source}:${citation.id}`} className="rounded-lg border border-border/60 bg-background px-2.5 py-2">
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-foreground text-[10px] text-background">{citation.index}</span>
+                    <span className="min-w-0 flex-1 truncate font-medium">{citation.title}</span>
+                    <span className="shrink-0 text-[10px] text-muted-foreground">{citation.updatedAt.slice(0, 10)}</span>
+                  </div>
+                  <p className="mt-1 truncate pl-7 text-[10px] text-muted-foreground">
+                    {citation.provenance ? `${sourceSystemLabel(citation.provenance.system)} · ${citation.provenance.path ?? '원문'}` : citation.source === 'journal' ? 'Folio 일지' : citation.source === 'docs' ? 'Folio 문서' : 'Folio 일정'}
+                  </p>
+                </div>
+              ))}
+              <p className="text-[10px] text-muted-foreground">신뢰도 {grounded.confidence === 'high' ? '높음' : grounded.confidence === 'medium' ? '보통' : '낮음'} · 근거 없는 내용은 답변하지 않습니다.</p>
+            </section>
+          ) : null}
 
           {hits.length > 0 && (
             <ul className="space-y-1.5">

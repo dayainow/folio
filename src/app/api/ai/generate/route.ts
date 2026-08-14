@@ -2,11 +2,13 @@ import { NextResponse } from 'next/server'
 import { runAiComplete, type AiCompleteRequest } from '@/lib/ai-complete'
 import { runAiEdit, type AiEditRequest } from '@/lib/ai-edit'
 import { runAiAnalytics, type AiAnalyticsRequest } from '@/lib/ai-analytics'
+import { answerWithGrounding, type GroundingSource } from '@/lib/ai-grounded'
 
 type Body =
   | ({ kind: 'complete' } & AiCompleteRequest)
   | ({ kind: 'edit' } & AiEditRequest)
   | ({ kind: 'analyze' } & AiAnalyticsRequest)
+  | { kind: 'answer'; question: string; sources: GroundingSource[] }
 
 /**
  * POST /api/ai/generate
@@ -31,6 +33,13 @@ export async function POST(req: Request) {
     }
     if (body.kind === 'analyze') {
       const result = await runAiAnalytics(body)
+      return NextResponse.json(result)
+    }
+    if (body.kind === 'answer') {
+      if (!body.question?.trim() || !Array.isArray(body.sources)) {
+        return NextResponse.json({ error: 'answer requires question + sources' }, { status: 400 })
+      }
+      const result = await answerWithGrounding(body.question, body.sources)
       return NextResponse.json(result)
     }
     return NextResponse.json({ error: 'Unknown kind' }, { status: 400 })
