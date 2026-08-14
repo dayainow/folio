@@ -668,7 +668,7 @@ export default function Home() {
         onNewTask={() => setTab('board')}
       />
       <PerfProfiler id="FolioHome">
-    <div className={cn('flex min-h-screen flex-col bg-background', mobileFs && 'folio-fs-root')}>
+    <div className={cn('folio-shell flex min-h-screen flex-col bg-background', mobileFs && 'folio-fs-root')}>
       <a href="#main-content" className="skip-link">
         {t('nav.skipToContent')}
       </a>
@@ -676,28 +676,28 @@ export default function Home() {
       {/* 최소 헤더: 로고 + 탭 + 검색 */}
       <header
         className={cn(
-          'sticky top-0 z-50 border-b border-gray-100 bg-background/90 px-3 backdrop-blur dark:border-gray-800 sm:px-4',
+          'folio-header sticky top-0 z-50 px-3 sm:px-4',
           mobileFs && 'hidden md:block',
         )}
         role="banner"
       >
-        <div className="mx-auto flex h-12 max-w-[1600px] items-center gap-2 sm:gap-3">
+        <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-3 sm:gap-5">
           <div className="flex shrink-0 items-center gap-2">
             <span
-              className="relative inline-flex items-center gap-1.5 text-lg font-bold tracking-[-0.07em] text-foreground"
+              className="folio-wordmark relative inline-flex items-center gap-2 text-xl font-semibold tracking-[-0.065em] text-foreground"
               style={{ fontFamily: 'var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif' }}
             >
-              <SpriteIcon name="folio-mark" className="size-5 text-teal-700 dark:text-teal-400" />
+              <span className="folio-brand-mark"><SpriteIcon name="folio-mark" className="size-4.5" /></span>
               Folio
               <span
                 aria-hidden
-                className="absolute -right-1.5 top-0.5 h-1 w-1 rotate-45 rounded-[1px] bg-foreground"
+                className="absolute -right-2 top-0 h-1 w-1 rotate-45 rounded-[1px] bg-[var(--folio-jade)]"
               />
             </span>
           </div>
 
           <nav aria-label={t('nav.main')} className="hidden min-w-0 flex-1 md:block">
-            <ul className="flex items-center gap-0.5">
+            <ul className="folio-primary-nav flex items-center gap-1">
               {(
                 [
                   { value: 'assistant' as const, labelKey: 'nav.assistant', assistantIcon: true },
@@ -712,10 +712,10 @@ export default function Home() {
                     onClick={() => handleTabChange(item.value)}
                     aria-current={tab === item.value ? 'page' : undefined}
                     className={cn(
-                      'inline-flex h-8 items-center gap-1 rounded-lg px-3 text-xs transition-colors',
+                      'inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-xs transition-all',
                       tab === item.value
-                        ? 'bg-gray-100 font-medium text-foreground dark:bg-gray-800'
-                        : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground',
+                        ? 'folio-nav-active font-semibold text-foreground'
+                        : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
                     )}
                   >
                     {'assistantIcon' in item && item.assistantIcon ? <Sparkles className="h-3 w-3" /> : null}
@@ -734,9 +734,9 @@ export default function Home() {
                 >
                   <summary
                     className={cn(
-                      'flex h-8 cursor-pointer list-none items-center gap-1 rounded-lg px-3 text-xs text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground [&::-webkit-details-marker]:hidden',
+                      'flex h-9 cursor-pointer list-none items-center gap-1 rounded-full px-3.5 text-xs text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground [&::-webkit-details-marker]:hidden',
                       (tab === 'projects' || tab === 'process') &&
-                        'bg-gray-100 font-medium text-foreground dark:bg-gray-800',
+                        'folio-nav-active font-semibold text-foreground',
                     )}
                   >
                     더보기
@@ -838,7 +838,7 @@ export default function Home() {
           ref={mainRef}
           tabIndex={-1}
           className={cn(
-            'min-w-0 flex-1 outline-none px-3 pt-5 pb-28 sm:px-4 sm:pt-7 lg:pb-6',
+            'folio-main min-w-0 flex-1 outline-none px-3 pt-5 pb-28 sm:px-6 sm:pt-8 lg:pb-10',
             mobileFs && 'pt-2 pb-[env(safe-area-inset-bottom)] md:pt-7 md:pb-6',
           )}
         >
