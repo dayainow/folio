@@ -35,6 +35,7 @@ import {
 import { cn } from '@/lib/utils'
 import { DailyReviewCard } from '@/components/daily-review-card'
 import { loadDailyReview } from '@/lib/daily-review'
+import { WeeklyReviewCard } from '@/components/weekly-review-card'
 
 type CaptureMode = 'memo' | 'idea' | 'decision'
 
@@ -456,6 +457,8 @@ export function PersonalAssistantHome({
         completedTasks={data.tasks.filter((task) => task.status === 'done').length}
         journalCount={todayEntries.length}
       />
+
+      <WeeklyReviewCard anchor={today} journals={data.journals} tasks={data.tasks} />
 
       <details className="folio-surface group rounded-[1.5rem]">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 [&::-webkit-details-marker]:hidden sm:p-5">

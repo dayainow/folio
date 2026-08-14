@@ -9,6 +9,7 @@ test.describe('Folio core flows (P66)', () => {
       localStorage.setItem('welcome_seen', '1')
       localStorage.setItem('folio_locale', 'ko')
       localStorage.setItem('workspace_tasks', '[]')
+      localStorage.removeItem('folio_weekly_plans_v1')
     })
   })
 
@@ -89,5 +90,18 @@ test.describe('Folio core flows (P66)', () => {
     await dialog.getByRole('button', { name: /선택 항목 승인 후 추가/ }).click()
     await expect(dialog.getByText(/Backlog에 추가했습니다/)).toBeVisible()
     await expect.poll(async () => page.evaluate(() => JSON.parse(localStorage.getItem('workspace_tasks') || '[]').length)).toBe(1)
+  })
+
+  test('weekly review confirms next-week focus before persisting it', async ({ page }) => {
+    await page.goto('/')
+    await page.getByText('주간 리뷰', { exact: true }).click()
+    await page.getByRole('textbox', { name: '1순위 목표' }).fill('고객 피드백 정리')
+    await expect.poll(async () => page.evaluate(() => localStorage.getItem('folio_weekly_plans_v1'))).toBeNull()
+    await page.getByRole('button', { name: /주간 리뷰 완료/ }).click()
+    await expect(page.getByText('이번 주를 정리하고 다음 주 초점을 확정했습니다.')).toBeVisible()
+    await expect.poll(async () => page.evaluate(() => {
+      const plans = JSON.parse(localStorage.getItem('folio_weekly_plans_v1') || '{}')
+      return Object.values(plans)[0]?.focus?.[0]
+    })).toBe('고객 피드백 정리')
   })
 })
