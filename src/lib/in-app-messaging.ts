@@ -145,11 +145,13 @@ export function postInAppMessage(input: {
 }
 
 export function markMessagesRead(channelId: string, userId: string): void {
+  let changed = false
   const next = loadMessages().map((m) => {
     if (m.channelId !== channelId || m.readBy.includes(userId)) return m
+    changed = true
     return { ...m, readBy: [...m.readBy, userId] }
   })
-  saveMessages(next)
+  if (changed) saveMessages(next)
 }
 
 export function toggleMessageReaction(

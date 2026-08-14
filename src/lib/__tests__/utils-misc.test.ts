@@ -1,7 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 import { debounce } from '@/lib/debounce'
 import { loadFavorites, saveFavorites, toggleFavorite } from '@/lib/favorites'
-import { buildFolioDeepLink, parseFolioDeepLink } from '@/lib/folio-links'
+import {
+  buildFolioDeepLink,
+  buildFolioHash,
+  parseFolioDeepLink,
+  parseFolioHash,
+} from '@/lib/folio-links'
 import { buildTitleIndex, extractWikiLinks, normalizeDocTitle } from '@/lib/link-parser'
 
 describe('debounce', () => {
@@ -51,6 +56,18 @@ describe('folio deep links', () => {
   it('parses docs and board', () => {
     expect(parseFolioDeepLink('?tab=docs&docId=abc').docId).toBe('abc')
     expect(parseFolioDeepLink('?tab=board&taskId=t1').taskId).toBe('t1')
+  })
+
+  it('preserves workspace panel context in readable hashes', () => {
+    expect(parseFolioHash('#journal/view')).toEqual({
+      tab: 'journal',
+      journalSubTab: 'journal-view',
+    })
+    expect(parseFolioHash('#docs/intake')).toEqual({ tab: 'docs', docsSubTab: 'intake' })
+    expect(buildFolioHash('docs', { docsSubTab: 'view' })).toBe('#docs/view')
+    expect(buildFolioHash('journal', { journalSubTab: 'journal-write' })).toBe(
+      '#journal/write',
+    )
   })
 })
 

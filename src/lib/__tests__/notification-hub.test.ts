@@ -15,6 +15,7 @@ import {
   markMessagesRead,
   postInAppMessage,
   searchMessages,
+  subscribeMessages,
   toggleMessageReaction,
 } from '@/lib/in-app-messaging'
 import {
@@ -75,6 +76,23 @@ describe('in-app messaging', () => {
     markMessagesRead(ch.id, 'u2')
     expect(listChannelMessages(ch.id)[0]!.readBy).toContain('u2')
     expect(searchMessages('folio')).toHaveLength(1)
+  })
+
+  it('does not emit another change when messages are already read', () => {
+    const ch = ensureMessageChannel({ kind: 'doc', title: 'Spec', refId: 'doc-2' })
+    postInAppMessage({
+      channelId: ch.id,
+      userId: 'u1',
+      userName: 'Ada',
+      text: 'already read',
+    })
+    const listener = vi.fn()
+    const unsubscribe = subscribeMessages(listener)
+    markMessagesRead(ch.id, 'u1')
+    expect(listener).not.toHaveBeenCalled()
+    markMessagesRead(ch.id, 'u2')
+    expect(listener).toHaveBeenCalledTimes(1)
+    unsubscribe()
   })
 })
 

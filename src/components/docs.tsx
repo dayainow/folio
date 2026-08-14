@@ -15,12 +15,14 @@ export type DocsSubTab = 'write' | 'view' | 'intake'
 function readHashTab(): DocsSubTab {
   if (typeof window === 'undefined') return 'write'
   const hash = window.location.hash.replace(/^#/, '')
-  return hash === 'view' || hash === 'intake' ? hash : 'write'
+  if (hash === 'docs/view' || hash === 'view') return 'view'
+  if (hash === 'docs/intake' || hash === 'intake') return 'intake'
+  return 'write'
 }
 
 function writeHash(tab: DocsSubTab) {
   if (typeof window === 'undefined') return
-  const next = `#${tab}`
+  const next = `#docs/${tab}`
   if (window.location.hash !== next) {
     window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}${next}`)
   }

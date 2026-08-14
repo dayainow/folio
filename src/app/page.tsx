@@ -23,7 +23,7 @@ import { MobileNav } from '@/components/mobile-nav';
 import { McpSyncButton } from '@/components/mcp-sync-button';
 import { SpriteIcon } from '@/components/icon-sprite';
 import { getActiveTeamId } from '@/lib/team';
-import { parseFolioDeepLink } from '@/lib/folio-links';
+import { buildFolioHash, parseFolioDeepLink, parseFolioHash } from '@/lib/folio-links';
 import { useSwipe } from '@/hooks/use-swipe';
 import {
   dispatchMobileAction,
@@ -214,6 +214,7 @@ export default function Home() {
   const [email, setEmail] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [authReady, setAuthReady] = useState(false);
+  const [routeReady, setRouteReady] = useState(false);
   const [tab, setTab] = useState<TabValue>('assistant');
   const [focusJournalDate, setFocusJournalDate] = useState<string | null>(null);
   const [focusJournalFolder, setFocusJournalFolder] = useState<string | null>(null);
@@ -242,11 +243,33 @@ export default function Home() {
   useEffect(() => subscribeMobileFullscreen(setMobileFs), []);
 
   useEffect(() => {
-    if (window.location.hash === '#intake') {
-      const timer = window.setTimeout(() => setTab('docs'), 0);
-      return () => window.clearTimeout(timer);
-    }
+    const applyHashRoute = () => {
+      const route = parseFolioHash(window.location.hash);
+      setTab(route.tab);
+      if (route.journalSubTab) setJournalSubTab(route.journalSubTab);
+      setRouteReady(true);
+    };
+    const timer = window.setTimeout(applyHashRoute, 0);
+    window.addEventListener('hashchange', applyHashRoute);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('hashchange', applyHashRoute);
+    };
   }, []);
+
+  useEffect(() => {
+    if (!routeReady) return;
+    const route = parseFolioHash(window.location.hash);
+    if (tab === 'docs' && route.tab === 'docs') return;
+    const nextHash = buildFolioHash(tab, { journalSubTab });
+    if (window.location.hash !== nextHash) {
+      window.history.replaceState(
+        null,
+        '',
+        `${window.location.pathname}${window.location.search}${nextHash}`,
+      );
+    }
+  }, [journalSubTab, routeReady, tab]);
 
   useEffect(() => {
     void import('@/plugins').then((m) => m.bootstrapBuiltinPlugins());
@@ -817,7 +840,15 @@ export default function Home() {
               <TabsContent value="journal" className="mt-0">
                 <Tabs
                   value={journalSubTab}
-                  onValueChange={(v) => setJournalSubTab(v as 'journal-write' | 'journal-view')}
+                  onValueChange={(v) => {
+                    const next = v as 'journal-write' | 'journal-view';
+                    setJournalSubTab(next);
+                    window.history.replaceState(
+                      null,
+                      '',
+                      `${window.location.pathname}${window.location.search}${buildFolioHash('journal', { journalSubTab: next })}`,
+                    );
+                  }}
                   className="w-full"
                 >
                   <TabsList className="mb-3 h-auto gap-1 border-0 bg-transparent p-0">
@@ -855,6 +886,11 @@ export default function Home() {
                       onOpenWrite={(date, entryKey) => {
                         setFocusJournalDate(entryKey ?? date);
                         setJournalSubTab('journal-write');
+                        window.history.replaceState(
+                          null,
+                          '',
+                          `${window.location.pathname}${window.location.search}#journal/write`,
+                        );
                       }}
                     />
                   </TabsContent>

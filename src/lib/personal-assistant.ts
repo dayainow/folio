@@ -1,5 +1,14 @@
 import type { JournalEntry } from '@/lib/journal'
 
+export type DailyJourneyPhase = 'plan' | 'capture' | 'review'
+
+export function dailyJourneyPhase(date = new Date()): DailyJourneyPhase {
+  const hour = date.getHours()
+  if (hour < 11) return 'plan'
+  if (hour < 18) return 'capture'
+  return 'review'
+}
+
 export type MemoryMoment = {
   entryKey: string
   entry: JournalEntry

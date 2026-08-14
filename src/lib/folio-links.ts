@@ -8,6 +8,69 @@ export type FolioDeepLink =
   | { tab: 'board'; taskId?: string }
   | { tab: 'process' }
 
+export type FolioMainTab =
+  | 'assistant'
+  | 'projects'
+  | 'journal'
+  | 'docs'
+  | 'board'
+  | 'process'
+
+export type FolioHashRoute = {
+  tab: FolioMainTab
+  journalSubTab?: 'journal-write' | 'journal-view'
+  docsSubTab?: 'write' | 'view' | 'intake'
+}
+
+/**
+ * 새로고침·공유 후에도 사용자가 보던 작업 맥락을 복원한다.
+ * 과거 #write/#view/#intake 링크도 계속 열리도록 호환한다.
+ */
+export function parseFolioHash(hash: string): FolioHashRoute {
+  const value = hash.replace(/^#/, '').replace(/^\//, '')
+  switch (value) {
+    case 'projects':
+      return { tab: 'projects' }
+    case 'journal/view':
+    case 'view':
+      return { tab: 'journal', journalSubTab: 'journal-view' }
+    case 'journal/write':
+    case 'write':
+      return { tab: 'journal', journalSubTab: 'journal-write' }
+    case 'docs/write':
+      return { tab: 'docs', docsSubTab: 'write' }
+    case 'docs/view':
+      return { tab: 'docs', docsSubTab: 'view' }
+    case 'docs/intake':
+    case 'intake':
+      return { tab: 'docs', docsSubTab: 'intake' }
+    case 'board':
+      return { tab: 'board' }
+    case 'process':
+      return { tab: 'process' }
+    case 'today':
+    default:
+      return { tab: 'assistant' }
+  }
+}
+
+export function buildFolioHash(
+  tab: FolioMainTab,
+  options: {
+    journalSubTab?: 'journal-write' | 'journal-view'
+    docsSubTab?: 'write' | 'view' | 'intake'
+  } = {},
+): string {
+  if (tab === 'assistant') return '#today'
+  if (tab === 'projects') return '#projects'
+  if (tab === 'journal') {
+    return options.journalSubTab === 'journal-view' ? '#journal/view' : '#journal/write'
+  }
+  if (tab === 'docs') return `#docs/${options.docsSubTab ?? 'view'}`
+  if (tab === 'board') return '#board'
+  return '#process'
+}
+
 export function getFolioOrigin(): string {
   if (typeof window !== 'undefined' && window.location?.origin) {
     return window.location.origin

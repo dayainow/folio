@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { JournalEntry } from '@/lib/journal'
 import {
   createJournalEntryKey,
+  dailyJourneyPhase,
   journalExcerpt,
   journalTitle,
   localDateKey,
@@ -36,6 +37,12 @@ describe('personal assistant helpers', () => {
     const content = '# 오늘 배운 점\n\n**작은 기록**을 계속 남기기로 했다.'
     expect(journalTitle(content)).toBe('오늘 배운 점')
     expect(journalExcerpt(content)).toContain('오늘 배운 점')
+  })
+
+  it('selects the daily journey phase from the local hour', () => {
+    expect(dailyJourneyPhase(new Date(2026, 7, 13, 9))).toBe('plan')
+    expect(dailyJourneyPhase(new Date(2026, 7, 13, 14))).toBe('capture')
+    expect(dailyJourneyPhase(new Date(2026, 7, 13, 20))).toBe('review')
   })
 
   it('resurfaces anchored memories before recent fallback entries', () => {

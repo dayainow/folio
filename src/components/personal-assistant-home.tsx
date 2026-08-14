@@ -1,17 +1,19 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowRight,
   BookOpen,
   CalendarDays,
   CheckCircle2,
+  ClipboardCheck,
   Clock3,
   FileText,
   FolderKanban,
   Inbox,
   Lightbulb,
   ListTodo,
+  PenLine,
   RefreshCw,
   Send,
   Sparkles,
@@ -26,6 +28,7 @@ import { loadDocsWithFallback, type DocEntry } from '@/lib/docs'
 import { loadTasksWithFallback, type Task } from '@/lib/board'
 import {
   createJournalEntryKey,
+  dailyJourneyPhase,
   journalExcerpt,
   journalTitle,
   localDateKey,
@@ -88,6 +91,7 @@ export function PersonalAssistantHome({
   const [capture, setCapture] = useState('')
   const [saving, setSaving] = useState(false)
   const [savedMessage, setSavedMessage] = useState('')
+  const captureRef = useRef<HTMLTextAreaElement>(null)
 
   const refresh = useCallback(async () => {
     setLoading(true)
@@ -141,6 +145,64 @@ export function PersonalAssistantHome({
   )
   const memories = useMemo(() => selectMemoryMoments(data.journals, now), [data.journals, now])
   const selectedMode = CAPTURE_MODES.find((mode) => mode.value === captureMode) ?? CAPTURE_MODES[0]!
+  const journeyPhase = dailyJourneyPhase(now)
+
+  const focusCapture = () => {
+    captureRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    window.setTimeout(() => captureRef.current?.focus(), 350)
+  }
+
+  const openIntake = () => {
+    window.location.hash = 'docs/intake'
+    onOpenDocs()
+  }
+
+  const primaryAction =
+    journeyPhase === 'plan'
+      ? { label: '오늘 계획 보기', icon: CalendarDays, action: () => onOpenBoard() }
+      : journeyPhase === 'capture'
+        ? { label: '지금 기록하기', icon: PenLine, action: focusCapture }
+        : { label: '오늘 정리하기', icon: ClipboardCheck, action: () => onOpenJournal(today, today) }
+  const PrimaryActionIcon = primaryAction.icon
+
+  const journeySteps = [
+    {
+      id: 'plan' as const,
+      eyebrow: 'START',
+      title: '방향 잡기',
+      description: activeTasks.length > 0 ? `열린 일 ${activeTasks.length}개를 먼저 살펴보세요.` : '오늘 일정과 우선순위를 가볍게 정해요.',
+      status: activeTasks.length > 0 ? `${activeTasks.length}개 진행 예정` : '계획 열기',
+      icon: CalendarDays,
+    },
+    {
+      id: 'capture' as const,
+      eyebrow: 'FLOW',
+      title: '흐름 남기기',
+      description: todayEntries.length > 0 ? `오늘 ${todayEntries.length}개의 맥락이 쌓였어요.` : '메모·아이디어·결정을 그때그때 붙잡아요.',
+      status: todayEntries.length > 0 ? `${todayEntries.length}개 기록됨` : '빠른 기록',
+      icon: PenLine,
+    },
+    {
+      id: 'review' as const,
+      eyebrow: 'CLOSE',
+      title: '하루 정리하기',
+      description: '흩어진 기록을 일지로 다듬고 내일의 맥락을 남겨요.',
+      status: '일지 정리',
+      icon: ClipboardCheck,
+    },
+  ]
+
+  const handleJourneyAction = (step: (typeof journeySteps)[number]['id']) => {
+    if (step === 'plan') {
+      onOpenBoard()
+      return
+    }
+    if (step === 'capture') {
+      focusCapture()
+      return
+    }
+    onOpenJournal(today, today)
+  }
 
   const saveCapture = async () => {
     const content = capture.trim()
@@ -175,6 +237,10 @@ export function PersonalAssistantHome({
               오늘의 생각을 붙잡고, 해야 할 일을 살피고, 잊고 있던 기록을 다시 꺼내드릴게요.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
+              <Button size="sm" className="gap-1.5 rounded-full px-4" onClick={primaryAction.action}>
+                <PrimaryActionIcon className="size-3.5" />
+                {primaryAction.label}
+              </Button>
               <Button variant="outline" size="sm" className="gap-1.5 rounded-full bg-white/60 dark:bg-white/5" onClick={onOpenProjects}>
                 <FolderKanban className="size-3.5" />
                 프로젝트 허브
@@ -183,10 +249,7 @@ export function PersonalAssistantHome({
                 variant="outline"
                 size="sm"
                 className="gap-1.5 rounded-full bg-white/60 dark:bg-white/5"
-                onClick={() => {
-                  window.location.hash = 'intake'
-                  onOpenDocs()
-                }}
+                onClick={openIntake}
               >
                 <Inbox className="size-3.5" />
                 통합 수집함
@@ -196,22 +259,68 @@ export function PersonalAssistantHome({
 
           <div className="grid grid-cols-3 gap-2 sm:min-w-[24rem]">
             {[
-              { label: '오늘 기록', value: todayEntries.length, icon: BookOpen },
-              { label: '진행할 일', value: activeTasks.length, icon: ListTodo },
-              { label: '최근 문서', value: recentDocs.length, icon: FileText },
+              { label: '오늘 기록', value: todayEntries.length, icon: BookOpen, action: () => onOpenJournal(today, today) },
+              { label: '진행할 일', value: activeTasks.length, icon: ListTodo, action: () => onOpenBoard() },
+              { label: '최근 문서', value: recentDocs.length, icon: FileText, action: () => onOpenDocs() },
             ].map((item) => {
               const Icon = item.icon
               return (
-                <div key={item.label} className="rounded-2xl border border-white/70 bg-white/60 p-3 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/5">
+                <button key={item.label} type="button" onClick={item.action} className="rounded-2xl border border-white/70 bg-white/60 p-3 text-left shadow-sm backdrop-blur transition-all hover:-translate-y-0.5 hover:bg-white hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10">
                   <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                     <Icon className="size-3.5" />
                     {item.label}
                   </div>
                   <p className="mt-1 text-2xl font-semibold tabular-nums">{loading ? '–' : item.value}</p>
-                </div>
+                </button>
               )
             })}
           </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="daily-journey-title" className="rounded-[1.5rem] border bg-card/70 p-3 shadow-sm sm:p-4">
+        <div className="mb-3 flex items-center justify-between gap-3 px-1">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">Daily loop</p>
+            <h2 id="daily-journey-title" className="mt-0.5 text-sm font-semibold">오늘의 기록 여정</h2>
+          </div>
+          <p className="hidden text-[11px] text-muted-foreground sm:block">시작 → 기록 → 정리, 필요한 순간에 바로 이어가세요.</p>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-3">
+          {journeySteps.map((step, index) => {
+            const Icon = step.icon
+            const active = journeyPhase === step.id
+            return (
+              <button
+                key={step.id}
+                type="button"
+                onClick={() => handleJourneyAction(step.id)}
+                aria-current={active ? 'step' : undefined}
+                className={cn(
+                  'group relative min-h-32 overflow-hidden rounded-2xl border p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600',
+                  active
+                    ? 'border-teal-300 bg-teal-50/80 shadow-[0_12px_30px_-24px_rgba(13,148,136,0.8)] dark:border-teal-700 dark:bg-teal-950/35'
+                    : 'border-border/70 bg-background hover:bg-muted/35',
+                )}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <span className={cn('flex size-9 items-center justify-center rounded-xl', active ? 'bg-teal-600 text-white' : 'bg-muted text-muted-foreground group-hover:text-foreground')}>
+                    <Icon className="size-4" />
+                  </span>
+                  <span className="text-[10px] font-semibold tracking-[0.16em] text-muted-foreground">0{index + 1} · {step.eyebrow}</span>
+                </div>
+                <div className="mt-4 flex items-end justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-semibold">{step.title}</h3>
+                    <p className="mt-1 line-clamp-2 text-[11px] leading-5 text-muted-foreground">{step.description}</p>
+                  </div>
+                  <span className={cn('shrink-0 rounded-full px-2 py-1 text-[10px] font-medium', active ? 'bg-teal-600 text-white' : 'bg-muted text-muted-foreground')}>
+                    {active ? '지금' : step.status}
+                  </span>
+                </div>
+              </button>
+            )
+          })}
         </div>
       </section>
 
@@ -245,6 +354,7 @@ export function PersonalAssistantHome({
           </CardHeader>
           <CardContent className="px-5 sm:px-6">
             <Textarea
+              ref={captureRef}
               value={capture}
               onChange={(event) => {
                 setCapture(event.target.value)
