@@ -37,6 +37,7 @@ import {
   Timer,
   Pause,
   Play,
+  Settings2,
 } from 'lucide-react';
 import { loadTasksWithFallback, saveTasksWithFallback, deleteTaskWithFallback, type Task, DEFAULT_COLUMNS } from '@/lib/board';
 import { loadJournalsWithFallback } from '@/lib/journal';
@@ -61,8 +62,10 @@ import { ExportMenu } from '@/components/export-menu';
 import { ShareResourceButton } from '@/components/share-resource';
 import { downloadText, tasksToCsv, tasksToJson } from '@/lib/export';
 import { getActiveTeamId } from '@/lib/team';
+import { progressiveWindow } from '@/lib/progressive-list';
 
 const STATUS_ORDER: Task['status'][] = ['backlog', 'in_progress', 'review', 'done'];
+const DONE_BATCH_SIZE = 12;
 
 const PRIORITY_COLORS: Record<string, string> = {
   high: 'bg-red-50 text-red-600 border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-900',
@@ -417,6 +420,7 @@ export function BoardDndPanel({
   const [lastPersist, setLastPersist] = useState<Task[] | null>(null);
   const [timeTick, setTimeTick] = useState(0);
   const [timePeriod, setTimePeriod] = useState<Period>('day');
+  const [showAllDone, setShowAllDone] = useState(false);
   const timeStore = loadTimeStore();
 
   useEffect(() => {
@@ -890,8 +894,18 @@ export function BoardDndPanel({
     for (const t of filtered) {
       map[t.status].push(t);
     }
+    map.done.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
     return map;
   }, [filtered]);
+
+  const doneWindow = useMemo(
+    () =>
+      progressiveWindow(
+        tasksByStatus.done,
+        showAllDone || search.trim() || filterTag ? tasksByStatus.done.length : DONE_BATCH_SIZE,
+      ),
+    [filterTag, search, showAllDone, tasksByStatus.done],
+  );
 
   const activeTask = activeId ? tasks.find(t => t.id === activeId) : null;
 
@@ -908,83 +922,6 @@ export function BoardDndPanel({
             aria-label="태스크 검색"
           />
         </div>
-        <ExportMenu
-          label="내보내기"
-          items={[
-            {
-              id: 'csv',
-              label: 'CSV',
-              description: 'Excel에서 열기 · boards-YYYY-MM-DD.csv',
-              run: async (setProgress) => {
-                setProgress(0.4, 'CSV 생성…')
-                const csv = tasksToCsv(tasks)
-                const day = new Date().toISOString().slice(0, 10)
-                downloadText(csv, `boards-${day}.csv`, 'text/csv;charset=utf-8')
-                setProgress(1, '완료')
-              },
-            },
-            {
-              id: 'json',
-              label: 'JSON',
-              description: '백업/마이그레이션 · boards-YYYY-MM-DD.json',
-              run: async (setProgress) => {
-                setProgress(0.4, 'JSON 생성…')
-                const json = tasksToJson(tasks)
-                const day = new Date().toISOString().slice(0, 10)
-                downloadText(json, `boards-${day}.json`, 'application/json;charset=utf-8')
-                setProgress(1, '완료')
-              },
-            },
-          ]}
-        />
-        <ShareResourceButton
-          kind="board"
-          resourceId={getActiveTeamId() || 'personal-board'}
-          resourceLabel="일정 보드"
-        />
-        <Button
-          onClick={() => void syncFromJira()}
-          size="sm"
-          variant="outline"
-          disabled={jiraSyncing}
-          className="gap-1"
-          aria-busy={jiraSyncing}
-          aria-label={jiraSyncing ? 'Jira 동기화 중' : 'Jira 동기화'}
-        >
-          <RefreshCw className={`h-3 w-3 ${jiraSyncing ? 'animate-spin' : ''}`} />
-          {jiraSyncing ? '동기화 중…' : 'Jira 동기화'}
-        </Button>
-        {githubEnabled && (
-          <Button
-            onClick={() => void syncFromGitHub()}
-            size="sm"
-            variant="outline"
-            disabled={githubSyncing}
-            className="gap-1"
-            aria-busy={githubSyncing}
-            aria-label={githubSyncing ? 'GitHub 동기화 중' : 'GitHub 동기화'}
-          >
-            <GitBranch className={`h-3 w-3 ${githubSyncing ? 'animate-pulse' : ''}`} />
-            {githubSyncing ? 'GH 동기화…' : 'GitHub 동기화'}
-          </Button>
-        )}
-        {githubEnabled && (
-          <span className="text-[11px] text-gray-400 inline-flex items-center gap-1">
-            <GitBranch className="h-3.5 w-3.5" />
-            GitHub 연동됨
-          </span>
-        )}
-        {hasNotifyChannel && (
-          <label className="inline-flex items-center gap-1.5 text-[11px] text-gray-500 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={notifyOnDone}
-              onChange={e => setNotifyOnDone(e.target.checked)}
-              className="rounded border-gray-300"
-            />
-            완료 시 알림
-          </label>
-        )}
         <Button
           type="button"
           onClick={() => openNewTask('backlog')}
@@ -993,6 +930,102 @@ export function BoardDndPanel({
         >
           <Plus className="h-3 w-3" /> 새 태스크
         </Button>
+        <details
+          className="group relative"
+          onBlur={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+              event.currentTarget.removeAttribute('open');
+            }
+          }}
+        >
+          <summary className="flex h-9 cursor-pointer list-none items-center gap-1.5 rounded-lg border px-3 text-xs hover:bg-muted [&::-webkit-details-marker]:hidden">
+            <Settings2 className="size-3.5" />
+            도구
+            <ChevronDown className="size-3 transition-transform group-open:rotate-180" />
+          </summary>
+          <div className="absolute right-0 top-11 z-40 w-72 space-y-3 rounded-xl border bg-background p-3 shadow-xl">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">백업 · 공유 · 연동</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <ExportMenu
+                label="내보내기"
+                items={[
+                  {
+                    id: 'csv',
+                    label: 'CSV',
+                    description: 'Excel에서 열기 · boards-YYYY-MM-DD.csv',
+                    run: async (setProgress) => {
+                      setProgress(0.4, 'CSV 생성…')
+                      const csv = tasksToCsv(tasks)
+                      const day = new Date().toISOString().slice(0, 10)
+                      downloadText(csv, `boards-${day}.csv`, 'text/csv;charset=utf-8')
+                      setProgress(1, '완료')
+                    },
+                  },
+                  {
+                    id: 'json',
+                    label: 'JSON',
+                    description: '백업/마이그레이션 · boards-YYYY-MM-DD.json',
+                    run: async (setProgress) => {
+                      setProgress(0.4, 'JSON 생성…')
+                      const json = tasksToJson(tasks)
+                      const day = new Date().toISOString().slice(0, 10)
+                      downloadText(json, `boards-${day}.json`, 'application/json;charset=utf-8')
+                      setProgress(1, '완료')
+                    },
+                  },
+                ]}
+              />
+              <ShareResourceButton
+                kind="board"
+                resourceId={getActiveTeamId() || 'personal-board'}
+                resourceLabel="일정 보드"
+              />
+              <Button
+                onClick={() => void syncFromJira()}
+                size="sm"
+                variant="outline"
+                disabled={jiraSyncing}
+                className="gap-1"
+                aria-busy={jiraSyncing}
+                aria-label={jiraSyncing ? 'Jira 동기화 중' : 'Jira 동기화'}
+              >
+                <RefreshCw className={`h-3 w-3 ${jiraSyncing ? 'animate-spin' : ''}`} />
+                {jiraSyncing ? '동기화 중…' : 'Jira 동기화'}
+              </Button>
+              {githubEnabled ? (
+                <Button
+                  onClick={() => void syncFromGitHub()}
+                  size="sm"
+                  variant="outline"
+                  disabled={githubSyncing}
+                  className="gap-1"
+                  aria-busy={githubSyncing}
+                  aria-label={githubSyncing ? 'GitHub 동기화 중' : 'GitHub 동기화'}
+                >
+                  <GitBranch className={`h-3 w-3 ${githubSyncing ? 'animate-pulse' : ''}`} />
+                  {githubSyncing ? 'GH 동기화…' : 'GitHub 동기화'}
+                </Button>
+              ) : null}
+            </div>
+            {githubEnabled ? (
+              <span className="text-[11px] text-gray-400 inline-flex items-center gap-1">
+                <GitBranch className="h-3.5 w-3.5" />
+                GitHub 연동됨
+              </span>
+            ) : null}
+            {hasNotifyChannel ? (
+              <label className="inline-flex items-center gap-1.5 text-[11px] text-gray-500 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={notifyOnDone}
+                  onChange={e => setNotifyOnDone(e.target.checked)}
+                  className="rounded border-gray-300"
+                />
+                완료 시 알림
+              </label>
+            ) : null}
+          </div>
+        </details>
         <div className="ml-auto flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
           <Timer className="h-3.5 w-3.5" aria-hidden />
           {(['day', 'week', 'month'] as Period[]).map((p) => (
@@ -1013,17 +1046,23 @@ export function BoardDndPanel({
         </div>
       </div>
 
-      <Card className="rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-3 bg-card">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-xs font-semibold text-gray-600 dark:text-gray-300">태그 클라우드</h3>
+      <details className="group rounded-xl border border-gray-100 bg-card shadow-sm dark:border-gray-800">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-xs font-medium [&::-webkit-details-marker]:hidden">
+          <span>{filterTag ? `태그 · #${filterTag}` : '태그로 좁히기'}</span>
+          <ChevronDown className="size-3.5 text-muted-foreground transition-transform group-open:rotate-180" />
+        </summary>
+        <div className="border-t p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <h3 className="text-xs font-semibold text-gray-600 dark:text-gray-300">자주 쓰는 태그</h3>
           {filterTag && (
             <Button type="button" size="sm" variant="ghost" className="h-6 text-[11px]" onClick={() => setFilterTag(null)}>
               필터 해제
             </Button>
           )}
+          </div>
+          <TagCloud tags={cloudTags} selected={filterTag} onSelect={setFilterTag} />
         </div>
-        <TagCloud tags={cloudTags} selected={filterTag} onSelect={setFilterTag} />
-      </Card>
+      </details>
 
       {saveError && (
         <div
@@ -1172,6 +1211,7 @@ export function BoardDndPanel({
         >
           {DEFAULT_COLUMNS.map(col => {
             const colTasks = tasksByStatus[col.key];
+            const renderedTasks = col.key === 'done' ? doneWindow.items : colTasks;
             return (
               <DroppableColumn
                 key={col.key}
@@ -1185,7 +1225,7 @@ export function BoardDndPanel({
                     <p>+ 버튼으로 「{col.label}」에 태스크를 추가하세요</p>
                   </div>
                 )}
-                {colTasks.map(task => (
+                {renderedTasks.map(task => (
                   <DraggableTaskCard
                     key={task.id}
                     task={task}
@@ -1204,6 +1244,26 @@ export function BoardDndPanel({
                     onToggleTimer={() => handleToggleTimer(task.id)}
                   />
                 ))}
+                {col.key === 'done' && doneWindow.remainingCount > 0 ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="w-full text-xs"
+                    onClick={() => setShowAllDone(true)}
+                  >
+                    완료 {doneWindow.remainingCount}개 더 보기
+                  </Button>
+                ) : null}
+                {col.key === 'done' && showAllDone && colTasks.length > DONE_BATCH_SIZE ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="w-full text-xs text-muted-foreground"
+                    onClick={() => setShowAllDone(false)}
+                  >
+                    최근 완료만 보기
+                  </Button>
+                ) : null}
               </DroppableColumn>
             );
           })}

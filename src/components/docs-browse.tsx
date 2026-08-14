@@ -28,6 +28,7 @@ import { cn } from '@/lib/utils'
 import { loadCategories, loadDocsWithFallback, type DocEntry } from '@/lib/docs'
 import { isBookmarked } from '@/lib/bookmarks'
 import { isShareExpired, listShareLinks } from '@/lib/share-links'
+import { progressiveWindow } from '@/lib/progressive-list'
 
 export type DocsBrowsePanelProps = {
   focusDocId?: string | null
@@ -41,6 +42,7 @@ type Sort = 'newest' | 'oldest' | 'title'
 type DocsView = 'gallery' | 'list'
 
 const DOCS_VIEW_KEY = 'folio_docs_view_v1'
+const DOCS_BATCH_SIZE = 24
 
 function loadDocsView(): DocsView {
   return localStorage.getItem(DOCS_VIEW_KEY) === 'list' ? 'list' : 'gallery'
@@ -85,6 +87,7 @@ export function DocsBrowsePanel({
   const [drawer, setDrawer] = useState<'sort' | 'filter' | null>(null)
   const [view, setView] = useState<DocsView>('gallery')
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [visibleLimit, setVisibleLimit] = useState(DOCS_BATCH_SIZE)
 
   useEffect(() => {
     queueMicrotask(() => setView(loadDocsView()))
@@ -147,6 +150,11 @@ export function DocsBrowsePanel({
       })
   }, [docs, search, filterCat, scope, sort, sharedTitles])
 
+  const visibleDocs = useMemo(
+    () => progressiveWindow(filtered, visibleLimit),
+    [filtered, visibleLimit],
+  )
+
   const openDoc = useCallback(
     (id: string) => {
       onOpenWrite?.(id)
@@ -188,7 +196,11 @@ export function DocsBrowsePanel({
                 'flex min-h-11 w-full items-center gap-2 rounded-lg px-2 text-left text-xs',
                 filterCat === null && 'bg-slate-100 dark:bg-slate-800',
               )}
-              onClick={() => setFilterCat(null)}
+              onClick={() => {
+                setFilterCat(null)
+                setVisibleLimit(DOCS_BATCH_SIZE)
+                setSelectedId(null)
+              }}
             >
               <Folder className="h-3.5 w-3.5 text-muted-foreground" />
               모든 폴더
@@ -203,7 +215,11 @@ export function DocsBrowsePanel({
                       'flex min-h-11 w-full items-center gap-2 rounded-lg px-2 text-left text-xs font-medium',
                       filterCat === cat && 'bg-slate-100 dark:bg-slate-800',
                     )}
-                    onClick={() => setFilterCat(filterCat === cat ? null : cat)}
+                    onClick={() => {
+                      setFilterCat(filterCat === cat ? null : cat)
+                      setVisibleLimit(DOCS_BATCH_SIZE)
+                      setSelectedId(null)
+                    }}
                   >
                     <Folder className="h-3.5 w-3.5 text-muted-foreground" />
                     <span className="truncate">{cat}</span>
@@ -239,7 +255,11 @@ export function DocsBrowsePanel({
             <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
             <Input
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value)
+                setVisibleLimit(DOCS_BATCH_SIZE)
+                setSelectedId(null)
+              }}
               placeholder="문서 검색…"
               className="h-11 pl-8 text-xs"
               aria-label="문서 검색"
@@ -289,7 +309,11 @@ export function DocsBrowsePanel({
             <button
               key={k}
               type="button"
-              onClick={() => setScope(k)}
+              onClick={() => {
+                setScope(k)
+                setVisibleLimit(DOCS_BATCH_SIZE)
+                setSelectedId(null)
+              }}
               className={cn(
                 'min-h-11 rounded-lg px-3 text-xs shadow-sm',
                 scope === k
@@ -302,6 +326,12 @@ export function DocsBrowsePanel({
             </button>
           ))}
         </div>
+
+        {filtered.length > 0 ? (
+          <p className="text-[11px] text-muted-foreground" role="status">
+            {filtered.length}개 중 {visibleDocs.visibleCount}개 표시
+          </p>
+        ) : null}
 
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-slate-200 px-4 py-16 text-center dark:border-slate-700">
@@ -317,7 +347,7 @@ export function DocsBrowsePanel({
                 ? 'grid grid-cols-[repeat(auto-fill,minmax(min(100%,14rem),1fr))] gap-3'
                 : 'divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-100 bg-card dark:divide-slate-800 dark:border-slate-800',
             )}>
-              {filtered.map((doc) => {
+              {visibleDocs.items.map((doc) => {
                 const selected = selectedId === doc.id
                 return (
                   <li key={doc.id}>
@@ -408,6 +438,17 @@ export function DocsBrowsePanel({
             )}
           </div>
         )}
+
+        {visibleDocs.remainingCount > 0 ? (
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={() => setVisibleLimit((current) => current + DOCS_BATCH_SIZE)}
+          >
+            문서 {Math.min(DOCS_BATCH_SIZE, visibleDocs.remainingCount)}개 더 보기 · 남은 {visibleDocs.remainingCount}개
+          </Button>
+        ) : null}
       </div>
 
       <FilterDrawer open={drawer === 'sort'} onClose={() => setDrawer(null)} title="정렬">
@@ -426,6 +467,8 @@ export function DocsBrowsePanel({
               className="w-full justify-start"
               onClick={() => {
                 setSort(k)
+                setVisibleLimit(DOCS_BATCH_SIZE)
+                setSelectedId(null)
                 setDrawer(null)
               }}
             >
@@ -437,7 +480,11 @@ export function DocsBrowsePanel({
 
       <FilterDrawer open={drawer === 'filter'} onClose={() => setDrawer(null)} title="폴더 필터">
         <div className="flex flex-wrap gap-2">
-          <Button type="button" size="sm" variant={filterCat === null ? 'default' : 'outline'} onClick={() => setFilterCat(null)}>
+          <Button type="button" size="sm" variant={filterCat === null ? 'default' : 'outline'} onClick={() => {
+            setFilterCat(null)
+            setVisibleLimit(DOCS_BATCH_SIZE)
+            setSelectedId(null)
+          }}>
             전체
           </Button>
           {categories.map((cat) => (
@@ -446,7 +493,11 @@ export function DocsBrowsePanel({
               type="button"
               size="sm"
               variant={filterCat === cat ? 'default' : 'outline'}
-              onClick={() => setFilterCat(filterCat === cat ? null : cat)}
+              onClick={() => {
+                setFilterCat(filterCat === cat ? null : cat)
+                setVisibleLimit(DOCS_BATCH_SIZE)
+                setSelectedId(null)
+              }}
             >
               {cat}
             </Button>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 export interface TagCount {
   tag: string;
@@ -13,6 +13,8 @@ interface TagCloudProps {
   onSelect: (tag: string | null) => void;
   emptyLabel?: string;
   className?: string;
+  /** 장기 사용 시 태그가 화면을 밀어내지 않도록 처음 표시할 개수 */
+  limit?: number;
 }
 
 /** 빈도 기반 폰트 크기 / 색상 */
@@ -53,8 +55,12 @@ export function TagCloud({
   onSelect,
   emptyLabel = '아직 태그 없음',
   className = '',
+  limit = 24,
 }: TagCloudProps) {
   const max = useMemo(() => Math.max(1, ...tags.map(t => t.count)), [tags]);
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded ? tags : tags.slice(0, limit);
+  const remaining = Math.max(0, tags.length - visible.length);
 
   if (tags.length === 0) {
     return <span className="text-xs text-gray-400 dark:text-gray-500">{emptyLabel}</span>;
@@ -62,7 +68,7 @@ export function TagCloud({
 
   return (
     <div className={`flex flex-wrap items-center gap-x-2 gap-y-1.5 ${className}`}>
-      {tags.map(({ tag, count }) => {
+      {visible.map(({ tag, count }) => {
         const active = selected === tag;
         const { fontSize, className: tone } = styleForCount(count, max);
         return (
@@ -84,6 +90,23 @@ export function TagCloud({
           </button>
         );
       })}
+      {remaining > 0 ? (
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          className="rounded-md border border-dashed px-2 py-1 text-[11px] text-muted-foreground hover:bg-muted"
+        >
+          태그 {remaining}개 더 보기
+        </button>
+      ) : expanded && tags.length > limit ? (
+        <button
+          type="button"
+          onClick={() => setExpanded(false)}
+          className="rounded-md px-2 py-1 text-[11px] text-muted-foreground hover:bg-muted"
+        >
+          자주 쓰는 태그만 보기
+        </button>
+      ) : null}
     </div>
   );
 }
