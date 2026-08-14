@@ -3,16 +3,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowRight,
-  BookOpen,
   CalendarDays,
   CheckCircle2,
   ClipboardCheck,
   Clock3,
+  ChevronDown,
   FileText,
-  FolderKanban,
   Inbox,
   Lightbulb,
-  ListTodo,
   PenLine,
   RefreshCw,
   Send,
@@ -76,12 +74,10 @@ export function PersonalAssistantHome({
   onOpenJournal,
   onOpenDocs,
   onOpenBoard,
-  onOpenProjects,
 }: {
   onOpenJournal: (entryKey: string, date: string) => void
   onOpenDocs: (docId?: string) => void
   onOpenBoard: (taskId?: string) => void
-  onOpenProjects: () => void
 }) {
   const { locale } = useI18n()
   const [now] = useState(() => new Date())
@@ -170,7 +166,6 @@ export function PersonalAssistantHome({
       id: 'plan' as const,
       eyebrow: 'START',
       title: '방향 잡기',
-      description: activeTasks.length > 0 ? `열린 일 ${activeTasks.length}개를 먼저 살펴보세요.` : '오늘 일정과 우선순위를 가볍게 정해요.',
       status: activeTasks.length > 0 ? `${activeTasks.length}개 진행 예정` : '계획 열기',
       icon: CalendarDays,
     },
@@ -178,7 +173,6 @@ export function PersonalAssistantHome({
       id: 'capture' as const,
       eyebrow: 'FLOW',
       title: '흐름 남기기',
-      description: todayEntries.length > 0 ? `오늘 ${todayEntries.length}개의 맥락이 쌓였어요.` : '메모·아이디어·결정을 그때그때 붙잡아요.',
       status: todayEntries.length > 0 ? `${todayEntries.length}개 기록됨` : '빠른 기록',
       icon: PenLine,
     },
@@ -186,7 +180,6 @@ export function PersonalAssistantHome({
       id: 'review' as const,
       eyebrow: 'CLOSE',
       title: '하루 정리하기',
-      description: '흩어진 기록을 일지로 다듬고 내일의 맥락을 남겨요.',
       status: '일지 정리',
       icon: ClipboardCheck,
     },
@@ -225,7 +218,7 @@ export function PersonalAssistantHome({
       <section className="relative overflow-hidden rounded-[1.75rem] border border-teal-900/10 bg-[linear-gradient(135deg,rgba(240,253,250,0.96),rgba(255,255,255,0.98)_48%,rgba(239,246,255,0.94))] p-5 shadow-[0_18px_60px_-38px_rgba(15,118,110,0.45)] dark:border-teal-300/10 dark:bg-[linear-gradient(135deg,rgba(17,40,38,0.96),rgba(12,18,26,0.98)_52%,rgba(17,31,45,0.96))] sm:p-7">
         <div aria-hidden className="absolute -right-12 -top-16 size-48 rounded-full bg-teal-300/20 blur-3xl" />
         <div aria-hidden className="absolute -bottom-20 left-1/3 size-44 rounded-full bg-sky-300/20 blur-3xl" />
-        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+        <div className="relative">
           <div>
             <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-teal-700/10 bg-white/65 px-3 py-1 text-[11px] font-medium text-teal-800 shadow-sm backdrop-blur dark:bg-white/5 dark:text-teal-200">
               <Sparkles className="size-3.5" />
@@ -241,10 +234,6 @@ export function PersonalAssistantHome({
                 <PrimaryActionIcon className="size-3.5" />
                 {primaryAction.label}
               </Button>
-              <Button variant="outline" size="sm" className="gap-1.5 rounded-full bg-white/60 dark:bg-white/5" onClick={onOpenProjects}>
-                <FolderKanban className="size-3.5" />
-                프로젝트 허브
-              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -255,36 +244,19 @@ export function PersonalAssistantHome({
                 통합 수집함
               </Button>
             </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2 sm:min-w-[24rem]">
-            {[
-              { label: '오늘 기록', value: todayEntries.length, icon: BookOpen, action: () => onOpenJournal(today, today) },
-              { label: '진행할 일', value: activeTasks.length, icon: ListTodo, action: () => onOpenBoard() },
-              { label: '최근 문서', value: recentDocs.length, icon: FileText, action: () => onOpenDocs() },
-            ].map((item) => {
-              const Icon = item.icon
-              return (
-                <button key={item.label} type="button" onClick={item.action} className="rounded-2xl border border-white/70 bg-white/60 p-3 text-left shadow-sm backdrop-blur transition-all hover:-translate-y-0.5 hover:bg-white hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10">
-                  <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                    <Icon className="size-3.5" />
-                    {item.label}
-                  </div>
-                  <p className="mt-1 text-2xl font-semibold tabular-nums">{loading ? '–' : item.value}</p>
-                </button>
-              )
-            })}
+            <p className="mt-4 text-xs text-muted-foreground">
+              오늘 기록 {loading ? '–' : todayEntries.length} · 진행할 일 {loading ? '–' : activeTasks.length} · 최근 문서 {loading ? '–' : recentDocs.length}
+            </p>
           </div>
         </div>
       </section>
 
-      <section aria-labelledby="daily-journey-title" className="rounded-[1.5rem] border bg-card/70 p-3 shadow-sm sm:p-4">
-        <div className="mb-3 flex items-center justify-between gap-3 px-1">
+      <section aria-labelledby="daily-journey-title" className="rounded-2xl border bg-card/70 p-3 shadow-sm">
+        <div className="mb-2 flex items-center justify-between gap-3 px-1">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-teal-700 dark:text-teal-300">Daily loop</p>
-            <h2 id="daily-journey-title" className="mt-0.5 text-sm font-semibold">오늘의 기록 여정</h2>
+            <h2 id="daily-journey-title" className="text-sm font-semibold">오늘의 흐름</h2>
           </div>
-          <p className="hidden text-[11px] text-muted-foreground sm:block">시작 → 기록 → 정리, 필요한 순간에 바로 이어가세요.</p>
+          <p className="text-[11px] text-muted-foreground">필요한 단계만 누르세요.</p>
         </div>
         <div className="grid gap-2 sm:grid-cols-3">
           {journeySteps.map((step, index) => {
@@ -297,24 +269,21 @@ export function PersonalAssistantHome({
                 onClick={() => handleJourneyAction(step.id)}
                 aria-current={active ? 'step' : undefined}
                 className={cn(
-                  'group relative min-h-32 overflow-hidden rounded-2xl border p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600',
+                  'group relative rounded-xl border px-3 py-3 text-left transition-colors hover:bg-muted/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600',
                   active
                     ? 'border-teal-300 bg-teal-50/80 shadow-[0_12px_30px_-24px_rgba(13,148,136,0.8)] dark:border-teal-700 dark:bg-teal-950/35'
                     : 'border-border/70 bg-background hover:bg-muted/35',
                 )}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <span className={cn('flex size-9 items-center justify-center rounded-xl', active ? 'bg-teal-600 text-white' : 'bg-muted text-muted-foreground group-hover:text-foreground')}>
-                    <Icon className="size-4" />
+                <div className="flex items-center gap-2.5">
+                  <span className={cn('flex size-8 shrink-0 items-center justify-center rounded-lg', active ? 'bg-teal-600 text-white' : 'bg-muted text-muted-foreground group-hover:text-foreground')}>
+                    <Icon className="size-3.5" />
                   </span>
-                  <span className="text-[10px] font-semibold tracking-[0.16em] text-muted-foreground">0{index + 1} · {step.eyebrow}</span>
-                </div>
-                <div className="mt-4 flex items-end justify-between gap-3">
                   <div className="min-w-0">
-                    <h3 className="text-sm font-semibold">{step.title}</h3>
-                    <p className="mt-1 line-clamp-2 text-[11px] leading-5 text-muted-foreground">{step.description}</p>
+                    <p className="text-[9px] font-semibold tracking-[0.14em] text-muted-foreground">0{index + 1} · {step.eyebrow}</p>
+                    <h3 className="mt-0.5 truncate text-xs font-semibold">{step.title}</h3>
                   </div>
-                  <span className={cn('shrink-0 rounded-full px-2 py-1 text-[10px] font-medium', active ? 'bg-teal-600 text-white' : 'bg-muted text-muted-foreground')}>
+                  <span className={cn('ml-auto shrink-0 rounded-full px-2 py-1 text-[9px] font-medium', active ? 'bg-teal-600 text-white' : 'bg-muted text-muted-foreground')}>
                     {active ? '지금' : step.status}
                   </span>
                 </div>
@@ -385,10 +354,10 @@ export function PersonalAssistantHome({
         <Card className="gap-3 border-0 py-5 ring-1 ring-foreground/10">
           <CardHeader className="flex-row items-center justify-between px-5">
             <div>
-              <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-sky-700 dark:text-sky-300">Today</p>
-              <CardTitle className="mt-1 text-lg">오늘의 흐름</CardTitle>
+              <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-sky-700 dark:text-sky-300">Tasks</p>
+              <CardTitle className="mt-1 text-lg">오늘 할 일</CardTitle>
             </div>
-            <Button variant="ghost" size="icon" className="size-8 rounded-full" onClick={() => void refresh()} aria-label="오늘의 흐름 새로고침">
+            <Button variant="ghost" size="icon" className="size-8 rounded-full" onClick={() => void refresh()} aria-label="오늘 할 일 새로고침">
               <RefreshCw className={cn('size-3.5', loading && 'animate-spin')} />
             </Button>
           </CardHeader>
@@ -425,17 +394,15 @@ export function PersonalAssistantHome({
         </Card>
       </div>
 
-      <section>
-        <div className="mb-3 flex items-end justify-between gap-3">
+      <details className="group rounded-2xl border bg-muted/15">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 [&::-webkit-details-marker]:hidden sm:p-5">
           <div>
-            <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-violet-700 dark:text-violet-300">Memory resurfacing</p>
-            <h2 className="mt-1 text-lg font-semibold">다시 꺼내볼 기억</h2>
-            <p className="mt-1 text-xs text-muted-foreground">지나간 기록에서 지금의 나에게 필요한 맥락을 찾아보세요.</p>
+            <h2 className="text-sm font-semibold">지난 기록 돌아보기</h2>
+            <p className="mt-1 text-xs text-muted-foreground">필요할 때만 과거의 맥락을 펼쳐보세요.</p>
           </div>
-          <Button variant="ghost" size="sm" className="hidden gap-1 text-xs sm:inline-flex" onClick={() => onOpenJournal(today, today)}>
-            일지 열기 <ArrowRight className="size-3.5" />
-          </Button>
-        </div>
+          <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
+        </summary>
+        <div className="border-t p-4 sm:p-5">
         {memories.length > 0 ? (
           <div className="grid gap-3 md:grid-cols-3">
             {memories.map((memory, index) => (
@@ -473,7 +440,8 @@ export function PersonalAssistantHome({
             <p className="mt-1 text-xs text-muted-foreground">오늘부터 짧게라도 남겨보세요.</p>
           </div>
         )}
-      </section>
+        </div>
+      </details>
 
       {recentDocs.length > 0 ? (
         <section className="rounded-2xl border bg-muted/20 p-4 sm:p-5">

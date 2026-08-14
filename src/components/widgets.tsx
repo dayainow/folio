@@ -4,12 +4,11 @@
  * Writing-first 우측 사이드바 위젯 — 핵심 / 추가 분리 (P58+)
  */
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
-import { Activity, BookOpen, Kanban, Loader2, RefreshCw } from 'lucide-react'
+import { BookOpen, Kanban, Loader2, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { loadJournalsWithFallback } from '@/lib/journal'
 import { loadTasksWithFallback, type Task } from '@/lib/board'
-import { fetchBeaconSummary, type ProjectSummary } from '@/lib/beacon'
 import { AiSummaryWidget } from '@/components/ai-summary-widget'
 import { ActivityFeed } from '@/components/activity-feed'
 import { PluginWidgetHost } from '@/components/plugin-widget-host'
@@ -36,15 +35,13 @@ function useSummaryData(livePreview?: { date: string; content: string } | null) 
   )
   const [inProgress, setInProgress] = useState(0)
   const [taskTotal, setTaskTotal] = useState(0)
-  const [gateSummary, setGateSummary] = useState<ProjectSummary | null>(null)
 
   const refresh = useCallback(async () => {
     setLoading(true)
     try {
-      const [journals, tasks, beacon] = await Promise.all([
+      const [journals, tasks] = await Promise.all([
         loadJournalsWithFallback().catch(() => ({}) as Record<string, { content: string }>),
         loadTasksWithFallback().catch(() => [] as Task[]),
-        fetchBeaconSummary().catch(() => null),
       ])
 
       const today = new Date().toISOString().slice(0, 10)
@@ -60,7 +57,6 @@ function useSummaryData(livePreview?: { date: string; content: string } | null) 
 
       setInProgress(tasks.filter((t) => t.status === 'in_progress').length)
       setTaskTotal(tasks.length)
-      setGateSummary(beacon?.available ? beacon.summary : null)
     } finally {
       setLoading(false)
     }
@@ -76,13 +72,11 @@ function useSummaryData(livePreview?: { date: string; content: string } | null) 
     preview: livePreview ?? storedPreview,
     inProgress,
     taskTotal,
-    gateSummary,
-    progress: gateSummary?.progressPercent ?? 0,
     refresh,
   }
 }
 
-/** 핵심 위젯: 오늘의 일지 · 진행 중 태스크 · Gate */
+/** 핵심 위젯: 오늘의 일지 · 진행 중 태스크 */
 export function CoreSummaryWidgets({
   onOpenTab,
   journalPreview,
@@ -92,14 +86,14 @@ export function CoreSummaryWidgets({
   journalPreview?: WidgetSidebarProps['journalPreview']
   className?: string
 }) {
-  const { loading, preview, inProgress, taskTotal, gateSummary, progress, refresh } =
+  const { loading, preview, inProgress, taskTotal, refresh } =
     useSummaryData(journalPreview)
 
   return (
     <div className={cn('flex flex-col gap-5', className)}>
       <div className="flex items-center justify-between px-0.5">
         <h2 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-          요약
+          오늘
         </h2>
         <Button
           type="button"
@@ -174,49 +168,6 @@ export function CoreSummaryWidgets({
             onClick={() => onOpenTab('board')}
           >
             일정 보드 열기
-          </button>
-        )}
-      </section>
-
-      <Separator />
-
-      <section className="rounded-xl border border-gray-100 bg-card p-4 dark:border-gray-800">
-        <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
-          <Activity className="h-4 w-4 shrink-0" aria-hidden />
-          Gate 상태
-        </div>
-        {loading ? (
-          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-        ) : gateSummary ? (
-          <>
-            <p className="truncate text-sm font-medium">{gateSummary.name}</p>
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              {gateSummary.currentGate
-                ? `${gateSummary.currentGate.toUpperCase()} · ${gateSummary.currentGateLabel}`
-                : 'Gate 미확인'}
-              {' · '}
-              {progress}%
-            </p>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
-              <div
-                className="h-full rounded-full bg-foreground/70 transition-[width]"
-                style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
-              />
-            </div>
-          </>
-        ) : (
-          <p className="text-xs text-muted-foreground">Beacon 미연동</p>
-        )}
-        {onOpenTab && (
-          <button
-            type="button"
-            className={cn(
-              touchBtn,
-              'mt-3 w-full border border-border bg-muted/40 text-foreground hover:bg-muted',
-            )}
-            onClick={() => onOpenTab('process')}
-          >
-            프로세스 열기
           </button>
         )}
       </section>

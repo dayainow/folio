@@ -31,7 +31,7 @@ import {
   setMobileFullscreen,
   subscribeMobileFullscreen,
 } from '@/lib/mobile-actions';
-import { Activity, BookOpen, FolderKanban, Maximize2, Minimize2, PanelRight, Sparkles, Users, X } from 'lucide-react';
+import { Activity, BookOpen, ChevronDown, FolderKanban, Maximize2, Minimize2, PanelRight, Sparkles, Users, X } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 
@@ -529,6 +529,36 @@ export default function Home() {
 
   const sidebarFooter = (
     <div className="space-y-3">
+      <div className="space-y-2">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          도구와 설정
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <LanguageToggle />
+          <Link
+            href="/guide"
+            className={cn(buttonVariants({ size: 'sm', variant: 'outline' }), 'h-9 gap-1.5 text-xs')}
+          >
+            <BookOpen className="size-3.5" />
+            {t('nav.guide')}
+          </Link>
+          <AdvancedSearchButton onNavigate={handleSearchNavigate} />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-9 gap-1.5 text-xs"
+            onClick={() => {
+              setMobileSidebarOpen(false);
+              setCollabPanelOpen(true);
+            }}
+          >
+            <Users className="size-3.5" />
+            협업
+          </Button>
+        </div>
+      </div>
+      <Separator className="my-1" />
       <div className="flex flex-wrap items-center gap-2">
         <StorageModeToggle />
         <CollabModeToggle />
@@ -671,11 +701,9 @@ export default function Home() {
               {(
                 [
                   { value: 'assistant' as const, labelKey: 'nav.assistant', assistantIcon: true },
-                  { value: 'projects' as const, labelKey: 'nav.projects', projectIcon: true },
                   { value: 'journal' as const, labelKey: 'nav.journal' },
                   { value: 'docs' as const, labelKey: 'nav.docs' },
                   { value: 'board' as const, labelKey: 'nav.board' },
-                  { value: 'process' as const, labelKey: 'nav.process', icon: true },
                 ] as const
               ).map((item) => (
                 <li key={item.value}>
@@ -691,44 +719,61 @@ export default function Home() {
                     )}
                   >
                     {'assistantIcon' in item && item.assistantIcon ? <Sparkles className="h-3 w-3" /> : null}
-                    {'projectIcon' in item && item.projectIcon ? <FolderKanban className="h-3 w-3" /> : null}
-                    {'icon' in item && item.icon ? <Activity className="h-3 w-3" /> : null}
                     {t(item.labelKey)}
                   </button>
                 </li>
               ))}
+              <li>
+                <details
+                  className="group relative"
+                  onBlur={(event) => {
+                    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                      event.currentTarget.removeAttribute('open');
+                    }
+                  }}
+                >
+                  <summary
+                    className={cn(
+                      'flex h-8 cursor-pointer list-none items-center gap-1 rounded-lg px-3 text-xs text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground [&::-webkit-details-marker]:hidden',
+                      (tab === 'projects' || tab === 'process') &&
+                        'bg-gray-100 font-medium text-foreground dark:bg-gray-800',
+                    )}
+                  >
+                    더보기
+                    <ChevronDown className="size-3 transition-transform group-open:rotate-180" />
+                  </summary>
+                  <div className="absolute left-0 top-10 z-[70] w-44 rounded-xl border bg-background p-1.5 shadow-xl">
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs hover:bg-muted"
+                      onClick={(event) => {
+                        event.currentTarget.closest('details')?.removeAttribute('open');
+                        handleTabChange('projects');
+                      }}
+                    >
+                      <FolderKanban className="size-3.5 text-muted-foreground" />
+                      {t('nav.projects')}
+                    </button>
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs hover:bg-muted"
+                      onClick={(event) => {
+                        event.currentTarget.closest('details')?.removeAttribute('open');
+                        handleTabChange('process');
+                      }}
+                    >
+                      <Activity className="size-3.5 text-muted-foreground" />
+                      {t('nav.process')}
+                    </button>
+                  </div>
+                </details>
+              </li>
             </ul>
           </nav>
 
           <div className="ml-auto flex items-center gap-1">
-            <LanguageToggle />
-            <Link
-              href="/guide"
-              className={cn(
-                buttonVariants({ size: 'sm', variant: 'ghost' }),
-                'hidden h-8 gap-1 px-2 text-xs text-muted-foreground sm:inline-flex sm:px-2.5',
-              )}
-              aria-label={t('nav.guide')}
-            >
-              <BookOpen className="h-3.5 w-3.5" aria-hidden />
-              <span className="hidden sm:inline">{t('nav.guide')}</span>
-            </Link>
             <GlobalSearch variant="icon" onNavigate={handleSearchNavigate} />
-            <span className="hidden md:inline-flex">
-              <AdvancedSearchButton onNavigate={handleSearchNavigate} />
-            </span>
             <NotificationCenterButton />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="hidden h-9 w-9 sm:inline-flex"
-              aria-label={t('settings.collabRealtime')}
-              aria-expanded={collabPanelOpen}
-              onClick={() => setCollabPanelOpen(true)}
-            >
-              <Users className="h-4 w-4" />
-            </Button>
             <Button
               type="button"
               variant="ghost"
@@ -744,7 +789,7 @@ export default function Home() {
               type="button"
               variant="ghost"
               size="icon"
-              className="h-12 w-12 min-h-[48px] min-w-[48px] md:h-9 md:w-9 md:min-h-0 md:min-w-0 lg:hidden"
+              className="h-12 w-12 min-h-[48px] min-w-[48px] md:h-9 md:w-9 md:min-h-0 md:min-w-0"
               aria-label={t('nav.summaryOpen')}
               aria-expanded={mobileSidebarOpen}
               onClick={() => setMobileSidebarOpen(true)}
@@ -817,7 +862,6 @@ export default function Home() {
                     setFocusTaskId(taskId ?? null);
                     handleTabChange('board');
                   }}
-                  onOpenProjects={() => handleTabChange('projects')}
                 />
               </TabsContent>
               <TabsContent value="projects" className="mt-0">
@@ -943,26 +987,20 @@ export default function Home() {
           </div>
         </main>
 
-        {/* 데스크톱 우측 사이드바 280px */}
-        <aside className="hidden w-[280px] shrink-0 border-l border-gray-100 p-3 dark:border-gray-800 lg:block">
-          <ScrollArea className="sticky top-14 h-[calc(100vh-3.5rem)]">
-            <div className="pr-3">{sidebar}</div>
-          </ScrollArea>
-        </aside>
       </div>
 
-      {/* 모바일: 하단 시트 */}
+      {/* 필요할 때만 여는 요약·도구 패널 */}
       {mobileSidebarOpen && (
-        <div className="fixed inset-0 z-[60] lg:hidden" role="dialog" aria-modal aria-label={t('nav.summary')}>
+        <div className="fixed inset-0 z-[60]" role="dialog" aria-modal aria-label={t('nav.summary')}>
           <button
             type="button"
             className="absolute inset-0 bg-black/40"
             aria-label={t('common.close')}
             onClick={() => setMobileSidebarOpen(false)}
           />
-          <div className="absolute inset-x-0 bottom-0 flex max-h-[75vh] flex-col rounded-t-2xl border border-gray-100 bg-background shadow-xl dark:border-gray-800">
+          <div className="absolute inset-x-0 bottom-0 flex max-h-[75vh] flex-col rounded-t-2xl border border-gray-100 bg-background shadow-xl dark:border-gray-800 lg:inset-y-0 lg:left-auto lg:right-0 lg:h-full lg:max-h-none lg:w-[360px] lg:rounded-none lg:border-y-0 lg:border-r-0 lg:border-l">
             <div className="flex shrink-0 items-center justify-between border-b border-border/60 px-4 py-3">
-              <span className="text-sm font-semibold">{t('nav.summary')}</span>
+              <span className="text-sm font-semibold">내 Folio</span>
               <Button
                 type="button"
                 variant="ghost"
@@ -974,7 +1012,7 @@ export default function Home() {
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            <ScrollArea className="h-[min(60vh,calc(75vh-3.5rem))] px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+            <ScrollArea className="h-[min(60vh,calc(75vh-3.5rem))] px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] lg:h-[calc(100vh-3.5rem)]">
               <div className="pr-3">{sidebar}</div>
             </ScrollArea>
           </div>
