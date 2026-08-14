@@ -33,6 +33,8 @@ import {
   selectMemoryMoments,
 } from '@/lib/personal-assistant'
 import { cn } from '@/lib/utils'
+import { DailyReviewCard } from '@/components/daily-review-card'
+import { loadDailyReview } from '@/lib/daily-review'
 
 type CaptureMode = 'memo' | 'idea' | 'decision'
 
@@ -117,6 +119,11 @@ export function PersonalAssistantHome({
   }, [refresh])
 
   const today = localDateKey(now)
+  const previousReview = useMemo(() => {
+    const yesterday = new Date(now)
+    yesterday.setDate(yesterday.getDate() - 1)
+    return loadDailyReview(localDateKey(yesterday))
+  }, [now])
   const todayEntries = useMemo(
     () =>
       Object.entries(data.journals)
@@ -139,6 +146,27 @@ export function PersonalAssistantHome({
     () => [...data.docs].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 3),
     [data.docs],
   )
+  const sourcedContext = useMemo(() => {
+    const docs = data.docs
+      .filter((doc) => doc.provenance || doc.tags?.some((tag) => tag.startsWith('source-system:')))
+      .map((doc) => ({
+        id: doc.id,
+        kind: 'doc' as const,
+        title: doc.title || '제목 없는 문서',
+        system: doc.provenance?.system ?? doc.tags?.find((tag) => tag.startsWith('source-system:'))?.slice(14) ?? 'file',
+        updatedAt: doc.updatedAt,
+      }))
+    const journals = Object.entries(data.journals)
+      .filter(([, entry]) => entry.provenance || entry.tags?.some((tag) => tag.startsWith('source-system:')))
+      .map(([id, entry]) => ({
+        id,
+        kind: 'journal' as const,
+        title: journalTitle(entry.content),
+        system: entry.provenance?.system ?? entry.tags?.find((tag) => tag.startsWith('source-system:'))?.slice(14) ?? 'file',
+        updatedAt: entry.updatedAt,
+      }))
+    return [...docs, ...journals].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 3)
+  }, [data.docs, data.journals])
   const memories = useMemo(() => selectMemoryMoments(data.journals, now), [data.journals, now])
   const selectedMode = CAPTURE_MODES.find((mode) => mode.value === captureMode) ?? CAPTURE_MODES[0]!
   const journeyPhase = dailyJourneyPhase(now)
@@ -214,44 +242,51 @@ export function PersonalAssistantHome({
   }
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-5 pb-6">
-      <section className="relative overflow-hidden rounded-[1.75rem] border border-teal-900/10 bg-[linear-gradient(135deg,rgba(240,253,250,0.96),rgba(255,255,255,0.98)_48%,rgba(239,246,255,0.94))] p-5 shadow-[0_18px_60px_-38px_rgba(15,118,110,0.45)] dark:border-teal-300/10 dark:bg-[linear-gradient(135deg,rgba(17,40,38,0.96),rgba(12,18,26,0.98)_52%,rgba(17,31,45,0.96))] sm:p-7">
-        <div aria-hidden className="absolute -right-12 -top-16 size-48 rounded-full bg-teal-300/20 blur-3xl" />
-        <div aria-hidden className="absolute -bottom-20 left-1/3 size-44 rounded-full bg-sky-300/20 blur-3xl" />
+    <div className="folio-home mx-auto w-full max-w-6xl space-y-6 pb-8">
+      <section className="folio-hero relative overflow-hidden rounded-[2rem] p-6 sm:p-9">
+        <div aria-hidden className="folio-hero-orbit absolute -right-14 -top-20 size-64 rounded-full" />
+        <div aria-hidden className="absolute -bottom-24 left-[42%] size-52 rounded-full bg-emerald-200/15 blur-3xl dark:bg-emerald-400/5" />
         <div className="relative">
           <div>
-            <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-teal-700/10 bg-white/65 px-3 py-1 text-[11px] font-medium text-teal-800 shadow-sm backdrop-blur dark:bg-white/5 dark:text-teal-200">
+            <div className="folio-eyebrow mb-5 inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em]">
               <Sparkles className="size-3.5" />
               나를 위한 기록 비서
             </div>
-            <p className="text-sm text-muted-foreground">{formatToday(now, locale)}</p>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">{greeting(now)}</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+            <p className="text-xs font-medium tracking-wide text-muted-foreground">{formatToday(now, locale)}</p>
+            <h1 className="mt-2 max-w-3xl text-3xl font-semibold leading-[1.15] tracking-[-0.045em] sm:text-[2.75rem]">{greeting(now)}</h1>
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-[15px]">
               오늘의 생각을 붙잡고, 해야 할 일을 살피고, 잊고 있던 기록을 다시 꺼내드릴게요.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Button size="sm" className="gap-1.5 rounded-full px-4" onClick={primaryAction.action}>
+              <Button size="sm" className="folio-primary-action h-10 gap-2 rounded-full px-5" onClick={primaryAction.action}>
                 <PrimaryActionIcon className="size-3.5" />
                 {primaryAction.label}
               </Button>
               <Button
                 variant="outline"
                 size="sm"
-                className="gap-1.5 rounded-full bg-white/60 dark:bg-white/5"
+                className="h-10 gap-2 rounded-full border-foreground/10 bg-white/50 px-4 dark:bg-white/5"
                 onClick={openIntake}
               >
                 <Inbox className="size-3.5" />
                 통합 수집함
               </Button>
             </div>
-            <p className="mt-4 text-xs text-muted-foreground">
+            <p className="mt-7 text-[11px] font-medium tracking-wide text-muted-foreground">
               오늘 기록 {loading ? '–' : todayEntries.length} · 진행할 일 {loading ? '–' : activeTasks.length} · 최근 문서 {loading ? '–' : recentDocs.length}
             </p>
+            {previousReview?.tomorrow ? (
+              <button type="button" onClick={primaryAction.action} className="mt-3 inline-flex max-w-2xl items-center gap-2 rounded-xl border border-teal-700/10 bg-white/45 px-3 py-2 text-left text-xs text-muted-foreground transition-colors hover:bg-white/70 dark:bg-white/5 dark:hover:bg-white/10">
+                <span className="shrink-0 font-semibold text-teal-800 dark:text-teal-300">어제 정한 첫 행동</span>
+                <span className="truncate text-foreground/80">{previousReview.tomorrow}</span>
+                <ArrowRight className="size-3.5 shrink-0" />
+              </button>
+            ) : null}
           </div>
         </div>
       </section>
 
-      <section aria-labelledby="daily-journey-title" className="rounded-2xl border bg-card/70 p-3 shadow-sm">
+      <section aria-labelledby="daily-journey-title" className="folio-surface rounded-[1.5rem] p-4">
         <div className="mb-2 flex items-center justify-between gap-3 px-1">
           <div>
             <h2 id="daily-journey-title" className="text-sm font-semibold">오늘의 흐름</h2>
@@ -293,8 +328,30 @@ export function PersonalAssistantHome({
         </div>
       </section>
 
+      <section aria-labelledby="context-title" className="flex flex-col gap-3 rounded-[1.4rem] border border-foreground/10 bg-card/55 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <Inbox className="size-4 text-teal-700 dark:text-teal-300" />
+            <h2 id="context-title" className="text-sm font-semibold">연결된 업무 맥락</h2>
+            <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">{sourcedContext.length ? `${sourcedContext.length}개 최근 항목` : '준비됨'}</span>
+          </div>
+          {sourcedContext.length ? (
+            <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
+              {sourcedContext.map((item) => (
+                <button key={`${item.kind}-${item.id}`} type="button" className="max-w-56 truncate text-left text-xs text-muted-foreground hover:text-foreground" onClick={() => item.kind === 'doc' ? onOpenDocs(item.id) : onOpenJournal(item.id, data.journals[item.id]?.date ?? today)}>
+                  <span className="font-medium text-foreground/80">{item.system}</span> · {item.title}
+                </button>
+              ))}
+            </div>
+          ) : <p className="mt-1 text-xs text-muted-foreground">Obsidian·Markdown 자료를 가져오면 오늘의 업무와 함께 기억해드려요.</p>}
+        </div>
+        <Button variant="outline" size="sm" className="shrink-0 gap-1.5 rounded-full" onClick={openIntake}>
+          <Inbox className="size-3.5" />자료 가져오기
+        </Button>
+      </section>
+
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
-        <Card className="gap-4 border-0 py-5 shadow-[0_16px_45px_-32px_rgba(15,23,42,0.5)] ring-1 ring-foreground/10">
+        <Card className="folio-surface gap-4 border-0 py-6">
           <CardHeader className="gap-3 px-5 sm:px-6">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -351,7 +408,7 @@ export function PersonalAssistantHome({
           </CardContent>
         </Card>
 
-        <Card className="gap-3 border-0 py-5 ring-1 ring-foreground/10">
+        <Card className="folio-surface gap-3 border-0 py-6">
           <CardHeader className="flex-row items-center justify-between px-5">
             <div>
               <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-sky-700 dark:text-sky-300">Tasks</p>
@@ -394,7 +451,13 @@ export function PersonalAssistantHome({
         </Card>
       </div>
 
-      <details className="group rounded-2xl border bg-muted/15">
+      <DailyReviewCard
+        date={today}
+        completedTasks={data.tasks.filter((task) => task.status === 'done').length}
+        journalCount={todayEntries.length}
+      />
+
+      <details className="folio-surface group rounded-[1.5rem]">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 [&::-webkit-details-marker]:hidden sm:p-5">
           <div>
             <h2 className="text-sm font-semibold">지난 기록 돌아보기</h2>
