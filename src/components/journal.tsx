@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { saveJournal, saveJournalWithFallback, loadJournalsWithFallback, getAllTags, type JournalEntry } from '@/lib/journal';
 import { loadTasksWithFallback } from '@/lib/board';
 import { readObsidianMarkdownFiles } from '@/lib/obsidian';
+import { appendIntakeHistory, buildIntakeCandidates, intakeFingerprintsFromTagSets, intakeTags } from '@/lib/intake';
+import { createJournalEntryKey } from '@/lib/personal-assistant';
 import { TagCloud, buildTagCounts } from '@/components/tag-cloud';
 import { setToastRetryHandler, showAppToast } from '@/lib/health-monitor';
 import {
@@ -480,26 +482,40 @@ export const JournalPanel = memo(function JournalPanel({
     setImportMsg(null);
     try {
       const notes = await readObsidianMarkdownFiles(files, 'journal');
+      const knownFingerprints = intakeFingerprintsFromTagSets(Object.values(days).map((day) => day.tags));
+      const candidates = buildIntakeCandidates(notes, undefined, new Date(), knownFingerprints).filter((candidate) => candidate.route === 'journal');
       let imported = 0;
       let skipped = 0;
       let noDate = 0;
       const nextMap = { ...days };
+      const history = [];
 
-      for (const note of notes) {
+      for (const note of candidates) {
         if (!note.date) {
           noDate += 1;
-          continue;
         }
-        const existing = Object.values(nextMap).find((day) => day.date === note.date);
-        if (existing?.content?.trim()) {
+        if (note.duplicate) {
           skipped += 1;
           continue;
         }
-        const tags = note.tags;
-        await saveJournalWithFallback(note.date, note.content, tags);
-        nextMap[note.date] = { date: note.date, content: note.content, tags };
+        const entryId = createJournalEntryKey(note.resolvedDate);
+        const tags = intakeTags(note);
+        await saveJournalWithFallback(note.resolvedDate, note.content, tags, entryId);
+        nextMap[entryId] = { date: note.resolvedDate, content: note.content, tags };
+        history.push({
+          fingerprint: note.fingerprint,
+          fileName: note.fileName,
+          relativePath: note.relativePath,
+          title: note.title,
+          route: note.route,
+          targetId: entryId,
+          date: note.resolvedDate,
+          importedAt: new Date().toISOString(),
+        });
         imported += 1;
       }
+
+      if (history.length) appendIntakeHistory(history);
 
       setDays(nextMap);
       if (nextMap[entryKey]) {
@@ -507,9 +523,9 @@ export const JournalPanel = memo(function JournalPanel({
         setTagsInput(joinTags(nextMap[entryKey].tags));
       }
       setImportMsg(
-        notes.length === 0
+        candidates.length === 0
           ? '가져올 .md 파일이 없습니다.'
-          : `${imported}개 가져옴${skipped ? `, 기존 ${skipped}건 스킵` : ''}${noDate ? `, 날짜 없음 ${noDate}건` : ''}`,
+          : `${imported}개 새 기록으로 추가${skipped ? `, 중복 ${skipped}건 스킵` : ''}${noDate ? `, 날짜 보완 ${noDate}건` : ''}`,
       );
     } finally {
       setImporting(false);

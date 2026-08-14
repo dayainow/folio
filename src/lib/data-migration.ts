@@ -392,6 +392,10 @@ export async function exportDatasetSqlite(
       title TEXT,
       content TEXT,
       category TEXT,
+      source TEXT,
+      note_type TEXT,
+      tags TEXT,
+      source_path TEXT,
       created_at TEXT,
       updated_at TEXT
     );
@@ -443,10 +447,21 @@ export async function exportDatasetSqlite(
 
   onProgress?.({ phase: 'export', ratio: 0.65, label: '문서 기록…' })
   const dStmt = db.prepare(
-    'INSERT INTO docs VALUES (?, ?, ?, ?, ?, ?)',
+    'INSERT INTO docs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
   )
   for (const d of payload.docs) {
-    dStmt.run([d.id, d.title, d.content, d.category, d.createdAt, d.updatedAt])
+    dStmt.run([
+      d.id,
+      d.title,
+      d.content,
+      d.category,
+      d.source ?? null,
+      d.noteType ?? null,
+      JSON.stringify(d.tags ?? []),
+      d.sourcePath ?? null,
+      d.createdAt,
+      d.updatedAt,
+    ])
   }
   dStmt.free()
 
@@ -551,22 +566,39 @@ export async function importDatasetSqlite(buffer: ArrayBuffer): Promise<FolioDat
   }
 
   const docs: DocEntry[] = []
-  try {
-    const rows = db.exec(
-      'SELECT id, title, content, category, created_at, updated_at FROM docs',
-    )
-    for (const row of rows[0]?.values ?? []) {
+  const appendDocRows = (rows: unknown[][], withMetadata: boolean) => {
+    for (const row of rows) {
+      const offset = withMetadata ? 4 : 0
       docs.push({
         id: String(row[0]),
         title: String(row[1] ?? ''),
         content: String(row[2] ?? ''),
         category: String(row[3] ?? 'General'),
-        createdAt: String(row[4] ?? new Date().toISOString()),
-        updatedAt: String(row[5] ?? new Date().toISOString()),
+        source: withMetadata && (row[4] === 'manual' || row[4] === 'hermes')
+          ? row[4]
+          : undefined,
+        noteType: withMetadata && ['doc', 'research', 'meeting', 'knowledge'].includes(String(row[5]))
+          ? String(row[5]) as DocEntry['noteType']
+          : undefined,
+        tags: withMetadata ? parseTags(row[6]) : [],
+        sourcePath: withMetadata && row[7] != null ? String(row[7]) : undefined,
+        createdAt: String(row[4 + offset] ?? new Date().toISOString()),
+        updatedAt: String(row[5 + offset] ?? new Date().toISOString()),
       })
     }
+  }
+  try {
+    const rows = db.exec(
+      'SELECT id, title, content, category, source, note_type, tags, source_path, created_at, updated_at FROM docs',
+    )
+    appendDocRows((rows[0]?.values ?? []) as unknown[][], true)
   } catch {
-    /* empty */
+    try {
+      const rows = db.exec('SELECT id, title, content, category, created_at, updated_at FROM docs')
+      appendDocRows((rows[0]?.values ?? []) as unknown[][], false)
+    } catch {
+      /* empty */
+    }
   }
 
   const tasks: Task[] = []

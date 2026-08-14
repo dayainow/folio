@@ -242,6 +242,13 @@ export default function Home() {
   useEffect(() => subscribeMobileFullscreen(setMobileFs), []);
 
   useEffect(() => {
+    if (window.location.hash === '#intake') {
+      const timer = window.setTimeout(() => setTab('docs'), 0);
+      return () => window.clearTimeout(timer);
+    }
+  }, []);
+
+  useEffect(() => {
     void import('@/plugins').then((m) => m.bootstrapBuiltinPlugins());
   }, []);
 
@@ -676,7 +683,7 @@ export default function Home() {
               href="/guide"
               className={cn(
                 buttonVariants({ size: 'sm', variant: 'ghost' }),
-                'h-8 gap-1 px-2 text-xs text-muted-foreground sm:px-2.5',
+                'hidden h-8 gap-1 px-2 text-xs text-muted-foreground sm:inline-flex sm:px-2.5',
               )}
               aria-label={t('nav.guide')}
             >
@@ -684,13 +691,15 @@ export default function Home() {
               <span className="hidden sm:inline">{t('nav.guide')}</span>
             </Link>
             <GlobalSearch variant="icon" onNavigate={handleSearchNavigate} />
-            <AdvancedSearchButton onNavigate={handleSearchNavigate} />
+            <span className="hidden md:inline-flex">
+              <AdvancedSearchButton onNavigate={handleSearchNavigate} />
+            </span>
             <NotificationCenterButton />
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              className="h-9 w-9"
+              className="hidden h-9 w-9 sm:inline-flex"
               aria-label={t('settings.collabRealtime')}
               aria-expanded={collabPanelOpen}
               onClick={() => setCollabPanelOpen(true)}
@@ -701,7 +710,7 @@ export default function Home() {
               type="button"
               variant="ghost"
               size="icon"
-              className="h-12 w-12 min-h-[48px] min-w-[48px] md:h-9 md:w-9 md:min-h-0 md:min-w-0 lg:hidden"
+              className="hidden h-12 w-12 min-h-[48px] min-w-[48px] sm:inline-flex md:h-9 md:w-9 md:min-h-0 md:min-w-0 lg:hidden"
               aria-label={mobileFs ? t('settings.fullscreenExit') : t('settings.fullscreen')}
               aria-pressed={mobileFs}
               onClick={() => setMobileFullscreen(!mobileFs)}
@@ -855,6 +864,11 @@ export default function Home() {
                 <DocsPanel
                   focusDocId={focusDocId}
                   onFocusHandled={() => setFocusDocId(null)}
+                  onOpenJournal={(entryKey) => {
+                    setFocusJournalDate(entryKey)
+                    setJournalSubTab('journal-write')
+                    handleTabChange('journal')
+                  }}
                   writingFirst
                 />
               </TabsContent>

@@ -9,6 +9,7 @@ import {
   Clock3,
   FileText,
   FolderKanban,
+  Inbox,
   Lightbulb,
   ListTodo,
   RefreshCw,
@@ -173,10 +174,24 @@ export function PersonalAssistantHome({
             <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
               오늘의 생각을 붙잡고, 해야 할 일을 살피고, 잊고 있던 기록을 다시 꺼내드릴게요.
             </p>
-            <Button variant="outline" size="sm" className="mt-4 gap-1.5 rounded-full bg-white/60 dark:bg-white/5" onClick={onOpenProjects}>
-              <FolderKanban className="size-3.5" />
-              프로젝트 허브 열기
-            </Button>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" className="gap-1.5 rounded-full bg-white/60 dark:bg-white/5" onClick={onOpenProjects}>
+                <FolderKanban className="size-3.5" />
+                프로젝트 허브
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 rounded-full bg-white/60 dark:bg-white/5"
+                onClick={() => {
+                  window.location.hash = 'intake'
+                  onOpenDocs()
+                }}
+              >
+                <Inbox className="size-3.5" />
+                통합 수집함
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-3 gap-2 sm:min-w-[24rem]">

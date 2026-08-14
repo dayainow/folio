@@ -58,7 +58,7 @@ export function extractObsidianTags(body: string, frontmatter: Record<string, st
   const fmTags = frontmatter.tags || frontmatter.tag
   if (fmTags) {
     for (const part of fmTags.split(/[,\s]+/)) {
-      const t = part.replace(/^#/, '').trim()
+      const t = part.replace(/^#/, '').replace(/^["']|["']$/g, '').trim()
       if (t) tags.add(t)
     }
   }
@@ -148,7 +148,8 @@ export async function parseMarkdownFile(file: File): Promise<ParsedObsidianNote>
   const { frontmatter, body } = parseFrontmatter(text)
   const relativePath = relativePathOf(file)
   const titleFromFm = frontmatter.title || frontmatter.name
-  const title = (titleFromFm?.trim() || parseTitleFromFilename(file.name)).trim()
+  const titleFromHeading = body.match(/^#\s+(.+)$/m)?.[1]?.trim()
+  const title = (titleFromFm?.trim() || titleFromHeading || parseTitleFromFilename(file.name)).trim()
   const date = resolveNoteDate(file.name, frontmatter)
   const tags = extractObsidianTags(body, frontmatter)
 

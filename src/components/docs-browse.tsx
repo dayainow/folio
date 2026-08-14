@@ -130,7 +130,8 @@ export function DocsBrowsePanel({
         (d) =>
           !search ||
           d.title.toLowerCase().includes(search.toLowerCase()) ||
-          d.content.toLowerCase().includes(search.toLowerCase()),
+          d.content.toLowerCase().includes(search.toLowerCase()) ||
+          `${d.source ?? ''} ${d.noteType ?? ''} ${(d.tags ?? []).join(' ')}`.toLowerCase().includes(search.toLowerCase()),
       )
       .filter((d) => !filterCat || d.category === filterCat)
       .filter((d) => {
@@ -347,7 +348,10 @@ export function DocsBrowsePanel({
                           <h3 className="mt-3 line-clamp-2 text-sm font-semibold text-slate-950 dark:text-slate-50">{doc.title}</h3>
                           <p className="mt-2 line-clamp-3 flex-1 text-xs leading-5 text-muted-foreground">{docPreview(doc.content)}</p>
                           <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-2.5 dark:border-slate-800">
-                            <Badge variant="secondary" className="max-w-32 truncate rounded-full text-[9px]">{doc.category}</Badge>
+                            <span className="flex min-w-0 items-center gap-1">
+                              <Badge variant="secondary" className="max-w-32 truncate rounded-full text-[9px]">{doc.category}</Badge>
+                              {doc.source ? <Badge variant="outline" className="rounded-full text-[9px]">{doc.source}</Badge> : null}
+                            </span>
                             <span className="text-[9px] text-muted-foreground">{wordCount(doc.content)}단어</span>
                           </div>
                         </>
@@ -357,7 +361,7 @@ export function DocsBrowsePanel({
                             <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
                             <div className="min-w-0">
                               <p className="truncate text-sm font-medium">{doc.title}</p>
-                              <p className="truncate text-[10px] text-muted-foreground">{doc.category}</p>
+                              <p className="truncate text-[10px] text-muted-foreground">{doc.category}{doc.source ? ` · ${doc.source}` : ''}</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
@@ -383,7 +387,11 @@ export function DocsBrowsePanel({
                   </Button>
                 </div>
                 <div className="p-5">
-                  <Badge variant="secondary" className="rounded-full text-[10px]">{selectedDoc.category}</Badge>
+                  <div className="flex flex-wrap gap-1">
+                    <Badge variant="secondary" className="rounded-full text-[10px]">{selectedDoc.category}</Badge>
+                    {selectedDoc.source ? <Badge variant="outline" className="rounded-full text-[10px]">{selectedDoc.source}</Badge> : null}
+                    {selectedDoc.noteType ? <Badge variant="outline" className="rounded-full text-[10px]">{selectedDoc.noteType}</Badge> : null}
+                  </div>
                   <h2 className="mt-3 text-lg font-semibold tracking-tight text-slate-950 dark:text-slate-50">{selectedDoc.title}</h2>
                   <div className="mt-2 flex items-center gap-3 text-[10px] text-muted-foreground">
                     <span>{formatUpdated(selectedDoc.updatedAt)} 수정</span>

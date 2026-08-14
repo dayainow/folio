@@ -139,7 +139,12 @@ function searchJournals(entries: Record<string, JournalEntry>, query: string): J
 function searchDocs(docs: DocEntry[], query: string): DocSearchHit[] {
   const hits: DocSearchHit[] = [];
   for (const doc of docs) {
-    const scored = scoreMatch(query, doc.title, `${doc.content}\n${doc.category}`);
+    const scored = scoreMatch(
+      query,
+      doc.title,
+      `${doc.content}\n${doc.category}\n${doc.source ?? ''}\n${doc.noteType ?? ''}`,
+      doc.tags,
+    );
     if (!scored) continue;
     hits.push({
       id: doc.id,

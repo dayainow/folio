@@ -1,19 +1,21 @@
 'use client'
 
 /**
- * P62-1 — 문서 탭 셸 (작성 | 보기) · URL 해시 #write / #view
+ * P62-1 — 문서 탭 셸 (작성 | 보기 | 수집함)
  */
 import { useEffect, useRef, useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DocsEditor } from '@/components/docs-editor'
 import { DocsBrowsePanel } from '@/components/docs-browse'
+import { IntakeCenter } from '@/components/intake-center'
 import { saveDocWithFallback, type DocEntry } from '@/lib/docs'
 
-export type DocsSubTab = 'write' | 'view'
+export type DocsSubTab = 'write' | 'view' | 'intake'
 
 function readHashTab(): DocsSubTab {
   if (typeof window === 'undefined') return 'write'
-  return window.location.hash.replace(/^#/, '') === 'view' ? 'view' : 'write'
+  const hash = window.location.hash.replace(/^#/, '')
+  return hash === 'view' || hash === 'intake' ? hash : 'write'
 }
 
 function writeHash(tab: DocsSubTab) {
@@ -27,10 +29,12 @@ function writeHash(tab: DocsSubTab) {
 export function DocsPanel({
   focusDocId,
   onFocusHandled,
+  onOpenJournal,
   writingFirst = false,
 }: {
   focusDocId?: string | null
   onFocusHandled?: () => void
+  onOpenJournal?: (entryKey: string, date: string) => void
   writingFirst?: boolean
 } = {}) {
   const [subTab, setSubTab] = useState<DocsSubTab>(readHashTab)
@@ -50,7 +54,7 @@ export function DocsPanel({
     }
     if (!opts?.skipConfirm && subTabRef.current === 'write' && dirtyRef.current) {
       const ok = window.confirm(
-        '작성 중인 변경사항이 있습니다. 저장하지 않고 보기로 이동할까요?',
+        '작성 중인 변경사항이 있습니다. 저장하지 않고 다른 화면으로 이동할까요?',
       )
       if (!ok) {
         writeHash('write')
@@ -77,7 +81,7 @@ export function DocsPanel({
       if (next === subTabRef.current) return
       if (subTabRef.current === 'write' && dirtyRef.current) {
         const ok = window.confirm(
-          '작성 중인 변경사항이 있습니다. 저장하지 않고 보기로 이동할까요?',
+          '작성 중인 변경사항이 있습니다. 저장하지 않고 다른 화면으로 이동할까요?',
         )
         if (!ok) {
           writeHash('write')
@@ -117,9 +121,9 @@ export function DocsPanel({
 
   return (
     <Tabs
-      value={subTab === 'write' ? 'docs-write' : 'docs-view'}
+      value={`docs-${subTab}`}
       onValueChange={(v) => {
-        trySwitch(v === 'docs-view' ? 'view' : 'write')
+        trySwitch(v.replace(/^docs-/, '') as DocsSubTab)
       }}
       className="w-full"
     >
@@ -135,6 +139,12 @@ export function DocsPanel({
           className="h-7 rounded-md px-2.5 text-[11px] data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-gray-800"
         >
           보기
+        </TabsTrigger>
+        <TabsTrigger
+          value="docs-intake"
+          className="h-7 rounded-md px-2.5 text-[11px] data-[state=active]:bg-violet-100 data-[state=active]:text-violet-900 dark:data-[state=active]:bg-violet-950 dark:data-[state=active]:text-violet-100"
+        >
+          수집함
         </TabsTrigger>
       </TabsList>
 
@@ -155,6 +165,13 @@ export function DocsPanel({
 
       <TabsContent value="docs-view" className="mt-0">
         <DocsBrowsePanel onOpenWrite={openWrite} onCreateNew={() => void createNew()} />
+      </TabsContent>
+
+      <TabsContent value="docs-intake" className="mt-0">
+        <IntakeCenter
+          onOpenDoc={openWrite}
+          onOpenJournal={(entryKey, date) => onOpenJournal?.(entryKey, date)}
+        />
       </TabsContent>
     </Tabs>
   )

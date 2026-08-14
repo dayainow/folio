@@ -12,10 +12,18 @@ alter table if exists public.docs
 alter table if exists public.boards
   add column if not exists user_id uuid references auth.users (id) on delete cascade;
 
+-- 통합 수집함 메타데이터
+alter table if exists public.docs add column if not exists source text;
+alter table if exists public.docs add column if not exists note_type text;
+alter table if exists public.docs add column if not exists tags text[] not null default '{}';
+alter table if exists public.docs add column if not exists source_path text;
+
 -- 2) 인덱스
 create index if not exists journals_user_id_idx on public.journals (user_id);
 create index if not exists docs_user_id_idx on public.docs (user_id);
 create index if not exists boards_user_id_idx on public.boards (user_id);
+create index if not exists docs_source_idx on public.docs (source);
+create index if not exists docs_note_type_idx on public.docs (note_type);
 
 -- journals: 같은 날짜에 여러 기록을 허용하고 클라이언트 키로 동기화
 alter table if exists public.journals

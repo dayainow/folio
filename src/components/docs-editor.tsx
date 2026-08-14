@@ -222,8 +222,10 @@ export const DocsEditor = memo(function DocsEditor({
   const selectDoc = useCallback(async (doc: DocEntry) => {
     // 편집 중 다른 문서로 이동 시 현재 내용 저장
     if (editing && selectedId && selectedId !== doc.id) {
-      const createdAt = docs.find(d => d.id === selectedId)?.createdAt ?? new Date().toISOString();
+      const previous = docs.find(d => d.id === selectedId);
+      const createdAt = previous?.createdAt ?? new Date().toISOString();
       const updated: DocEntry = {
+        ...previous,
         id: selectedId,
         title: title.trim() || '제목 없음',
         content,
@@ -297,6 +299,7 @@ export const DocsEditor = memo(function DocsEditor({
     const previous = docs.find(d => d.id === selectedId) ?? null;
     const createdAt = previous?.createdAt ?? new Date().toISOString();
     const updated: DocEntry = {
+      ...previous,
       id: selectedId,
       title,
       content,
@@ -380,9 +383,10 @@ export const DocsEditor = memo(function DocsEditor({
     return startDocAutoSnapshot(selectedId, () => {
       const d = draftRef.current;
       if (!d.selectedId) return null;
-      const createdAt =
-        d.docs.find((x) => x.id === d.selectedId)?.createdAt ?? new Date().toISOString();
+      const previous = d.docs.find((x) => x.id === d.selectedId);
+      const createdAt = previous?.createdAt ?? new Date().toISOString();
       return {
+        ...previous,
         id: d.selectedId,
         title: d.title.trim() || '제목 없음',
         content: d.content,

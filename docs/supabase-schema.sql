@@ -52,9 +52,21 @@ create table if not exists public.docs (
   title text not null default '',
   content text not null default '',
   category text not null default 'Dev Guide',
+  source text check (source is null or source in ('manual', 'hermes')),
+  note_type text check (note_type is null or note_type in ('doc', 'research', 'meeting', 'knowledge')),
+  tags text[] not null default '{}',
+  source_path text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.docs add column if not exists source text;
+alter table public.docs add column if not exists note_type text;
+alter table public.docs add column if not exists tags text[] not null default '{}';
+alter table public.docs add column if not exists source_path text;
+
+create index if not exists docs_source_idx on public.docs (source);
+create index if not exists docs_note_type_idx on public.docs (note_type);
 
 create index if not exists docs_category_idx on public.docs (category);
 create index if not exists docs_created_at_idx on public.docs (created_at);

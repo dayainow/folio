@@ -64,14 +64,16 @@ export function journalsToMarkdownRich(entries: JournalEntry[]): string {
 }
 
 export function docToMarkdownRich(doc: DocEntry, extraTags: string[] = []): string {
-  const tags = extraTags.map((t) => t.replace(/^#/, ''))
+  const tags = Array.from(new Set([...(doc.tags ?? []), ...extraTags])).map((t) => t.replace(/^#/, ''))
   const fm = [
     '---',
-    `type: doc`,
+    `type: ${doc.noteType ?? 'doc'}`,
+    doc.source ? `source: ${doc.source}` : null,
     `title: ${yamlQuote(doc.title)}`,
     `category: ${yamlQuote(doc.category)}`,
     `id: ${doc.id}`,
     tags.length ? `tags: [${tags.map(yamlQuote).join(', ')}]` : null,
+    doc.sourcePath ? `sourcePath: ${yamlQuote(doc.sourcePath)}` : null,
     `createdAt: ${doc.createdAt}`,
     `updatedAt: ${doc.updatedAt}`,
     `exportedAt: ${new Date().toISOString()}`,

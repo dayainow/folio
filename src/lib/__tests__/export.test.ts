@@ -60,10 +60,15 @@ describe('markdown / csv / json', () => {
       title: 'Spec',
       content: 'body',
       category: 'Engineering',
+      source: 'hermes',
+      noteType: 'research',
+      tags: ['folio'],
       createdAt: '',
       updatedAt: '',
     }
     expect(docToMarkdown(doc)).toContain('Spec')
+    expect(docToMarkdown(doc)).toContain('source: hermes')
+    expect(docToMarkdown(doc)).toContain('type: research')
   })
 
   it('tasksToCsv includes BOM and id', () => {

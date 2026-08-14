@@ -105,27 +105,11 @@ export function bulkApplyTags(
           fail += 1
           continue
         }
-        // docs use category as primary; append tag note into category lightly via content marker skip —
-        // store tags in category suffix is awkward; use content frontmatter-like line skip.
-        // Instead: append to title? Better: no-op for docs without tags field — count as fail soft
-        // Folio DocEntry has category only — treat category replace only when mode add and empty
-        if (mode === 'add' && !doc.category.includes(t)) {
-          saveDoc({ ...doc, category: doc.category ? `${doc.category},${t}` : t, updatedAt: new Date().toISOString() })
-          ok += 1
-        } else if (mode === 'remove') {
-          saveDoc({
-            ...doc,
-            category: doc.category
-              .split(/[,/]/)
-              .map((x) => x.trim())
-              .filter((x) => x && x !== t)
-              .join(','),
-            updatedAt: new Date().toISOString(),
-          })
-          ok += 1
-        } else {
-          ok += 1
-        }
+        const tags = mode === 'add'
+          ? [...new Set([...(doc.tags ?? []), t])]
+          : (doc.tags ?? []).filter((tag) => tag !== t)
+        saveDoc({ ...doc, tags, updatedAt: new Date().toISOString() })
+        ok += 1
       }
     }
   } catch {

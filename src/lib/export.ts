@@ -88,12 +88,18 @@ export function docToMarkdown(doc: DocEntry): string {
     '---',
     `title: ${JSON.stringify(doc.title)}`,
     `category: ${JSON.stringify(doc.category)}`,
+    doc.source ? `source: ${doc.source}` : null,
+    doc.noteType ? `type: ${doc.noteType}` : null,
+    doc.tags?.length
+      ? `tags: [${doc.tags.map((tag) => JSON.stringify(tag.replace(/^#/, ''))).join(', ')}]`
+      : null,
+    doc.sourcePath ? `sourcePath: ${JSON.stringify(doc.sourcePath)}` : null,
     `id: ${doc.id}`,
     `createdAt: ${doc.createdAt}`,
     `updatedAt: ${doc.updatedAt}`,
     '---',
     '',
-  ].join('\n')
+  ].filter(Boolean).join('\n')
   const body = doc.content?.trim() ? doc.content : ''
   const hasTitle = /^#\s+/m.test(body)
   return hasTitle ? `${fm}${body}\n` : `${fm}# ${doc.title}\n\n${body}\n`

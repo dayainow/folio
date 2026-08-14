@@ -13,6 +13,12 @@ export interface DocEntry {
   title: string;
   content: string;
   category: string;
+  /** 원본 작성 주체 — 수집함 frontmatter에서 보존 */
+  source?: 'manual' | 'hermes';
+  /** 원본 노트 유형 — doc | research | meeting | knowledge */
+  noteType?: 'doc' | 'research' | 'meeting' | 'knowledge';
+  tags?: string[];
+  sourcePath?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -34,6 +40,10 @@ type DocRow = {
   title: string;
   content: string;
   category: string;
+  source: DocEntry['source'] | null;
+  note_type: DocEntry['noteType'] | null;
+  tags: string[] | null;
+  source_path: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -44,6 +54,10 @@ function rowToDoc(row: DocRow): DocEntry {
     title: row.title,
     content: row.content ?? '',
     category: row.category,
+    source: row.source ?? undefined,
+    noteType: row.note_type ?? undefined,
+    tags: row.tags ?? [],
+    sourcePath: row.source_path ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -109,11 +123,28 @@ export async function loadDocsSupabase(): Promise<DocEntry[]> {
     const { supabase, userId } = await requireAuthUser();
     const { data, error } = await supabase
       .from('docs')
-      .select('id, title, content, category, created_at, updated_at')
+      .select('id, title, content, category, source, note_type, tags, source_path, created_at, updated_at')
       .eq('user_id', userId)
       .order('updated_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      // intake migration 전 스키마에서도 기존 문서는 계속 읽을 수 있게 한다.
+      const legacy = await supabase
+        .from('docs')
+        .select('id, title, content, category, created_at, updated_at')
+        .eq('user_id', userId)
+        .order('updated_at', { ascending: false });
+      if (legacy.error) throw legacy.error;
+      return (legacy.data ?? []).map((row) => ({
+        id: String(row.id),
+        title: String(row.title ?? ''),
+        content: String(row.content ?? ''),
+        category: String(row.category ?? 'Dev Guide'),
+        tags: [],
+        createdAt: String(row.created_at),
+        updatedAt: String(row.updated_at),
+      }));
+    }
 
     return ((data ?? []) as DocRow[]).map(rowToDoc);
   });
@@ -130,6 +161,10 @@ export async function saveDocSupabase(doc: DocEntry) {
       title: doc.title,
       content: doc.content,
       category: doc.category,
+      source: doc.source ?? null,
+      note_type: doc.noteType ?? null,
+      tags: doc.tags ?? [],
+      source_path: doc.sourcePath ?? null,
       created_at: doc.createdAt || now,
       updated_at: now,
     },

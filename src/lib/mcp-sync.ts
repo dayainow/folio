@@ -75,6 +75,7 @@ export function applyMcpStoreToLocal(payload: McpStorePayload): McpSyncResult {
       localDocs.find((d) => d.id === doc.id) ||
       localDocs.find((d) => d.title === doc.title)
     const next: DocEntry = {
+      ...existing,
       id: doc.id || existing?.id || crypto.randomUUID(),
       title: doc.title,
       content: doc.content ?? '',

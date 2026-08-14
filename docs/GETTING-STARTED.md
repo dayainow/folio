@@ -16,7 +16,7 @@ cd folio
 cp docs/env.example .env.local   # 값 채우기
 npm install
 npm run dev
-# http://localhost:3000
+# http://localhost:3456
 ```
 
 품질 검사:
@@ -39,11 +39,12 @@ Supabase 스키마:
 
 1. [supabase-schema.sql](./supabase-schema.sql) 또는 migration
 2. 팀: [supabase-schema-team.sql](./supabase-schema-team.sql)
+3. 기존 DB에 통합 수집함 메타데이터 추가: [supabase-schema-intake.sql](./supabase-schema-intake.sql)
 
 ## 기본 사용법
 
 1. **일지** — 날짜별 기록, 태그(Enter 추가 / Backspace 삭제), 자동 저장(3초), 저장 버튼
-2. **문서** — 마크다운 편집 · 미리보기 · 분할, Obsidian `.md` 가져오기
+2. **문서** — 마크다운 편집 · 미리보기 · 분할, **수집함**에서 Obsidian/Markdown 분류 가져오기
 3. **일정** — 칸반 드래그 또는 ←/→ 키보드 이동, Jira 동기화 · GitHub 이슈(설정 시)
 4. **프로세스** — Beacon Gate / Timeline / 산출물 (읽기 전용)
 5. **저장 모드** — 헤더에서 `로컬` / `클라우드` / `Beacon` 전환
