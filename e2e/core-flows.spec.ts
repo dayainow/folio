@@ -236,4 +236,40 @@ test.describe('Folio core flows (P66)', () => {
       return Object.values(reviews)[0]
     })).toMatchObject({ tomorrow: 'Top 3 미완료 업무', execution: { planned: 2, completed: 1, open: 1 } })
   })
+
+  test('morning briefing summarizes yesterday, deadlines and weekly focus', async ({ page }) => {
+    await page.addInitScript(() => {
+      const dateKey = (value: Date) => [value.getFullYear(), String(value.getMonth() + 1).padStart(2, '0'), String(value.getDate()).padStart(2, '0')].join('-')
+      const now = new Date()
+      const today = dateKey(now)
+      const previous = new Date(now)
+      previous.setDate(previous.getDate() - 1)
+      const previousKey = dateKey(previous)
+      const monday = new Date(now)
+      monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7))
+      const mondayKey = dateKey(monday)
+      const base = { description: '', priority: 'medium', tags: [], status: 'backlog', createdAt: previous.toISOString(), updatedAt: previous.toISOString() }
+      localStorage.setItem('workspace_tasks', JSON.stringify([
+        { ...base, id: 'brief-action', title: '어제 첫 행동' },
+        { ...base, id: 'brief-due', title: '오늘 마감 보고서', dueDate: today },
+        { ...base, id: 'brief-late', title: '지연된 검토', dueDate: previousKey },
+      ]))
+      localStorage.setItem('folio_daily_plans_v1', JSON.stringify({
+        [previousKey]: { date: previousKey, taskIds: ['brief-action'], confirmedAt: previous.toISOString(), updatedAt: previous.toISOString() },
+      }))
+      localStorage.setItem('folio_daily_reviews_v1', JSON.stringify({
+        [previousKey]: { date: previousKey, win: '', learned: '', tomorrow: '어제 첫 행동', completedAt: previous.toISOString(), updatedAt: previous.toISOString() },
+      }))
+      localStorage.setItem('folio_weekly_plans_v1', JSON.stringify({
+        [mondayKey]: { weekStart: mondayKey, weekEnd: today, focus: ['출시 준비'], reflection: '', completedAt: previous.toISOString(), updatedAt: previous.toISOString() },
+      }))
+    })
+    await page.goto('/')
+    const briefing = page.getByRole('region', { name: '오늘 시작 전, 이것만 확인하세요' })
+    await expect(briefing).toBeVisible()
+    await expect(briefing.getByText('이월 1', { exact: true })).toBeVisible()
+    await expect(briefing.getByText('마감 1 · 지연 1', { exact: true })).toBeVisible()
+    await expect(briefing.getByText(/출시 준비/)).toBeVisible()
+    await expect(briefing.getByRole('button', { name: '어제 첫 행동' })).toHaveCount(2)
+  })
 })
