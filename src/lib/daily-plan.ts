@@ -38,6 +38,12 @@ export function moveDailyTask(taskIds: string[], taskId: string, direction: -1 |
   return next
 }
 
+export function completeDailyTask(tasks: Task[], taskId: string, now = new Date()): Task[] {
+  return tasks.map((task) => task.id === taskId && task.status !== 'done'
+    ? { ...task, status: 'done', updatedAt: now.toISOString() }
+    : task)
+}
+
 export function loadDailyPlans(): Record<string, DailyPlan> {
   return getLocalJson<Record<string, DailyPlan>>(STORAGE_KEY, {})
 }

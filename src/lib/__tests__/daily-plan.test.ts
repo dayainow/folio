@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { loadDailyPlan, moveDailyTask, recommendDailyTaskIds, saveDailyPlan } from '@/lib/daily-plan'
+import { completeDailyTask, loadDailyPlan, moveDailyTask, recommendDailyTaskIds, saveDailyPlan } from '@/lib/daily-plan'
 import type { Task } from '@/lib/board'
 
 const task = (id: string, partial: Partial<Task> = {}): Task => ({
@@ -34,5 +34,13 @@ describe('daily top three plan', () => {
     const plan = saveDailyPlan('2026-08-14', ['a', 'b', 'a', 'c', 'd'], new Date('2026-08-14T08:00:00.000Z'))
     expect(plan.taskIds).toEqual(['a', 'b', 'c'])
     expect(loadDailyPlan('2026-08-14')).toEqual(plan)
+  })
+
+  it('completes only the selected task and updates its timestamp', () => {
+    const tasks = [task('a'), task('b', { status: 'in_progress' })]
+    const next = completeDailyTask(tasks, 'b', new Date('2026-08-18T09:30:00.000Z'))
+    expect(next[0]).toBe(tasks[0])
+    expect(next[1]).toMatchObject({ id: 'b', status: 'done', updatedAt: '2026-08-18T09:30:00.000Z' })
+    expect(tasks[1]?.status).toBe('in_progress')
   })
 })

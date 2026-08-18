@@ -151,5 +151,12 @@ test.describe('Folio core flows (P66)', () => {
       const plans = JSON.parse(localStorage.getItem('folio_daily_plans_v1') || '{}') as Record<string, { taskIds: string[] }>
       return Object.values(plans)[0]?.taskIds
     })).toEqual(['due', 'active', 'focus'])
+    await dailyPlan.getByRole('button', { name: '오늘 마감 업무 완료 처리' }).click()
+    await expect(dailyPlan.getByText('“오늘 마감 업무”을 완료했습니다.')).toBeVisible()
+    await expect.poll(async () => page.evaluate(() => {
+      const tasks = JSON.parse(localStorage.getItem('workspace_tasks') || '[]') as Array<{ id: string; status: string }>
+      return tasks.find((task) => task.id === 'due')?.status
+    })).toBe('done')
+    await expect(dailyPlan.getByRole('button', { name: '오늘 마감 업무 완료됨' })).toBeVisible()
   })
 })

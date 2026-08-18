@@ -1,25 +1,29 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ArrowDown, ArrowRight, ArrowUp, CheckCircle2, Plus, RotateCcw, Sparkles, X } from 'lucide-react'
+import { ArrowDown, ArrowRight, ArrowUp, Check, CheckCircle2, Circle, Plus, RotateCcw, Sparkles, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import type { Task } from '@/lib/board'
-import { loadDailyPlan, moveDailyTask, recommendDailyTaskIds, saveDailyPlan } from '@/lib/daily-plan'
+import { saveTasksWithFallback, type Task } from '@/lib/board'
+import { completeDailyTask, loadDailyPlan, moveDailyTask, recommendDailyTaskIds, saveDailyPlan } from '@/lib/daily-plan'
 import { findWeeklyPlanForDate } from '@/lib/weekly-review'
 import { cn } from '@/lib/utils'
 
 export function DailyPlanCard({ date, tasks, onOpenBoard }: { date: string; tasks: Task[]; onOpenBoard: (taskId?: string) => void }) {
-  const openTasks = useMemo(() => tasks.filter((task) => task.status !== 'done'), [tasks])
+  const [localTasks, setLocalTasks] = useState(tasks)
+  const openTasks = useMemo(() => localTasks.filter((task) => task.status !== 'done'), [localTasks])
   const [taskIds, setTaskIds] = useState<string[]>([])
   const [confirmed, setConfirmed] = useState(false)
   const [ready, setReady] = useState(false)
   const [message, setMessage] = useState('')
+  const [completing, setCompleting] = useState<string | null>(null)
 
   const recommend = useCallback(() => {
-    setTaskIds(recommendDailyTaskIds(tasks, date, findWeeklyPlanForDate(date)))
+    setTaskIds(recommendDailyTaskIds(localTasks, date, findWeeklyPlanForDate(date)))
     setConfirmed(false)
     setMessage('')
-  }, [date, tasks])
+  }, [date, localTasks])
+
+  useEffect(() => setLocalTasks(tasks), [tasks])
 
   useEffect(() => {
     const stored = loadDailyPlan(date)
@@ -32,14 +36,32 @@ export function DailyPlanCard({ date, tasks, onOpenBoard }: { date: string; task
     setReady(true)
   }, [date, tasks])
 
-  if (!ready || openTasks.length === 0) return null
+  if (!ready || (openTasks.length === 0 && taskIds.length === 0)) return null
 
-  const selectedTasks = taskIds.map((id) => tasks.find((task) => task.id === id)).filter((task): task is Task => Boolean(task))
+  const selectedTasks = taskIds.map((id) => localTasks.find((task) => task.id === id)).filter((task): task is Task => Boolean(task))
   const candidates = openTasks.filter((task) => !taskIds.includes(task.id)).slice(0, 3)
   const confirm = () => {
     saveDailyPlan(date, taskIds)
     setConfirmed(true)
     setMessage('오늘의 Top 3를 확정했습니다.')
+  }
+  const complete = async (task: Task) => {
+    if (task.status === 'done' || completing) return
+    const previous = localTasks
+    const next = completeDailyTask(previous, task.id)
+    setCompleting(task.id)
+    setLocalTasks(next)
+    setMessage('')
+    try {
+      await saveTasksWithFallback(next)
+      setMessage(`“${task.title}”을 완료했습니다.`)
+      window.dispatchEvent(new CustomEvent('folio-tasks-changed'))
+    } catch {
+      setLocalTasks(previous)
+      setMessage('완료 상태를 저장하지 못했습니다. 다시 시도해 주세요.')
+    } finally {
+      setCompleting(null)
+    }
   }
 
   return (
@@ -57,13 +79,14 @@ export function DailyPlanCard({ date, tasks, onOpenBoard }: { date: string; task
 
       <div className="mt-4 space-y-2">
         {selectedTasks.map((task, index) => (
-          <div key={task.id} className="flex items-center gap-2 rounded-xl border bg-background p-2.5">
+          <div key={task.id} className={cn('flex items-center gap-2 rounded-xl border bg-background p-2.5', task.status === 'done' && 'bg-teal-50/60 dark:bg-teal-950/20')}>
             <span className={cn('flex size-7 shrink-0 items-center justify-center rounded-lg text-xs font-semibold', index === 0 ? 'bg-sky-600 text-white' : 'bg-muted text-muted-foreground')}>{index + 1}</span>
             <button type="button" className="min-w-0 flex-1 text-left" onClick={() => onOpenBoard(task.id)}>
-              <span className="block truncate text-sm font-medium">{task.title}</span>
-              <span className="text-[10px] text-muted-foreground">{task.status === 'in_progress' ? '진행 중' : task.status === 'review' ? '검토 중' : '대기'} · {task.priority === 'high' ? '높음' : task.priority === 'medium' ? '보통' : '낮음'}</span>
+              <span className={cn('block truncate text-sm font-medium', task.status === 'done' && 'text-muted-foreground line-through')}>{task.title}</span>
+              <span className="text-[10px] text-muted-foreground">{task.status === 'done' ? '완료' : task.status === 'in_progress' ? '진행 중' : task.status === 'review' ? '검토 중' : '대기'} · {task.priority === 'high' ? '높음' : task.priority === 'medium' ? '보통' : '낮음'}</span>
             </button>
             <div className="flex gap-0.5">
+              <Button variant="ghost" size="icon" className="size-7" onClick={() => void complete(task)} disabled={task.status === 'done' || completing === task.id} aria-label={task.status === 'done' ? `${task.title} 완료됨` : `${task.title} 완료 처리`}>{task.status === 'done' ? <Check className="size-3.5 text-teal-600" /> : <Circle className="size-3.5" />}</Button>
               <Button variant="ghost" size="icon" className="size-7" onClick={() => { setTaskIds(moveDailyTask(taskIds, task.id, -1)); setConfirmed(false) }} disabled={index === 0} aria-label={`${task.title} 순서 올리기`}><ArrowUp className="size-3.5" /></Button>
               <Button variant="ghost" size="icon" className="size-7" onClick={() => { setTaskIds(moveDailyTask(taskIds, task.id, 1)); setConfirmed(false) }} disabled={index === selectedTasks.length - 1} aria-label={`${task.title} 순서 내리기`}><ArrowDown className="size-3.5" /></Button>
               <Button variant="ghost" size="icon" className="size-7" onClick={() => { setTaskIds(taskIds.filter((id) => id !== task.id)); setConfirmed(false) }} aria-label={`${task.title} 오늘 계획에서 빼기`}><X className="size-3.5" /></Button>
