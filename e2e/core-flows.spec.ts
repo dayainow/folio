@@ -212,12 +212,14 @@ test.describe('Folio core flows (P66)', () => {
     })
     await page.goto('/')
     await expect(page.getByText(/Top 3 1\/2 완료 · 미완료 1/)).toBeVisible()
+    await page.getByRole('button', { name: '내일 첫 행동으로 제안 적용: Top 3 미완료 업무' }).click()
+    await expect(page.getByRole('textbox', { name: '내일의 첫 행동' })).toHaveValue('Top 3 미완료 업무')
     await page.getByRole('textbox', { name: '오늘 가장 잘한 일' }).fill('Top 3 한 가지를 끝냈다')
     await page.getByRole('button', { name: '업무 닫기', exact: true }).click()
     await expect(page.getByText('오늘의 업무를 닫았습니다.')).toBeVisible()
     await expect.poll(async () => page.evaluate(() => {
-      const reviews = JSON.parse(localStorage.getItem('folio_daily_reviews_v1') || '{}') as Record<string, { execution?: { planned: number; completed: number; open: number } }>
-      return Object.values(reviews)[0]?.execution
-    })).toMatchObject({ planned: 2, completed: 1, open: 1 })
+      const reviews = JSON.parse(localStorage.getItem('folio_daily_reviews_v1') || '{}') as Record<string, { tomorrow: string; execution?: { planned: number; completed: number; open: number } }>
+      return Object.values(reviews)[0]
+    })).toMatchObject({ tomorrow: 'Top 3 미완료 업무', execution: { planned: 2, completed: 1, open: 1 } })
   })
 })

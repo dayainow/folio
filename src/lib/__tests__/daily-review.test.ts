@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { buildDailyExecutionSummary, isDailyReviewComplete, loadDailyReview, saveDailyReview } from '@/lib/daily-review'
+import { buildDailyExecutionSummary, isDailyReviewComplete, loadDailyReview, saveDailyReview, suggestTomorrowAction } from '@/lib/daily-review'
 import type { Task } from '@/lib/board'
 
 describe('daily shutdown review', () => {
@@ -28,5 +28,7 @@ describe('daily shutdown review', () => {
     expect(execution).toEqual({ planned: 2, completed: 1, open: 1, completedTaskIds: ['done'], openTaskIds: ['open'] })
     saveDailyReview('2026-08-18', { win: '한 가지 완료', learned: '', tomorrow: '미완료 이어가기', execution }, true)
     expect(loadDailyReview('2026-08-18')?.execution).toEqual(execution)
+    expect(suggestTomorrowAction(execution, tasks)).toBe('미완료')
+    expect(suggestTomorrowAction({ ...execution, openTaskIds: [] }, tasks)).toBeNull()
   })
 })

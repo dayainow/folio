@@ -39,6 +39,15 @@ export function buildDailyExecutionSummary(date: string, tasks: Task[], plan: Da
   }
 }
 
+export function suggestTomorrowAction(execution: DailyExecutionSummary, tasks: Task[]): string | null {
+  const byId = new Map(tasks.map((task) => [task.id, task]))
+  for (const id of execution.openTaskIds) {
+    const task = byId.get(id)
+    if (task && task.status !== 'done' && task.title.trim()) return task.title.trim()
+  }
+  return null
+}
+
 export function loadDailyReviews(): Record<string, DailyReview> {
   return getLocalJson<Record<string, DailyReview>>(STORAGE_KEY, {})
 }

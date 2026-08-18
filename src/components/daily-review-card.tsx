@@ -1,11 +1,11 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { CheckCircle2, ClipboardCheck, Save } from 'lucide-react'
+import { useId, useMemo, useState } from 'react'
+import { CheckCircle2, ClipboardCheck, Sparkles, Save } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
-import { buildDailyExecutionSummary, isDailyReviewComplete, loadDailyReview, saveDailyReview } from '@/lib/daily-review'
+import { buildDailyExecutionSummary, isDailyReviewComplete, loadDailyReview, saveDailyReview, suggestTomorrowAction } from '@/lib/daily-review'
 import type { Task } from '@/lib/board'
 
 export function DailyReviewCard({
@@ -18,6 +18,7 @@ export function DailyReviewCard({
   journalCount: number
 }) {
   const execution = useMemo(() => buildDailyExecutionSummary(date, tasks), [date, tasks])
+  const tomorrowSuggestion = useMemo(() => suggestTomorrowAction(execution, tasks), [execution, tasks])
   const [initial] = useState(() => loadDailyReview(date))
   const [win, setWin] = useState(initial?.win ?? '')
   const [learned, setLearned] = useState(initial?.learned ?? '')
@@ -44,7 +45,7 @@ export function DailyReviewCard({
       <CardContent className="grid gap-3 px-5 sm:px-6 lg:grid-cols-3">
         <ReviewField label="오늘 가장 잘한 일" value={win} onChange={setWin} placeholder="작더라도 분명한 진전 한 가지" />
         <ReviewField label="배운 점 또는 막힌 점" value={learned} onChange={setLearned} placeholder="다음에는 다르게 해볼 점" />
-        <ReviewField label="내일의 첫 행동" value={tomorrow} onChange={setTomorrow} placeholder="업무를 시작하면 가장 먼저 할 일" />
+        <ReviewField label="내일의 첫 행동" value={tomorrow} onChange={setTomorrow} placeholder="업무를 시작하면 가장 먼저 할 일" suggestion={tomorrowSuggestion} />
         <div className="flex items-center justify-between gap-3 lg:col-span-3">
           <p className="text-[11px] text-muted-foreground" role="status">{message || '완료하면 내일 Today에서 다시 이어갈 수 있습니다.'}</p>
           <div className="flex gap-2">
@@ -57,6 +58,7 @@ export function DailyReviewCard({
   )
 }
 
-function ReviewField({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (value: string) => void; placeholder: string }) {
-  return <label className="space-y-1.5"><span className="text-xs font-semibold">{label}</span><Textarea value={value} onChange={(event) => onChange(event.target.value)} rows={3} className="min-h-24 resize-y bg-muted/35 text-sm" placeholder={placeholder} /></label>
+function ReviewField({ label, value, onChange, placeholder, suggestion }: { label: string; value: string; onChange: (value: string) => void; placeholder: string; suggestion?: string | null }) {
+  const id = useId()
+  return <div className="space-y-1.5"><label htmlFor={id} className="block text-xs font-semibold">{label}</label><Textarea id={id} value={value} onChange={(event) => onChange(event.target.value)} rows={3} className="min-h-24 resize-y bg-muted/35 text-sm" placeholder={placeholder} />{suggestion && !value.trim() ? <button type="button" onClick={() => onChange(suggestion)} aria-label={`내일 첫 행동으로 제안 적용: ${suggestion}`} className="flex max-w-full items-center gap-1.5 rounded-lg bg-sky-50 px-2.5 py-1.5 text-left text-[11px] font-medium text-sky-700 transition-colors hover:bg-sky-100 dark:bg-sky-950/35 dark:text-sky-300 dark:hover:bg-sky-950/55"><Sparkles className="size-3 shrink-0" /><span className="truncate">제안 적용 · {suggestion}</span></button> : null}</div>
 }
