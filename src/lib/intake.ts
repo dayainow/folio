@@ -19,6 +19,7 @@ export type IntakeCandidate = ParsedObsidianNote & {
   provenance: SourceMetadata
   reviewState: IntakeReviewState
   changeState: IntakeChangeState
+  existingTargetId?: string
 }
 
 export type IntakeHistoryItem = {
@@ -205,6 +206,7 @@ export function buildIntakeCandidates(
       }),
       reviewState: duplicate ? 'duplicate' : warnings.length ? 'needs_review' : 'ready',
       changeState,
+      ...(changeState === 'changed' && previousAtPath?.targetId ? { existingTargetId: previousAtPath.targetId } : {}),
     }
   })
 }

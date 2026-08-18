@@ -93,6 +93,19 @@ test.describe('Folio core flows (P66)', () => {
         },
       }))
       localStorage.setItem('folio_intake_history_v1', JSON.stringify(records))
+      localStorage.setItem('workspace_docs', JSON.stringify([{
+        id: 'notion-doc-0',
+        title: 'Roadmap',
+        content: '# Roadmap\n\nOld plan',
+        category: 'Obsidian Import',
+        source: 'manual',
+        noteType: 'doc',
+        tags: [],
+        sourcePath: 'Notion/Workspace/Roadmap.md',
+        provenance: records[0]?.provenance,
+        createdAt: '2026-08-18T09:00:00.000Z',
+        updatedAt: '2026-08-18T09:00:00.000Z',
+      }]))
       localStorage.setItem('folio_import_connections_v1', JSON.stringify({
         notion: {
           system: 'notion',
@@ -127,6 +140,25 @@ test.describe('Folio core flows (P66)', () => {
     await expect(page.getByText('Notion 변경분을 확인했습니다. 신규 1 · 변경 1 · 동일 1.', { exact: false })).toBeVisible()
     await expect(page.getByText('변경됨', { exact: true })).toBeVisible()
     await expect(page.getByText('동일 · 건너뜀', { exact: true })).toBeVisible()
+    const updateMode = page.getByRole('group', { name: 'Roadmap 변경 반영 방식' })
+    await expect(updateMode.getByRole('button', { name: '새 버전 반영' })).toBeVisible()
+    await expect(updateMode.getByRole('button', { name: '별도 문서 추가' })).toBeVisible()
+    await page.getByRole('checkbox', { name: 'Roadmap 가져오기' }).check()
+    await page.getByRole('button', { name: '1개 가져오기' }).click()
+    await expect(page.getByText('1개를 반영했습니다. 기존 문서 새 버전 1개.')).toBeVisible()
+    await expect.poll(async () => page.evaluate(() => {
+      const docs = JSON.parse(localStorage.getItem('workspace_docs') || '[]') as Array<{ id: string; content: string }>
+      const versions = JSON.parse(localStorage.getItem('folio_doc_versions_v1') || '{}') as Record<string, Array<{ note?: string }>>
+      return {
+        docCount: docs.length,
+        content: docs.find((doc) => doc.id === 'notion-doc-0')?.content,
+        notes: versions['notion-doc-0']?.map((version) => version.note).sort(),
+      }
+    })).toEqual({
+      docCount: 1,
+      content: '# Roadmap\n\nUpdated plan',
+      notes: ['Notion 반영 전', 'Notion 변경 반영'],
+    })
   })
 
   test('board tab shows kanban columns for DnD', async ({ page }) => {

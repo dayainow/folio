@@ -116,7 +116,7 @@ describe('intake pipeline', () => {
       'notion',
     )[0]!
 
-    expect(changed).toMatchObject({ duplicate: false, changeState: 'changed', reviewState: 'ready' })
+    expect(changed).toMatchObject({ duplicate: false, changeState: 'changed', reviewState: 'ready', existingTargetId: 'doc-1' })
   })
 
   it('keeps source paths independent across import systems', () => {

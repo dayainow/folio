@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { saveDocWithFallback, loadDocsWithFallback, type DocEntry } from '@/lib/docs'
+import { createDocSnapshot } from '@/lib/doc-versions'
 import { loadJournalsWithFallback, saveJournalWithFallback } from '@/lib/journal'
 import {
   appendIntakeHistory,
@@ -65,6 +66,7 @@ export function IntakeCenter({
   const [notionAttempt, setNotionAttempt] = useState<ImportConnectionAttempt | undefined>(
     () => loadImportConnectionAttempts().notion,
   )
+  const [updateModes, setUpdateModes] = useState<Map<string, 'version' | 'new'>>(new Map())
 
   const selectedCandidates = useMemo(
     () => candidates.filter((candidate) => selected.has(candidate.fingerprint) && !candidate.duplicate),
@@ -107,6 +109,7 @@ export function IntakeCenter({
       ])
       const next = buildIntakeCandidates(notes, history, new Date(), fingerprints, sourceSystem)
       setCandidates(next)
+      setUpdateModes(new Map())
       setSelected(new Set(next.filter((candidate) => candidate.reviewState === 'ready').map((candidate) => candidate.fingerprint)))
       setMessage(next.length ? `${next.length}개 원본을 분석했습니다.` : '가져올 Markdown 파일이 없습니다.')
     } finally {
@@ -130,6 +133,11 @@ export function IntakeCenter({
       ])
       const next = buildIntakeCandidates(notes, history, new Date(), fingerprints, 'notion')
       setCandidates(next)
+      setUpdateModes(new Map(
+        next
+          .filter((candidate) => candidate.changeState === 'changed' && candidate.route === 'docs' && candidate.existingTargetId)
+          .map((candidate) => [candidate.fingerprint, 'version' as const]),
+      ))
       setSelected(new Set(next.filter((candidate) => candidate.reviewState === 'ready').map((candidate) => candidate.fingerprint)))
       const newCount = next.filter((candidate) => candidate.changeState === 'new').length
       const changedCount = next.filter((candidate) => candidate.changeState === 'changed').length
@@ -161,6 +169,7 @@ export function IntakeCenter({
     setMessage('')
     const imported: IntakeHistoryItem[] = []
     let failed = 0
+    let versioned = 0
     try {
       const docs = await loadDocsWithFallback()
       const titles = new Set(docs.map((doc) => doc.title.toLowerCase()))
@@ -178,24 +187,49 @@ export function IntakeCenter({
               candidate.provenance,
             )
           } else {
-            targetId = crypto.randomUUID()
-            const title = uniqueDocTitle(candidate.title || '제목 없는 문서', titles)
-            titles.add(title.toLowerCase())
-            const createdAt = new Date(`${candidate.resolvedDate}T12:00:00`).toISOString()
-            const doc: DocEntry = {
-              id: targetId,
-              title,
-              content: candidate.content,
-              category: candidate.category,
-              source: candidate.source,
-              noteType: candidate.noteType === 'log' ? 'doc' : candidate.noteType,
-              tags: canonicalIntakeTags(candidate),
-              sourcePath: candidate.relativePath,
-              provenance: candidate.provenance,
-              createdAt,
-              updatedAt: new Date().toISOString(),
+            const updateAsVersion = updateModes.get(candidate.fingerprint) === 'version' && candidate.existingTargetId
+            const existing = updateAsVersion ? docs.find((doc) => doc.id === candidate.existingTargetId) : undefined
+            if (existing) {
+              targetId = existing.id
+              createDocSnapshot({ doc: existing, kind: 'checkpoint', note: 'Notion 반영 전', skipIfUnchanged: false })
+              const updated: DocEntry = {
+                ...existing,
+                title: candidate.title || existing.title,
+                content: candidate.content,
+                category: candidate.category,
+                source: candidate.source,
+                noteType: candidate.noteType === 'log' ? 'doc' : candidate.noteType,
+                tags: canonicalIntakeTags(candidate),
+                sourcePath: candidate.relativePath,
+                provenance: candidate.provenance,
+                updatedAt: new Date().toISOString(),
+              }
+              await saveDocWithFallback(updated)
+              createDocSnapshot({ doc: updated, kind: 'important', note: 'Notion 변경 반영', skipIfUnchanged: false })
+              versioned += 1
+              const docIndex = docs.findIndex((doc) => doc.id === existing.id)
+              if (docIndex >= 0) docs[docIndex] = updated
+            } else {
+              targetId = crypto.randomUUID()
+              const title = uniqueDocTitle(candidate.title || '제목 없는 문서', titles)
+              titles.add(title.toLowerCase())
+              const createdAt = new Date(`${candidate.resolvedDate}T12:00:00`).toISOString()
+              const doc: DocEntry = {
+                id: targetId,
+                title,
+                content: candidate.content,
+                category: candidate.category,
+                source: candidate.source,
+                noteType: candidate.noteType === 'log' ? 'doc' : candidate.noteType,
+                tags: canonicalIntakeTags(candidate),
+                sourcePath: candidate.relativePath,
+                provenance: candidate.provenance,
+                createdAt,
+                updatedAt: new Date().toISOString(),
+              }
+              await saveDocWithFallback(doc)
+              docs.push(doc)
             }
-            await saveDocWithFallback(doc)
           }
           imported.push({
             fingerprint: candidate.fingerprint,
@@ -234,7 +268,7 @@ export function IntakeCenter({
           }))
         }
       }
-      setMessage(`${imported.length}개를 새 기록으로 가져왔습니다.${failed ? ` ${failed}개 실패` : ''}`)
+      setMessage(`${imported.length}개를 반영했습니다.${versioned ? ` 기존 문서 새 버전 ${versioned}개.` : ''}${failed ? ` ${failed}개 실패` : ''}`)
     } finally {
       setImporting(false)
     }
@@ -396,9 +430,9 @@ export function IntakeCenter({
           </div>
           <ul className="divide-y">
             {candidates.map((candidate) => (
-              <li key={`${candidate.relativePath}-${candidate.fingerprint}`}>
-                <label className={cn('grid cursor-pointer gap-3 px-4 py-4 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center sm:px-5', candidate.duplicate && 'cursor-not-allowed bg-muted/35 opacity-65')}>
-                  <input type="checkbox" checked={selected.has(candidate.fingerprint) && !candidate.duplicate} disabled={candidate.duplicate} onChange={() => toggleCandidate(candidate)} />
+              <li key={`${candidate.relativePath}-${candidate.fingerprint}`} className={cn(candidate.duplicate && 'bg-muted/35 opacity-65')}>
+                <div className="grid gap-3 px-4 py-4 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center sm:px-5">
+                  <input type="checkbox" aria-label={`${candidate.title} 가져오기`} className={candidate.duplicate ? 'cursor-not-allowed' : 'cursor-pointer'} checked={selected.has(candidate.fingerprint) && !candidate.duplicate} disabled={candidate.duplicate} onChange={() => toggleCandidate(candidate)} />
                   <span className="min-w-0">
                     <span className="flex flex-wrap items-center gap-2">
                       <span className="truncate text-sm font-medium">{candidate.title}</span>
@@ -407,12 +441,18 @@ export function IntakeCenter({
                       {candidate.duplicate ? <Badge variant="secondary">동일 · 건너뜀</Badge> : null}
                     </span>
                     <span className="mt-1 block truncate text-[11px] text-muted-foreground">{candidate.relativePath} · {candidate.resolvedDate}</span>
+                    {candidate.changeState === 'changed' && candidate.route === 'docs' && candidate.existingTargetId ? (
+                      <span className="mt-2 inline-flex rounded-lg border bg-background p-0.5" role="group" aria-label={`${candidate.title} 변경 반영 방식`}>
+                        <button type="button" className={cn('rounded-md px-2 py-1 text-[10px]', updateModes.get(candidate.fingerprint) !== 'new' ? 'bg-violet-100 font-semibold text-violet-900 dark:bg-violet-950 dark:text-violet-100' : 'text-muted-foreground')} onClick={() => setUpdateModes((current) => new Map(current).set(candidate.fingerprint, 'version'))}>새 버전 반영</button>
+                        <button type="button" className={cn('rounded-md px-2 py-1 text-[10px]', updateModes.get(candidate.fingerprint) === 'new' ? 'bg-violet-100 font-semibold text-violet-900 dark:bg-violet-950 dark:text-violet-100' : 'text-muted-foreground')} onClick={() => setUpdateModes((current) => new Map(current).set(candidate.fingerprint, 'new'))}>별도 문서 추가</button>
+                      </span>
+                    ) : null}
                     {candidate.warnings.length ? <span className="mt-1.5 flex flex-wrap gap-1"><Badge variant="outline" className="text-[9px] text-amber-700 dark:text-amber-300">검토 필요</Badge>{candidate.warnings.map((warning) => <Badge key={warning} variant="outline" className="text-[9px] text-amber-700 dark:text-amber-300">{warning}</Badge>)}</span> : null}
                   </span>
                   <span className="flex items-center gap-2 text-[11px]">
                     <Badge variant="outline">{sourceSystemLabel(candidate.provenance.system)}</Badge><Badge>{candidate.noteType}</Badge><ArrowRight className="size-3" /><Badge variant="secondary">{candidate.route === 'journal' ? '일지' : candidate.category}</Badge>
                   </span>
-                </label>
+                </div>
               </li>
             ))}
           </ul>
