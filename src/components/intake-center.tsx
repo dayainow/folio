@@ -510,7 +510,7 @@ export function IntakeCenter({
         <Card className="gap-0 overflow-hidden py-0">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3 sm:px-5">
             <div><p className="text-sm font-semibold">확인할 변경 사항</p><p className="mt-0.5 text-[11px] text-muted-foreground">신규 {changeCounts.new} · 변경 {changeCounts.changed}{changeCounts.unchanged ? ` · 자동 건너뜀 ${changeCounts.unchanged}` : ''}</p></div>
-            {actionableCandidates.length ? <div className="flex flex-wrap items-center gap-2">
+            {actionableCandidates.length ? <div className="hidden flex-wrap items-center gap-2 sm:flex">
               <Button variant="ghost" size="sm" onClick={() => setSelected(new Set(candidates.filter((candidate) => candidate.reviewState === 'ready').map((candidate) => candidate.fingerprint)))} disabled={importing}>
                 안전 항목 선택
               </Button>
@@ -522,11 +522,17 @@ export function IntakeCenter({
               </Button>
             </div> : null}
           </div>
+          {actionableCandidates.length ? (
+            <div className="sticky bottom-2 z-20 mx-3 mt-3 flex items-center gap-3 rounded-2xl border bg-background/95 p-2.5 shadow-lg backdrop-blur sm:hidden" role="region" aria-label="선택한 항목 가져오기">
+              <span className="min-w-0 flex-1 px-1"><span className="block text-xs font-semibold tabular-nums">{selectedCandidates.length}개 선택</span><span className="block truncate text-[10px] text-muted-foreground">확인한 항목만 반영합니다</span></span>
+              <Button size="sm" onClick={() => void importSelected()} disabled={!selectedCandidates.length || importing} className="gap-1.5"><Inbox className="size-3.5" />{importing ? '반영 중…' : '가져오기'}</Button>
+            </div>
+          ) : null}
           {actionableCandidates.length ? <ul className="divide-y">
             {actionableCandidates.map((candidate) => (
               <li key={`${candidate.relativePath}-${candidate.fingerprint}`} className={cn(candidate.duplicate && 'bg-muted/35 opacity-65')}>
-                <div className="grid gap-3 px-4 py-4 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center sm:px-5">
-                  <input type="checkbox" aria-label={`${candidate.title} 가져오기`} className={candidate.duplicate ? 'cursor-not-allowed' : 'cursor-pointer'} checked={selected.has(candidate.fingerprint) && !candidate.duplicate} disabled={candidate.duplicate} onChange={() => toggleCandidate(candidate)} />
+                <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-3 px-4 py-4 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center sm:px-5">
+                  <input type="checkbox" aria-label={`${candidate.title} 가져오기`} className={cn('mt-0.5 size-5 accent-violet-700 sm:mt-0', candidate.duplicate ? 'cursor-not-allowed' : 'cursor-pointer')} checked={selected.has(candidate.fingerprint) && !candidate.duplicate} disabled={candidate.duplicate} onChange={() => toggleCandidate(candidate)} />
                   <span className="min-w-0">
                     <span className="flex flex-wrap items-center gap-2">
                       <span className="truncate text-sm font-medium">{candidate.title}</span>
@@ -548,7 +554,7 @@ export function IntakeCenter({
                     ) : null}
                     {candidate.warnings.length ? <span className="mt-1.5 flex flex-wrap gap-1"><Badge variant="outline" className="text-[9px] text-amber-700 dark:text-amber-300">검토 필요</Badge>{candidate.warnings.map((warning) => <Badge key={warning} variant="outline" className="text-[9px] text-amber-700 dark:text-amber-300">{warning}</Badge>)}</span> : null}
                   </span>
-                  <span className="flex items-center gap-2 text-[11px]">
+                  <span className="col-start-2 flex flex-wrap items-center gap-2 text-[11px] sm:col-start-auto sm:flex-nowrap">
                     <Badge variant="outline">{sourceSystemLabel(candidate.provenance.system)}</Badge><Badge>{candidate.noteType}</Badge><ArrowRight className="size-3" /><Badge variant="secondary">{candidate.route === 'journal' ? '일지' : candidate.category}</Badge>
                   </span>
                 </div>

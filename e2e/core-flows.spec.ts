@@ -210,6 +210,7 @@ test.describe('Folio core flows (P66)', () => {
   })
 
   test('a persisted failed Notion item can be prepared alone for a safe retry', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
     await page.addInitScript(() => {
       const candidate = {
         fileName: 'Broken.md',
@@ -272,7 +273,11 @@ test.describe('Folio core flows (P66)', () => {
     await summary.getByRole('button', { name: /Broken import.*실패.*다시 준비/ }).click()
     await expect(page.getByText(/“Broken import” 실패 항목만 다시 준비했습니다/)).toBeVisible()
     await expect(page.getByRole('checkbox', { name: 'Broken import 가져오기' })).toBeChecked()
-    await expect(page.getByRole('button', { name: '1개 가져오기' })).toBeEnabled()
+    const mobileAction = page.getByRole('region', { name: '선택한 항목 가져오기' })
+    await expect(mobileAction).toBeVisible()
+    await expect(mobileAction.getByText('1개 선택', { exact: true })).toBeVisible()
+    await expect(mobileAction.getByRole('button', { name: '가져오기', exact: true })).toBeEnabled()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
   })
 
   test('board tab shows kanban columns for DnD', async ({ page }) => {
