@@ -13,7 +13,7 @@ export type TimeEntry = {
   durationMs: number
 }
 
-type Store = {
+export type TimeStore = {
   entries: TimeEntry[]
   activeTaskId: string | null
   activeStartedAt: string | null
@@ -21,12 +21,12 @@ type Store = {
 
 const STORAGE_KEY = 'folio_time_tracking_v1'
 
-function empty(): Store {
+function empty(): TimeStore {
   return { entries: [], activeTaskId: null, activeStartedAt: null }
 }
 
-export function loadTimeStore(): Store {
-  const raw = getLocalJson<Store | null>(STORAGE_KEY, null)
+export function loadTimeStore(): TimeStore {
+  const raw = getLocalJson<TimeStore | null>(STORAGE_KEY, null)
   if (!raw || !Array.isArray(raw.entries)) return empty()
   return {
     entries: raw.entries,
@@ -35,9 +35,10 @@ export function loadTimeStore(): Store {
   }
 }
 
-function save(store: Store) {
+function save(store: TimeStore) {
   setLocalJson(STORAGE_KEY, store)
   flushLocalJson(STORAGE_KEY)
+  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('folio-time-tracking-changed'))
 }
 
 function nowIso() {
@@ -45,7 +46,7 @@ function nowIso() {
 }
 
 /** 다른 타이머가 돌면 자동 정지 후 시작 */
-export function startTimer(taskId: string): Store {
+export function startTimer(taskId: string): TimeStore {
   let store = loadTimeStore()
   if (store.activeTaskId && store.activeStartedAt) {
     store = stopTimer(store.activeTaskId)
@@ -59,7 +60,7 @@ export function startTimer(taskId: string): Store {
   return store
 }
 
-export function stopTimer(taskId?: string): Store {
+export function stopTimer(taskId?: string): TimeStore {
   const store = loadTimeStore()
   const id = taskId ?? store.activeTaskId
   if (!id || store.activeTaskId !== id || !store.activeStartedAt) {
@@ -75,7 +76,7 @@ export function stopTimer(taskId?: string): Store {
     endedAt: nowIso(),
     durationMs,
   }
-  const next: Store = {
+  const next: TimeStore = {
     entries: [...store.entries, entry],
     activeTaskId: null,
     activeStartedAt: null,
@@ -85,17 +86,17 @@ export function stopTimer(taskId?: string): Store {
 }
 
 /** 완료 = 정지 + (선택) done 처리는 UI에서 */
-export function completeTimer(taskId: string): Store {
+export function completeTimer(taskId: string): TimeStore {
   return stopTimer(taskId)
 }
 
-export function getActiveElapsedMs(store?: Store, now = Date.now()): number {
+export function getActiveElapsedMs(store?: TimeStore, now = Date.now()): number {
   const s = store ?? loadTimeStore()
   if (!s.activeStartedAt) return 0
   return Math.max(0, now - new Date(s.activeStartedAt).getTime())
 }
 
-export function getTaskTotalMs(taskId: string, store?: Store, now = Date.now()): number {
+export function getTaskTotalMs(taskId: string, store?: TimeStore, now = Date.now()): number {
   const s = store ?? loadTimeStore()
   const closed = s.entries
     .filter((e) => e.taskId === taskId)
@@ -121,7 +122,7 @@ function startOfPeriod(period: Period, ref = new Date()): Date {
 }
 
 /** 기간 내 완료 세션 합계 (+ 활성 세션이 기간에 포함되면 live) */
-export function aggregateMs(period: Period, store?: Store, now = Date.now()): number {
+export function aggregateMs(period: Period, store?: TimeStore, now = Date.now()): number {
   const s = store ?? loadTimeStore()
   const from = startOfPeriod(period, new Date(now)).getTime()
   let total = 0
@@ -145,7 +146,7 @@ export function formatDuration(ms: number): string {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
-export function isTimerRunning(taskId: string, store?: Store): boolean {
+export function isTimerRunning(taskId: string, store?: TimeStore): boolean {
   const s = store ?? loadTimeStore()
   return s.activeTaskId === taskId && Boolean(s.activeStartedAt)
 }

@@ -1,12 +1,13 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ArrowDown, ArrowRight, ArrowUp, Check, CheckCircle2, Circle, Plus, RotateCcw, Sparkles, X } from 'lucide-react'
+import { ArrowDown, ArrowRight, ArrowUp, Check, CheckCircle2, Circle, Pause, Play, Plus, RotateCcw, Sparkles, Timer, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { saveTasksWithFallback, type Task } from '@/lib/board'
 import { completeDailyTask, loadDailyPlan, moveDailyTask, saveDailyPlan, suggestDailyPlan } from '@/lib/daily-plan'
 import { findWeeklyPlanForDate } from '@/lib/weekly-review'
 import { cn } from '@/lib/utils'
+import { formatDuration, getTaskTotalMs, loadTimeStore, startTimer, stopTimer, type TimeStore } from '@/lib/time-tracking'
 
 export function DailyPlanCard({ date, tasks, onOpenBoard }: { date: string; tasks: Task[]; onOpenBoard: (taskId?: string) => void }) {
   const [localTasks, setLocalTasks] = useState(tasks)
@@ -17,6 +18,8 @@ export function DailyPlanCard({ date, tasks, onOpenBoard }: { date: string; task
   const [message, setMessage] = useState('')
   const [completing, setCompleting] = useState<string | null>(null)
   const [carriedTaskIds, setCarriedTaskIds] = useState<string[]>([])
+  const [timeStore, setTimeStore] = useState<TimeStore | null>(null)
+  const [timeTick, setTimeTick] = useState(() => Date.now())
 
   const recommend = useCallback(() => {
     const suggestion = suggestDailyPlan(localTasks, date, findWeeklyPlanForDate(date))
@@ -27,6 +30,19 @@ export function DailyPlanCard({ date, tasks, onOpenBoard }: { date: string; task
   }, [date, localTasks])
 
   useEffect(() => setLocalTasks(tasks), [tasks])
+
+  useEffect(() => {
+    const sync = () => setTimeStore(loadTimeStore())
+    sync()
+    window.addEventListener('folio-time-tracking-changed', sync)
+    return () => window.removeEventListener('folio-time-tracking-changed', sync)
+  }, [])
+
+  useEffect(() => {
+    if (!timeStore?.activeTaskId) return
+    const timer = window.setInterval(() => setTimeTick(Date.now()), 1000)
+    return () => window.clearInterval(timer)
+  }, [timeStore?.activeTaskId])
 
   useEffect(() => {
     const stored = loadDailyPlan(date)
@@ -59,6 +75,7 @@ export function DailyPlanCard({ date, tasks, onOpenBoard }: { date: string; task
     setLocalTasks(next)
     setMessage('')
     try {
+      if (timeStore?.activeTaskId === task.id) setTimeStore(stopTimer(task.id))
       await saveTasksWithFallback(next)
       setMessage(`“${task.title}”을 완료했습니다.`)
       window.dispatchEvent(new CustomEvent('folio-tasks-changed'))
@@ -68,6 +85,14 @@ export function DailyPlanCard({ date, tasks, onOpenBoard }: { date: string; task
     } finally {
       setCompleting(null)
     }
+  }
+  const toggleFocus = (task: Task) => {
+    if (!confirmed || task.status === 'done') return
+    const active = timeStore?.activeTaskId === task.id
+    const next = active ? stopTimer(task.id) : startTimer(task.id)
+    setTimeStore(next)
+    setTimeTick(Date.now())
+    setMessage(active ? `“${task.title}” 집중 시간을 기록했습니다.` : `“${task.title}” 집중 세션을 시작했습니다.`)
   }
 
   return (
@@ -92,9 +117,11 @@ export function DailyPlanCard({ date, tasks, onOpenBoard }: { date: string; task
               <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                 {task.status === 'done' ? '완료' : task.status === 'in_progress' ? '진행 중' : task.status === 'review' ? '검토 중' : '대기'} · {task.priority === 'high' ? '높음' : task.priority === 'medium' ? '보통' : '낮음'}
                 {carriedTaskIds.includes(task.id) && task.status !== 'done' ? <span className="rounded-full bg-amber-50 px-1.5 py-0.5 font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">어제에서 이월</span> : null}
+                {timeStore ? <span className={cn('inline-flex items-center gap-1 tabular-nums', timeStore.activeTaskId === task.id && 'font-semibold text-sky-700 dark:text-sky-300')}><Timer className="size-3" />{formatDuration(getTaskTotalMs(task.id, timeStore, timeTick))}</span> : null}
               </span>
             </button>
             <div className="flex gap-0.5">
+              <Button variant="ghost" size="icon" className="size-7" onClick={() => toggleFocus(task)} disabled={!confirmed || task.status === 'done'} aria-label={timeStore?.activeTaskId === task.id ? `${task.title} 집중 중지` : `${task.title} 집중 시작`}>{timeStore?.activeTaskId === task.id ? <Pause className="size-3.5 text-sky-600" /> : <Play className="size-3.5" />}</Button>
               <Button variant="ghost" size="icon" className="size-7" onClick={() => void complete(task)} disabled={task.status === 'done' || completing === task.id} aria-label={task.status === 'done' ? `${task.title} 완료됨` : `${task.title} 완료 처리`}>{task.status === 'done' ? <Check className="size-3.5 text-teal-600" /> : <Circle className="size-3.5" />}</Button>
               <Button variant="ghost" size="icon" className="size-7" onClick={() => { setTaskIds(moveDailyTask(taskIds, task.id, -1)); setConfirmed(false) }} disabled={index === 0} aria-label={`${task.title} 순서 올리기`}><ArrowUp className="size-3.5" /></Button>
               <Button variant="ghost" size="icon" className="size-7" onClick={() => { setTaskIds(moveDailyTask(taskIds, task.id, 1)); setConfirmed(false) }} disabled={index === selectedTasks.length - 1} aria-label={`${task.title} 순서 내리기`}><ArrowDown className="size-3.5" /></Button>

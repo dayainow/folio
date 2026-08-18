@@ -12,6 +12,7 @@ test.describe('Folio core flows (P66)', () => {
       localStorage.removeItem('folio_weekly_plans_v1')
       localStorage.removeItem('folio_daily_plans_v1')
       localStorage.removeItem('folio_daily_reviews_v1')
+      localStorage.removeItem('folio_time_tracking_v1')
     })
   })
 
@@ -145,6 +146,7 @@ test.describe('Folio core flows (P66)', () => {
     await expect(dailyPlan).toBeVisible()
     await expect(dailyPlan.getByText('오늘 마감 업무', { exact: true })).toBeVisible()
     await expect.poll(async () => page.evaluate(() => localStorage.getItem('folio_daily_plans_v1'))).toBeNull()
+    await expect(dailyPlan.getByRole('button', { name: '진행 중 업무 집중 시작' })).toBeDisabled()
     await dailyPlan.getByRole('button', { name: '진행 중 업무 순서 올리기' }).click()
     await dailyPlan.getByRole('button', { name: 'Top 3 확정' }).click()
     await expect(dailyPlan.getByText('오늘의 Top 3를 확정했습니다.')).toBeVisible()
@@ -152,6 +154,18 @@ test.describe('Folio core flows (P66)', () => {
       const plans = JSON.parse(localStorage.getItem('folio_daily_plans_v1') || '{}') as Record<string, { taskIds: string[] }>
       return Object.values(plans)[0]?.taskIds
     })).toEqual(['due', 'active', 'focus'])
+    await dailyPlan.getByRole('button', { name: '진행 중 업무 집중 시작' }).click()
+    await expect(dailyPlan.getByRole('button', { name: '진행 중 업무 집중 중지' })).toBeVisible()
+    await page.waitForTimeout(600)
+    await dailyPlan.getByRole('button', { name: '진행 중 업무 집중 중지' }).click()
+    await expect.poll(async () => page.evaluate(() => {
+      const store = JSON.parse(localStorage.getItem('folio_time_tracking_v1') || '{}') as { activeTaskId?: string | null; entries?: Array<{ taskId: string; durationMs: number }> }
+      return { activeTaskId: store.activeTaskId, durationMs: store.entries?.find((entry) => entry.taskId === 'active')?.durationMs ?? 0 }
+    })).toMatchObject({ activeTaskId: null, durationMs: expect.any(Number) })
+    await expect.poll(async () => page.evaluate(() => {
+      const store = JSON.parse(localStorage.getItem('folio_time_tracking_v1') || '{}') as { entries?: Array<{ taskId: string; durationMs: number }> }
+      return store.entries?.find((entry) => entry.taskId === 'active')?.durationMs ?? 0
+    })).toBeGreaterThanOrEqual(400)
     await dailyPlan.getByRole('button', { name: '오늘 마감 업무 완료 처리' }).click()
     await expect(dailyPlan.getByText('“오늘 마감 업무”을 완료했습니다.')).toBeVisible()
     await expect.poll(async () => page.evaluate(() => {
