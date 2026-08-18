@@ -63,6 +63,21 @@ test.describe('Folio core flows (P66)', () => {
     await expect(surface.first()).toBeVisible({ timeout: 10000 })
   })
 
+  test('intake keeps the primary action clear on a mobile viewport', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto('/')
+    const docs = page.getByRole('tab', { name: /문서|Docs|ドキュメント/i }).or(
+      page.getByRole('button', { name: /문서|Docs/i }),
+    )
+    await docs.first().click()
+    await page.getByRole('tab', { name: '수집함', exact: true }).click()
+    await expect(page.getByRole('heading', { name: '필요한 자료만, 안전하게' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Notion에서 가져오기' })).toBeVisible()
+    await expect(page.getByText('텍스트 직접 붙여넣기', { exact: true })).toBeVisible()
+    await expect(page.getByPlaceholder('Markdown 텍스트를 붙여넣으세요')).toBeHidden()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
+  })
+
   test('Notion intake shows the latest import connection status', async ({ page }) => {
     await page.addInitScript(() => {
       const fingerprint = (value: string) => {
@@ -123,9 +138,9 @@ test.describe('Folio core flows (P66)', () => {
     await page.getByRole('tab', { name: '수집함', exact: true }).click()
     const connection = page.getByRole('region', { name: 'Notion 가져오기 상태' })
     await expect(connection).toBeVisible()
-    await expect(connection.getByText('가져옴', { exact: true })).toBeVisible()
-    await expect(connection.getByText('누적 2개', { exact: true })).toBeVisible()
-    await expect(connection.getByText(/workspace\.zip · Notion\/Workspace\/Roadmap\.md/)).toBeVisible()
+    await expect(page.getByRole('list', { name: '가져오기 진행 단계' }).getByRole('listitem').filter({ hasText: '자료 선택' })).toHaveAttribute('aria-current', 'step')
+    await expect(connection.getByText('가져옴 · 2개', { exact: true })).toBeVisible()
+    await expect(connection.getByText(/workspace\.zip/)).toBeVisible()
     await expect(connection.getByRole('button', { name: '다시 가져오기' })).toBeVisible()
 
     const zip = new JSZip()
@@ -182,6 +197,7 @@ test.describe('Folio core flows (P66)', () => {
     await page.getByRole('tab', { name: '수집함', exact: true }).click()
     const recentRuns = page.getByRole('region', { name: '최근 가져오기 실행' })
     await expect(recentRuns).toBeVisible()
+    await recentRuns.locator('summary').click()
     await recentRuns.getByRole('button', { name: /workspace-next\.zip.*반영 1.*건너뜀 1.*실패 0/ }).click()
     const restoredSummary = page.getByRole('region', { name: '가져오기 실행 요약' })
     await expect(restoredSummary).toBeVisible()
@@ -245,6 +261,7 @@ test.describe('Folio core flows (P66)', () => {
     await docs.first().click()
     await page.getByRole('tab', { name: '수집함', exact: true }).click()
     const recentRuns = page.getByRole('region', { name: '최근 가져오기 실행' })
+    await recentRuns.locator('summary').click()
     await recentRuns.getByRole('button', { name: /failed-workspace\.zip.*실패 1/ }).click()
     const summary = page.getByRole('region', { name: '가져오기 실행 요약' })
     await expect(summary.getByText('storage unavailable')).toBeVisible()

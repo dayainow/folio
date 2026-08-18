@@ -2,7 +2,6 @@
 
 import { useMemo, useRef, useState, type ChangeEvent, type DragEvent } from 'react'
 import {
-  AlertTriangle,
   ArrowRight,
   BookOpen,
   CheckCircle2,
@@ -15,8 +14,7 @@ import {
   RefreshCw,
   GitCompare,
   X,
-  ShieldCheck,
-  Sparkles,
+  ChevronDown,
   Upload,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -107,6 +105,7 @@ export function IntakeCenter({
     () => summarizeImportConnection('notion', history, notionAttempt),
     [history, notionAttempt],
   )
+  const flowStep = runSummary ? 4 : importing ? 3 : candidates.length ? 2 : 1
 
   const prepareFiles = async (files: FileList | File[], sourceSystem: SourceSystem = 'obsidian') => {
     setParsing(true)
@@ -358,30 +357,18 @@ export function IntakeCenter({
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-5 pb-8">
-      <section className="relative overflow-hidden rounded-[1.6rem] border border-violet-900/10 bg-[linear-gradient(135deg,rgba(245,243,255,.96),rgba(255,255,255,.98)_55%,rgba(240,253,250,.92))] p-5 dark:border-violet-300/10 dark:bg-[linear-gradient(135deg,rgba(35,27,55,.85),rgba(12,18,26,.98)_58%,rgba(17,42,39,.8))] sm:p-7">
-        <div aria-hidden className="absolute -right-10 -top-12 size-40 rounded-full bg-violet-300/20 blur-3xl" />
-        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="inline-flex items-center gap-1.5 rounded-full border bg-white/60 px-3 py-1 text-[11px] font-medium text-violet-700 dark:bg-white/5 dark:text-violet-200">
-              <Sparkles className="size-3.5" /> Migration-first
-            </p>
-            <h1 className="mt-3 text-2xl font-semibold tracking-tight">통합 수집함</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-              Obsidian과 에이전트가 만든 Markdown을 분석해 일지와 문서로 나눕니다. 기존 기록은 덮어쓰지 않고 언제나 새 원본으로 추가합니다.
-            </p>
-          </div>
-          <div className="grid grid-cols-3 gap-2 sm:min-w-[22rem]">
-            <Metric label="일지" value={routeCounts.journal} icon={BookOpen} />
-            <Metric label="문서" value={routeCounts.docs} icon={FileText} />
-            <Metric label={routeCounts.duplicates ? `중복 ${routeCounts.duplicates}` : '검토 필요'} value={routeCounts.review} icon={AlertTriangle} />
-          </div>
-        </div>
+      <section className="rounded-[1.6rem] border border-violet-900/10 bg-[linear-gradient(135deg,rgba(250,248,255,.98),rgba(255,255,255,.98)_62%,rgba(240,253,250,.75))] p-5 dark:border-violet-300/10 dark:bg-[linear-gradient(135deg,rgba(31,24,45,.8),rgba(12,18,26,.98))] sm:p-6">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-violet-600 dark:text-violet-300">자료 가져오기</p>
+        <h1 className="mt-2 text-2xl font-semibold tracking-tight">필요한 자료만, 안전하게</h1>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">파일을 선택하면 변경된 내용만 찾아 보여드립니다. 확인하기 전에는 아무것도 저장하지 않습니다.</p>
+        <ol className="mt-5 grid grid-cols-4 gap-1.5" aria-label="가져오기 진행 단계">
+          {['자료 선택', '변경 확인', '반영', '완료'].map((label, index) => <FlowStep key={label} number={index + 1} label={label} active={flowStep === index + 1} complete={flowStep > index + 1} />)}
+        </ol>
       </section>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.25fr)_minmax(18rem,.75fr)]">
-        <Card className="gap-4 py-5">
+      <Card className="gap-4 py-5">
           <CardHeader className="px-5 sm:px-6">
-            <CardTitle className="flex items-center gap-2"><Inbox className="size-4 text-violet-500" />원본 넣기</CardTitle>
+            <CardTitle className="flex items-center gap-2"><Inbox className="size-4 text-violet-500" />가져올 자료 선택</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 px-5 sm:px-6">
             <div
@@ -392,18 +379,18 @@ export function IntakeCenter({
                 if (event.dataTransfer.files.length) void prepareFiles(event.dataTransfer.files)
               }}
             >
-              <FileArchive className="mx-auto size-8 text-muted-foreground" />
-              <p className="mt-3 text-sm font-medium">Markdown 파일이나 볼트 폴더를 놓으세요</p>
-              <p className="mt-1 text-xs text-muted-foreground">source · type · created · tags를 읽어 자동 분류합니다.</p>
+              <FileArchive className="mx-auto size-8 text-violet-500" />
+              <p className="mt-3 text-sm font-semibold">Notion ZIP이나 Markdown을 여기에 놓으세요</p>
+              <p className="mt-1 text-xs text-muted-foreground">원본은 바꾸지 않고, 새 항목과 변경 항목만 찾아냅니다.</p>
               <div className="mt-4 flex flex-wrap justify-center gap-2">
+                <Button size="sm" className="gap-1.5" onClick={() => notionRef.current?.click()} disabled={parsing}>
+                  <FileArchive className="size-3.5" />Notion에서 가져오기
+                </Button>
                 <Button variant="outline" size="sm" className="gap-1.5" onClick={() => filesRef.current?.click()} disabled={parsing}>
-                  <Upload className="size-3.5" />파일 선택
+                  <Upload className="size-3.5" />Markdown 파일
                 </Button>
                 <Button variant="outline" size="sm" className="gap-1.5" onClick={() => folderRef.current?.click()} disabled={parsing}>
-                  <FolderOpen className="size-3.5" />볼트 폴더
-                </Button>
-                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => notionRef.current?.click()} disabled={parsing}>
-                  <FileArchive className="size-3.5" />Notion ZIP
+                  <FolderOpen className="size-3.5" />Obsidian 폴더
                 </Button>
               </div>
               <input ref={filesRef} type="file" accept=".md,text/markdown" multiple className="hidden" onChange={onFiles} />
@@ -429,59 +416,23 @@ export function IntakeCenter({
               />
             </div>
 
-            <div className="relative flex items-center gap-3"><span className="h-px flex-1 bg-border" /><span className="text-[10px] text-muted-foreground">또는 바로 붙여넣기</span><span className="h-px flex-1 bg-border" /></div>
-            <Textarea value={pasted} onChange={(event) => setPasted(event.target.value)} rows={6} placeholder={'---\nsource: manual\ntype: log\ncreated: 2026-08-14\ntags: [folio]\n---\n\n오늘의 기록'} className="font-mono text-xs leading-5" />
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-[11px] text-muted-foreground" role="status">{message || (parsing ? '원본 분석 중…' : '원본을 먼저 분석한 뒤 가져옵니다.')}</p>
-              <Button variant="secondary" size="sm" className="gap-1.5" onClick={preparePaste} disabled={!pasted.trim() || parsing}>
-                <ClipboardPaste className="size-3.5" />붙여넣기 분석
-              </Button>
+            <div role="region" aria-label="Notion 가져오기 상태" className="flex flex-col gap-3 rounded-xl border bg-muted/20 p-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2"><span className="text-xs font-medium">Notion</span><Badge variant={notionConnection.state === 'error' ? 'destructive' : notionConnection.state === 'ready' ? 'secondary' : 'outline'}>{notionConnection.state === 'error' ? '확인 필요' : notionConnection.state === 'ready' ? `가져옴 · ${notionConnection.importedCount}개` : '처음 사용'}</Badge></div>
+                <p className="mt-1 truncate text-[10px] text-muted-foreground">{notionConnection.state === 'error' ? notionConnection.lastError : notionConnection.lastImportedAt ? `마지막 ${new Date(notionConnection.lastImportedAt).toLocaleString('ko-KR')}${notionConnection.lastSourceName ? ` · ${notionConnection.lastSourceName}` : ''}` : 'Markdown & CSV ZIP을 지원합니다.'}</p>
+              </div>
+              <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => notionRef.current?.click()} disabled={parsing}><RefreshCw className="size-3.5" />{notionConnection.state === 'never' ? 'ZIP 선택' : '다시 가져오기'}</Button>
             </div>
+            <p className="text-[11px] text-muted-foreground" role="status">{message || (parsing ? '자료를 확인하고 있습니다…' : '자료를 선택하면 변경 내용을 먼저 보여드립니다.')}</p>
+            <details className="group rounded-xl border bg-background">
+              <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-xs font-medium [&::-webkit-details-marker]:hidden"><span className="flex items-center gap-2"><ClipboardPaste className="size-3.5 text-muted-foreground" />텍스트 직접 붙여넣기</span><ChevronDown className="size-3.5 text-muted-foreground transition-transform group-open:rotate-180" /></summary>
+              <div className="space-y-2 border-t p-3"><Textarea value={pasted} onChange={(event) => setPasted(event.target.value)} rows={5} placeholder="Markdown 텍스트를 붙여넣으세요" className="font-mono text-xs leading-5" /><div className="flex justify-end"><Button variant="secondary" size="sm" className="gap-1.5" onClick={preparePaste} disabled={!pasted.trim() || parsing}><ClipboardPaste className="size-3.5" />내용 확인</Button></div></div>
+            </details>
+            <details className="group rounded-xl border bg-background">
+              <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-xs font-medium [&::-webkit-details-marker]:hidden"><span>어떻게 안전하게 가져오나요?</span><ChevronDown className="size-3.5 text-muted-foreground transition-transform group-open:rotate-180" /></summary>
+              <ul className="space-y-1.5 border-t px-4 py-3 text-[11px] leading-5 text-muted-foreground"><li>• 같은 내용은 자동으로 건너뜁니다.</li><li>• 변경된 문서는 반영 전에 비교할 수 있습니다.</li><li>• 기존 문서는 이전 버전을 남겨 언제든 되돌릴 수 있습니다.</li><li>• 원본 경로와 가져온 시각을 함께 보존합니다.</li></ul>
+            </details>
           </CardContent>
-        </Card>
-
-        <Card className="gap-4 py-5">
-          <CardHeader className="px-5"><CardTitle className="flex items-center gap-2"><ShieldCheck className="size-4 text-teal-500" />운영 원칙</CardTitle></CardHeader>
-          <CardContent className="space-y-3 px-5 text-sm">
-            {[
-              ['역할 비중복', 'log는 일지, research·meeting·knowledge는 문서로 분리'],
-              ['출처 보존', '원문 시스템·경로·수집 시각·지문·동기화 상태를 기록'],
-              ['Append only', '동일 날짜가 있어도 새 항목으로 추가하고 원본을 덮어쓰지 않음'],
-              ['중복 방지', '원본 지문을 기록해 같은 파일의 재수집을 차단'],
-            ].map(([title, body]) => (
-              <div key={title} className="rounded-xl bg-muted/40 p-3"><p className="text-xs font-semibold">{title}</p><p className="mt-1 text-xs leading-5 text-muted-foreground">{body}</p></div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card role="region" aria-label="Notion 가져오기 상태" className="overflow-hidden border-violet-900/10 py-0 dark:border-violet-300/10">
-        <CardContent className="grid gap-4 p-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:p-6">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="text-sm font-semibold">Notion 가져오기</p>
-              <Badge variant={notionConnection.state === 'error' ? 'destructive' : notionConnection.state === 'ready' ? 'default' : 'secondary'}>
-                {notionConnection.state === 'error' ? '확인 필요' : notionConnection.state === 'ready' ? '가져옴' : '아직 가져오지 않음'}
-              </Badge>
-              <span className="text-xs tabular-nums text-muted-foreground">누적 {notionConnection.importedCount}개</span>
-            </div>
-            <p className="mt-2 text-xs leading-5 text-muted-foreground">
-              {notionConnection.state === 'never'
-                ? 'Notion에서 Markdown & CSV ZIP을 내보내면 원본 경로와 수집 시각을 보존합니다.'
-                : notionConnection.state === 'error'
-                  ? notionConnection.lastError
-                  : `마지막 가져오기 ${new Date(notionConnection.lastImportedAt ?? '').toLocaleString('ko-KR')}`}
-            </p>
-            {notionConnection.lastSourceName || notionConnection.lastPath ? (
-              <p className="mt-1 truncate text-[11px] text-muted-foreground">
-                {[notionConnection.lastSourceName, notionConnection.lastPath].filter(Boolean).join(' · ')}
-              </p>
-            ) : null}
-          </div>
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => notionRef.current?.click()} disabled={parsing}>
-            <RefreshCw className="size-3.5" />{notionConnection.state === 'never' ? 'ZIP 선택' : '다시 가져오기'}
-          </Button>
-        </CardContent>
       </Card>
 
       {runSummary ? (
@@ -530,9 +481,9 @@ export function IntakeCenter({
       ) : null}
 
       {runHistory.length ? (
-        <Card className="gap-3 py-4" role="region" aria-label="최근 가져오기 실행">
-          <CardHeader className="px-5"><CardTitle className="flex items-center gap-2"><History className="size-4 text-violet-500" />최근 가져오기 실행</CardTitle></CardHeader>
-          <CardContent className="space-y-1 px-3 sm:px-4">
+        <details className="group rounded-xl border bg-card" role="region" aria-label="최근 가져오기 실행">
+          <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-medium [&::-webkit-details-marker]:hidden"><span className="flex items-center gap-2"><History className="size-4 text-violet-500" />최근 실행 <span className="text-xs font-normal text-muted-foreground">{runHistory.length}건</span></span><ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" /></summary>
+          <div className="space-y-1 border-t px-3 py-2 sm:px-4">
             {runHistory.slice(0, 5).map((run) => {
               const applied = run.newDocuments + run.newVersions + run.journals
               return (
@@ -543,8 +494,8 @@ export function IntakeCenter({
                 </button>
               )
             })}
-          </CardContent>
-        </Card>
+          </div>
+        </details>
       ) : null}
 
       {candidates.length ? (
@@ -600,9 +551,9 @@ export function IntakeCenter({
       ) : null}
 
       {history.length ? (
-        <Card className="gap-3 py-4">
-          <CardHeader className="px-5"><CardTitle className="flex items-center gap-2"><History className="size-4" />최근 수집 이력</CardTitle></CardHeader>
-          <CardContent className="space-y-1 px-3 sm:px-4">
+        <details className="group rounded-xl border bg-card">
+          <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-medium [&::-webkit-details-marker]:hidden"><span className="flex items-center gap-2"><History className="size-4" />가져온 문서 기록 <span className="text-xs font-normal text-muted-foreground">{history.length}개</span></span><ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" /></summary>
+          <div className="space-y-1 border-t px-3 py-2 sm:px-4">
             {history.slice(0, 8).map((item) => (
               <button key={item.fingerprint} type="button" onClick={() => item.route === 'journal' ? onOpenJournal(item.targetId, item.date ?? localDateKey()) : onOpenDoc(item.targetId)} className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-muted/60">
                 {item.route === 'journal' ? <BookOpen className="size-4 text-muted-foreground" /> : <FileText className="size-4 text-muted-foreground" />}
@@ -610,8 +561,8 @@ export function IntakeCenter({
                 <ArrowRight className="size-3.5 opacity-0 group-hover:opacity-100" />
               </button>
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </details>
       ) : null}
 
       {comparison ? (
@@ -626,12 +577,12 @@ export function IntakeCenter({
   )
 }
 
-function Metric({ label, value, icon: Icon }: { label: string; value: number; icon: typeof CheckCircle2 }) {
-  return <div className="rounded-2xl border bg-white/60 p-3 dark:bg-white/5"><div className="flex items-center gap-1 text-[10px] text-muted-foreground"><Icon className="size-3" />{label}</div><p className="mt-1 text-xl font-semibold tabular-nums">{value}</p></div>
-}
-
 function RunMetric({ label, value, danger = false }: { label: string; value: number; danger?: boolean }) {
   return <div className="rounded-xl border bg-background/70 px-3 py-2"><p className="text-[10px] text-muted-foreground">{label}</p><p className={cn('mt-0.5 text-lg font-semibold tabular-nums', danger && 'text-red-600 dark:text-red-300')}>{value}</p></div>
+}
+
+function FlowStep({ number, label, active, complete }: { number: number; label: string; active: boolean; complete: boolean }) {
+  return <li className={cn('flex min-w-0 flex-col gap-1.5 rounded-xl px-2 py-2.5 sm:flex-row sm:items-center sm:px-3', active ? 'bg-violet-100 text-violet-950 dark:bg-violet-950 dark:text-violet-100' : 'text-muted-foreground')} aria-current={active ? 'step' : undefined}><span className={cn('grid size-5 shrink-0 place-items-center rounded-full text-[10px] font-semibold', active ? 'bg-violet-700 text-white dark:bg-violet-200 dark:text-violet-950' : complete ? 'bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-200' : 'bg-muted')}>{complete ? '✓' : number}</span><span className="truncate text-[10px] font-medium sm:text-xs">{label}</span></li>
 }
 
 function runOutcomeLabel(kind: ImportRunOutcome['kind']): string {
