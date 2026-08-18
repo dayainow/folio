@@ -154,6 +154,14 @@ test.describe('Folio core flows (P66)', () => {
     await page.getByRole('checkbox', { name: 'Roadmap 가져오기' }).check()
     await page.getByRole('button', { name: '1개 가져오기' }).click()
     await expect(page.getByText('1개를 반영했습니다. 기존 문서 새 버전 1개.')).toBeVisible()
+    const summary = page.getByRole('region', { name: '가져오기 실행 요약' })
+    await expect(summary).toBeVisible()
+    await expect(summary.getByText('신규 문서').locator('..')).toContainText('0')
+    await expect(summary.getByText('새 버전', { exact: true }).first().locator('..')).toContainText('1')
+    await expect(summary.getByText('건너뜀').locator('..')).toContainText('1')
+    await expect(summary.getByText('실패', { exact: true }).first().locator('..')).toContainText('0')
+    const importedItem = summary.getByRole('button', { name: /Roadmap.*새 버전/ })
+    await expect(importedItem).toBeEnabled()
     await expect.poll(async () => page.evaluate(() => {
       const docs = JSON.parse(localStorage.getItem('workspace_docs') || '[]') as Array<{ id: string; content: string }>
       const versions = JSON.parse(localStorage.getItem('folio_doc_versions_v1') || '{}') as Record<string, Array<{ note?: string }>>
@@ -167,6 +175,8 @@ test.describe('Folio core flows (P66)', () => {
       content: '# Roadmap\n\nUpdated plan',
       notes: ['Notion 반영 전', 'Notion 변경 반영'],
     })
+    await importedItem.click()
+    await expect(page).toHaveURL(/#docs\/write$/)
   })
 
   test('board tab shows kanban columns for DnD', async ({ page }) => {

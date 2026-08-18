@@ -14,6 +14,7 @@ import {
   Inbox,
   RefreshCw,
   GitCompare,
+  X,
   ShieldCheck,
   Sparkles,
   Upload,
@@ -46,6 +47,7 @@ import {
 import { createJournalEntryKey, localDateKey } from '@/lib/personal-assistant'
 import { cn } from '@/lib/utils'
 import { sourceSystemLabel, type SourceSystem } from '@/lib/provenance'
+import { createImportRunSummary, type ImportRunOutcome, type ImportRunSummary } from '@/lib/import-run'
 
 export function IntakeCenter({
   onOpenJournal,
@@ -70,6 +72,7 @@ export function IntakeCenter({
   )
   const [updateModes, setUpdateModes] = useState<Map<string, 'version' | 'new'>>(new Map())
   const [comparison, setComparison] = useState<{ candidate: IntakeCandidate; current: DocEntry } | null>(null)
+  const [runSummary, setRunSummary] = useState<ImportRunSummary | null>(null)
 
   const selectedCandidates = useMemo(
     () => candidates.filter((candidate) => selected.has(candidate.fingerprint) && !candidate.duplicate),
@@ -100,6 +103,7 @@ export function IntakeCenter({
   const prepareFiles = async (files: FileList | File[], sourceSystem: SourceSystem = 'obsidian') => {
     setParsing(true)
     setMessage('')
+    setRunSummary(null)
     try {
       const notes = await readObsidianMarkdownFiles(files, 'any')
       const [docs, journals] = await Promise.all([
@@ -123,6 +127,7 @@ export function IntakeCenter({
   const prepareNotion = async (file: File) => {
     setParsing(true)
     setMessage('')
+    setRunSummary(null)
     try {
       setNotionSourceName(file.name)
       const [{ notes, databases, attachments }, docs, journals] = await Promise.all([
@@ -171,6 +176,7 @@ export function IntakeCenter({
     setImporting(true)
     setMessage('')
     const imported: IntakeHistoryItem[] = []
+    const outcomes: ImportRunOutcome[] = []
     let failed = 0
     let versioned = 0
     try {
@@ -189,6 +195,7 @@ export function IntakeCenter({
               targetId,
               candidate.provenance,
             )
+            outcomes.push({ fingerprint: candidate.fingerprint, title: candidate.title, kind: 'journal', route: 'journal', targetId, date: candidate.resolvedDate })
           } else {
             const updateAsVersion = updateModes.get(candidate.fingerprint) === 'version' && candidate.existingTargetId
             const existing = updateAsVersion ? docs.find((doc) => doc.id === candidate.existingTargetId) : undefined
@@ -212,6 +219,7 @@ export function IntakeCenter({
               versioned += 1
               const docIndex = docs.findIndex((doc) => doc.id === existing.id)
               if (docIndex >= 0) docs[docIndex] = updated
+              outcomes.push({ fingerprint: candidate.fingerprint, title: candidate.title, kind: 'new_version', route: 'docs', targetId })
             } else {
               targetId = crypto.randomUUID()
               const title = uniqueDocTitle(candidate.title || '제목 없는 문서', titles)
@@ -232,6 +240,7 @@ export function IntakeCenter({
               }
               await saveDocWithFallback(doc)
               docs.push(doc)
+              outcomes.push({ fingerprint: candidate.fingerprint, title: candidate.title, kind: 'new_document', route: 'docs', targetId })
             }
           }
           imported.push({
@@ -245,8 +254,15 @@ export function IntakeCenter({
             importedAt: new Date().toISOString(),
             provenance: candidate.provenance,
           })
-        } catch {
+        } catch (error) {
           failed += 1
+          outcomes.push({
+            fingerprint: candidate.fingerprint,
+            title: candidate.title,
+            kind: 'failed',
+            route: candidate.route,
+            error: error instanceof Error ? error.message : '저장하지 못했습니다.',
+          })
         }
       }
 
@@ -272,6 +288,11 @@ export function IntakeCenter({
         }
       }
       setMessage(`${imported.length}개를 반영했습니다.${versioned ? ` 기존 문서 새 버전 ${versioned}개.` : ''}${failed ? ` ${failed}개 실패` : ''}`)
+      setRunSummary(createImportRunSummary(
+        outcomes,
+        candidates.filter((candidate) => candidate.changeState === 'unchanged').length,
+        notionSourceName || undefined,
+      ))
     } finally {
       setImporting(false)
     }
@@ -423,6 +444,47 @@ export function IntakeCenter({
         </CardContent>
       </Card>
 
+      {runSummary ? (
+        <Card role="region" aria-label="가져오기 실행 요약" className="overflow-hidden border-teal-600/20 bg-[linear-gradient(135deg,rgba(240,253,250,.9),rgba(255,255,255,.98))] py-0 dark:bg-[linear-gradient(135deg,rgba(17,50,45,.65),rgba(12,18,26,.98))]">
+          <CardContent className="p-5 sm:p-6">
+            <div className="flex items-start gap-3">
+              <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-200"><CheckCircle2 className="size-4.5" /></span>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm font-semibold">가져오기 완료</p>
+                  {runSummary.sourceName ? <Badge variant="outline">{runSummary.sourceName}</Badge> : null}
+                  <span className="text-[10px] text-muted-foreground">{new Date(runSummary.completedAt).toLocaleString('ko-KR')}</span>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  <RunMetric label="신규 문서" value={runSummary.newDocuments + runSummary.journals} />
+                  <RunMetric label="새 버전" value={runSummary.newVersions} />
+                  <RunMetric label="건너뜀" value={runSummary.skipped} />
+                  <RunMetric label="실패" value={runSummary.failed} danger={runSummary.failed > 0} />
+                </div>
+              </div>
+              <Button type="button" variant="ghost" size="icon-sm" aria-label="실행 요약 닫기" onClick={() => setRunSummary(null)}><X className="size-4" /></Button>
+            </div>
+            {runSummary.outcomes.length ? (
+              <div className="mt-4 divide-y rounded-xl border bg-background/70">
+                {runSummary.outcomes.map((outcome) => (
+                  <button
+                    key={outcome.fingerprint}
+                    type="button"
+                    disabled={!outcome.targetId || outcome.kind === 'failed'}
+                    onClick={() => outcome.route === 'journal' ? onOpenJournal(outcome.targetId!, outcome.date ?? localDateKey()) : onOpenDoc(outcome.targetId!)}
+                    className="flex w-full items-center gap-3 px-3 py-2.5 text-left enabled:hover:bg-muted/50 disabled:cursor-default"
+                  >
+                    <span className="min-w-0 flex-1"><span className="block truncate text-xs font-medium">{outcome.title}</span>{outcome.error ? <span className="block truncate text-[10px] text-red-600 dark:text-red-300">{outcome.error}</span> : null}</span>
+                    <Badge variant={outcome.kind === 'failed' ? 'destructive' : 'secondary'}>{runOutcomeLabel(outcome.kind)}</Badge>
+                    {outcome.targetId ? <ArrowRight className="size-3.5 text-muted-foreground" /> : null}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </CardContent>
+        </Card>
+      ) : null}
+
       {candidates.length ? (
         <Card className="gap-0 overflow-hidden py-0">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3 sm:px-5">
@@ -504,4 +566,15 @@ export function IntakeCenter({
 
 function Metric({ label, value, icon: Icon }: { label: string; value: number; icon: typeof CheckCircle2 }) {
   return <div className="rounded-2xl border bg-white/60 p-3 dark:bg-white/5"><div className="flex items-center gap-1 text-[10px] text-muted-foreground"><Icon className="size-3" />{label}</div><p className="mt-1 text-xl font-semibold tabular-nums">{value}</p></div>
+}
+
+function RunMetric({ label, value, danger = false }: { label: string; value: number; danger?: boolean }) {
+  return <div className="rounded-xl border bg-background/70 px-3 py-2"><p className="text-[10px] text-muted-foreground">{label}</p><p className={cn('mt-0.5 text-lg font-semibold tabular-nums', danger && 'text-red-600 dark:text-red-300')}>{value}</p></div>
+}
+
+function runOutcomeLabel(kind: ImportRunOutcome['kind']): string {
+  if (kind === 'new_version') return '새 버전'
+  if (kind === 'new_document') return '신규 문서'
+  if (kind === 'journal') return '신규 일지'
+  return '실패'
 }
