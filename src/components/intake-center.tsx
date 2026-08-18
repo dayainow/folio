@@ -79,6 +79,14 @@ export function IntakeCenter({
     }),
     [candidates],
   )
+  const changeCounts = useMemo(
+    () => ({
+      new: candidates.filter((candidate) => candidate.changeState === 'new').length,
+      changed: candidates.filter((candidate) => candidate.changeState === 'changed').length,
+      unchanged: candidates.filter((candidate) => candidate.changeState === 'unchanged').length,
+    }),
+    [candidates],
+  )
   const notionConnection = useMemo(
     () => summarizeImportConnection('notion', history, notionAttempt),
     [history, notionAttempt],
@@ -123,7 +131,10 @@ export function IntakeCenter({
       const next = buildIntakeCandidates(notes, history, new Date(), fingerprints, 'notion')
       setCandidates(next)
       setSelected(new Set(next.filter((candidate) => candidate.reviewState === 'ready').map((candidate) => candidate.fingerprint)))
-      setMessage(`${next.length}개 Notion 항목을 분석했습니다.${databases ? ` 데이터베이스 ${databases}개를 표 문서로 변환했습니다.` : ''}${attachments ? ` 첨부파일 ${attachments}개는 경로만 보존하고 제외했습니다.` : ''}`)
+      const newCount = next.filter((candidate) => candidate.changeState === 'new').length
+      const changedCount = next.filter((candidate) => candidate.changeState === 'changed').length
+      const unchangedCount = next.filter((candidate) => candidate.changeState === 'unchanged').length
+      setMessage(`Notion 변경분을 확인했습니다. 신규 ${newCount} · 변경 ${changedCount} · 동일 ${unchangedCount}.${databases ? ` 데이터베이스 ${databases}개를 표 문서로 변환했습니다.` : ''}${attachments ? ` 첨부파일 ${attachments}개는 경로만 보존하고 제외했습니다.` : ''}`)
     } catch {
       const error = 'Notion ZIP을 읽지 못했습니다. Markdown & CSV 형식으로 다시 내보내주세요.'
       setNotionAttempt(recordImportConnectionAttempt({ system: 'notion', state: 'error', sourceName: file.name, attemptedAt: new Date().toISOString(), error }))
@@ -370,7 +381,7 @@ export function IntakeCenter({
       {candidates.length ? (
         <Card className="gap-0 overflow-hidden py-0">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3 sm:px-5">
-            <div><p className="text-sm font-semibold">분류 결과</p><p className="mt-0.5 text-[11px] text-muted-foreground">안전한 항목만 기본 선택합니다. 검토 항목은 확인 후 직접 선택하세요.</p></div>
+            <div><p className="text-sm font-semibold">분류 결과</p><p className="mt-0.5 text-[11px] text-muted-foreground">신규 {changeCounts.new} · 변경 {changeCounts.changed} · 동일 {changeCounts.unchanged}. 변경분 중 안전한 항목만 기본 선택합니다.</p></div>
             <div className="flex flex-wrap items-center gap-2">
               <Button variant="ghost" size="sm" onClick={() => setSelected(new Set(candidates.filter((candidate) => candidate.reviewState === 'ready').map((candidate) => candidate.fingerprint)))} disabled={importing}>
                 안전 항목 선택
@@ -389,7 +400,12 @@ export function IntakeCenter({
                 <label className={cn('grid cursor-pointer gap-3 px-4 py-4 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center sm:px-5', candidate.duplicate && 'cursor-not-allowed bg-muted/35 opacity-65')}>
                   <input type="checkbox" checked={selected.has(candidate.fingerprint) && !candidate.duplicate} disabled={candidate.duplicate} onChange={() => toggleCandidate(candidate)} />
                   <span className="min-w-0">
-                    <span className="flex flex-wrap items-center gap-2"><span className="truncate text-sm font-medium">{candidate.title}</span>{candidate.duplicate ? <Badge variant="secondary">이미 수집됨</Badge> : null}</span>
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="truncate text-sm font-medium">{candidate.title}</span>
+                      {candidate.changeState === 'changed' ? <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100 dark:bg-amber-950 dark:text-amber-200">변경됨</Badge> : null}
+                      {candidate.changeState === 'new' ? <Badge variant="outline">신규</Badge> : null}
+                      {candidate.duplicate ? <Badge variant="secondary">동일 · 건너뜀</Badge> : null}
+                    </span>
                     <span className="mt-1 block truncate text-[11px] text-muted-foreground">{candidate.relativePath} · {candidate.resolvedDate}</span>
                     {candidate.warnings.length ? <span className="mt-1.5 flex flex-wrap gap-1"><Badge variant="outline" className="text-[9px] text-amber-700 dark:text-amber-300">검토 필요</Badge>{candidate.warnings.map((warning) => <Badge key={warning} variant="outline" className="text-[9px] text-amber-700 dark:text-amber-300">{warning}</Badge>)}</span> : null}
                   </span>

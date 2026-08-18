@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import JSZip from 'jszip'
 
 /**
  * P66 — 핵심 플로우 E2E (로컬 모드 · 인증 없이)
@@ -64,22 +65,34 @@ test.describe('Folio core flows (P66)', () => {
 
   test('Notion intake shows the latest import connection status', async ({ page }) => {
     await page.addInitScript(() => {
-      localStorage.setItem('folio_intake_history_v1', JSON.stringify([{
-        fingerprint: 'notion-roadmap',
-        fileName: 'Roadmap.md',
-        relativePath: 'Notion/Planning/Roadmap.md',
-        title: 'Roadmap',
+      const fingerprint = (value: string) => {
+        let hash = 0x811c9dc5
+        for (let index = 0; index < value.length; index += 1) {
+          hash ^= value.charCodeAt(index)
+          hash = Math.imul(hash, 0x01000193)
+        }
+        return (`00000000${(hash >>> 0).toString(16)}`).slice(-8)
+      }
+      const records = [
+        { title: 'Roadmap', path: 'Notion/Workspace/Roadmap.md', content: '# Roadmap\n\nOld plan' },
+        { title: 'Stable', path: 'Notion/Workspace/Stable.md', content: '# Stable\n\nNo changes' },
+      ].map((record, index) => ({
+        fingerprint: fingerprint([record.title, 'manual', 'doc', '', record.content].join('\n')),
+        fileName: record.path.split('/').pop(),
+        relativePath: record.path,
+        title: record.title,
         route: 'docs',
-        targetId: 'notion-doc',
+        targetId: `notion-doc-${index}`,
         importedAt: '2026-08-18T09:00:00.000Z',
         provenance: {
           system: 'notion',
-          fingerprint: 'notion-roadmap',
-          path: 'Notion/Planning/Roadmap.md',
+          fingerprint: fingerprint([record.title, 'manual', 'doc', '', record.content].join('\n')),
+          path: record.path,
           importedAt: '2026-08-18T09:00:00.000Z',
           syncState: 'imported',
         },
-      }]))
+      }))
+      localStorage.setItem('folio_intake_history_v1', JSON.stringify(records))
       localStorage.setItem('folio_import_connections_v1', JSON.stringify({
         notion: {
           system: 'notion',
@@ -98,9 +111,22 @@ test.describe('Folio core flows (P66)', () => {
     const connection = page.getByRole('region', { name: 'Notion 가져오기 상태' })
     await expect(connection).toBeVisible()
     await expect(connection.getByText('가져옴', { exact: true })).toBeVisible()
-    await expect(connection.getByText('누적 1개', { exact: true })).toBeVisible()
-    await expect(connection.getByText(/workspace\.zip · Notion\/Planning\/Roadmap\.md/)).toBeVisible()
+    await expect(connection.getByText('누적 2개', { exact: true })).toBeVisible()
+    await expect(connection.getByText(/workspace\.zip · Notion\/Workspace\/Roadmap\.md/)).toBeVisible()
     await expect(connection.getByRole('button', { name: '다시 가져오기' })).toBeVisible()
+
+    const zip = new JSZip()
+    zip.file('Workspace/Roadmap.md', '# Roadmap\n\nUpdated plan')
+    zip.file('Workspace/Stable.md', '# Stable\n\nNo changes')
+    zip.file('Workspace/New idea.md', '# New idea\n\nFirst draft')
+    await page.locator('input[type="file"][accept*=".zip"]').setInputFiles({
+      name: 'workspace-next.zip',
+      mimeType: 'application/zip',
+      buffer: await zip.generateAsync({ type: 'nodebuffer' }),
+    })
+    await expect(page.getByText('Notion 변경분을 확인했습니다. 신규 1 · 변경 1 · 동일 1.', { exact: false })).toBeVisible()
+    await expect(page.getByText('변경됨', { exact: true })).toBeVisible()
+    await expect(page.getByText('동일 · 건너뜀', { exact: true })).toBeVisible()
   })
 
   test('board tab shows kanban columns for DnD', async ({ page }) => {

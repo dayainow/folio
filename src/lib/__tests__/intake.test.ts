@@ -34,6 +34,7 @@ describe('intake pipeline', () => {
     expect(candidate.noteType).toBe('log')
     expect(candidate.warnings).toEqual([])
     expect(candidate.reviewState).toBe('ready')
+    expect(candidate.changeState).toBe('new')
     expect(candidate.provenance).toMatchObject({
       system: 'obsidian',
       fingerprint: candidate.fingerprint,
@@ -91,7 +92,48 @@ describe('intake pipeline', () => {
         importedAt: '2026-08-14T00:00:00.000Z',
       },
     ])
-    expect(buildIntakeCandidates([note()])[0]).toMatchObject({ duplicate: true, reviewState: 'duplicate' })
+    expect(buildIntakeCandidates([note()])[0]).toMatchObject({ duplicate: true, reviewState: 'duplicate', changeState: 'unchanged' })
+  })
+
+  it('marks changed content at the same source path for incremental import', () => {
+    const first = buildIntakeCandidates([note()], [], new Date('2026-08-14T00:00:00.000Z'), [], 'notion')[0]!
+    const history = [{
+      fingerprint: first.fingerprint,
+      fileName: first.fileName,
+      relativePath: first.relativePath,
+      title: first.title,
+      route: first.route,
+      targetId: 'doc-1',
+      importedAt: '2026-08-14T00:00:00.000Z',
+      provenance: first.provenance,
+    }]
+
+    const changed = buildIntakeCandidates(
+      [note({ content: '수정된 오늘 한 일' })],
+      history,
+      new Date('2026-08-15T00:00:00.000Z'),
+      [],
+      'notion',
+    )[0]!
+
+    expect(changed).toMatchObject({ duplicate: false, changeState: 'changed', reviewState: 'ready' })
+  })
+
+  it('keeps source paths independent across import systems', () => {
+    const notion = buildIntakeCandidates([note()], [], new Date(), [], 'notion')[0]!
+    const history = [{
+      fingerprint: notion.fingerprint,
+      fileName: notion.fileName,
+      relativePath: notion.relativePath,
+      title: notion.title,
+      route: notion.route,
+      targetId: 'doc-1',
+      importedAt: notion.provenance.importedAt,
+      provenance: notion.provenance,
+    }]
+
+    const obsidian = buildIntakeCandidates([note({ content: 'Obsidian 변경' })], history, new Date(), [], 'obsidian')[0]!
+    expect(obsidian.changeState).toBe('new')
   })
 
   it('detects duplicates from origin tags synced with records', () => {

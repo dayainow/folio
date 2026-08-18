@@ -5,6 +5,7 @@ export type IntakeSource = 'manual' | 'hermes'
 export type IntakeNoteType = 'log' | 'doc' | 'research' | 'meeting' | 'knowledge'
 export type IntakeRoute = 'journal' | 'docs'
 export type IntakeReviewState = 'ready' | 'needs_review' | 'duplicate'
+export type IntakeChangeState = 'new' | 'changed' | 'unchanged'
 
 export type IntakeCandidate = ParsedObsidianNote & {
   source: IntakeSource
@@ -17,6 +18,7 @@ export type IntakeCandidate = ParsedObsidianNote & {
   duplicate: boolean
   provenance: SourceMetadata
   reviewState: IntakeReviewState
+  changeState: IntakeChangeState
 }
 
 export type IntakeHistoryItem = {
@@ -137,6 +139,12 @@ export function buildIntakeCandidates(
   knownFingerprints: Iterable<string> = [],
   sourceSystem: SourceSystem = 'obsidian',
 ): IntakeCandidate[] {
+  const historyBySourcePath = new Map(
+    history
+      .filter((item) => item.provenance?.system && (item.provenance.path || item.relativePath))
+      .sort((a, b) => a.importedAt.localeCompare(b.importedAt))
+      .map((item) => [`${item.provenance!.system}:${item.provenance!.path || item.relativePath}`, item]),
+  )
   const seen = new Set([
     ...history.map((item) => item.fingerprint),
     ...knownFingerprints,
@@ -161,6 +169,23 @@ export function buildIntakeCandidates(
     )
     const duplicate = seen.has(fingerprint)
     seen.add(fingerprint)
+    const sourcePathKey = `${sourceSystem}:${note.relativePath}`
+    const previousAtPath = historyBySourcePath.get(sourcePathKey)
+    const changeState: IntakeChangeState = duplicate
+      ? 'unchanged'
+      : previousAtPath
+        ? 'changed'
+        : 'new'
+    historyBySourcePath.set(sourcePathKey, {
+      fingerprint,
+      fileName: note.fileName,
+      relativePath: note.relativePath,
+      title: note.title,
+      route: noteType.value === 'log' ? 'journal' : 'docs',
+      targetId: '',
+      importedAt: now.toISOString(),
+      provenance: createSourceMetadata({ system: sourceSystem, fingerprint, path: note.relativePath, now }),
+    })
 
     return {
       ...note,
@@ -179,6 +204,7 @@ export function buildIntakeCandidates(
         now,
       }),
       reviewState: duplicate ? 'duplicate' : warnings.length ? 'needs_review' : 'ready',
+      changeState,
     }
   })
 }
