@@ -11,6 +11,7 @@ test.describe('Folio core flows (P66)', () => {
       localStorage.setItem('workspace_tasks', '[]')
       localStorage.removeItem('folio_weekly_plans_v1')
       localStorage.removeItem('folio_daily_plans_v1')
+      localStorage.removeItem('folio_daily_reviews_v1')
     })
   })
 
@@ -193,5 +194,30 @@ test.describe('Folio core flows (P66)', () => {
       const plans = JSON.parse(localStorage.getItem('folio_daily_plans_v1') || '{}') as Record<string, { taskIds: string[] }>
       return Object.values(plans).find((plan) => plan.taskIds.includes('new'))?.taskIds
     })).toEqual(['carry', 'new'])
+  })
+
+  test('shutdown review stores the confirmed top three outcome', async ({ page }) => {
+    await page.addInitScript(() => {
+      const now = new Date()
+      const date = [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-')
+      const base = { description: '', priority: 'medium', tags: [], createdAt: now.toISOString(), updatedAt: now.toISOString() }
+      localStorage.setItem('workspace_tasks', JSON.stringify([
+        { ...base, id: 'review-done', title: 'Top 3 완료 업무', status: 'done' },
+        { ...base, id: 'review-open', title: 'Top 3 미완료 업무', status: 'in_progress' },
+        { ...base, id: 'outside', title: '계획 밖 업무', status: 'done' },
+      ]))
+      localStorage.setItem('folio_daily_plans_v1', JSON.stringify({
+        [date]: { date, taskIds: ['review-done', 'review-open'], confirmedAt: now.toISOString(), updatedAt: now.toISOString() },
+      }))
+    })
+    await page.goto('/')
+    await expect(page.getByText(/Top 3 1\/2 완료 · 미완료 1/)).toBeVisible()
+    await page.getByRole('textbox', { name: '오늘 가장 잘한 일' }).fill('Top 3 한 가지를 끝냈다')
+    await page.getByRole('button', { name: '업무 닫기', exact: true }).click()
+    await expect(page.getByText('오늘의 업무를 닫았습니다.')).toBeVisible()
+    await expect.poll(async () => page.evaluate(() => {
+      const reviews = JSON.parse(localStorage.getItem('folio_daily_reviews_v1') || '{}') as Record<string, { execution?: { planned: number; completed: number; open: number } }>
+      return Object.values(reviews)[0]?.execution
+    })).toMatchObject({ planned: 2, completed: 1, open: 1 })
   })
 })

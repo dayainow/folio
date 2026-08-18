@@ -462,7 +462,7 @@ export function PersonalAssistantHome({
 
       <DailyReviewCard
         date={today}
-        completedTasks={data.tasks.filter((task) => task.status === 'done').length}
+        tasks={data.tasks}
         journalCount={todayEntries.length}
       />
 

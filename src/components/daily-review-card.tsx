@@ -1,21 +1,23 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { CheckCircle2, ClipboardCheck, Save } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
-import { isDailyReviewComplete, loadDailyReview, saveDailyReview } from '@/lib/daily-review'
+import { buildDailyExecutionSummary, isDailyReviewComplete, loadDailyReview, saveDailyReview } from '@/lib/daily-review'
+import type { Task } from '@/lib/board'
 
 export function DailyReviewCard({
   date,
-  completedTasks,
+  tasks,
   journalCount,
 }: {
   date: string
-  completedTasks: number
+  tasks: Task[]
   journalCount: number
 }) {
+  const execution = useMemo(() => buildDailyExecutionSummary(date, tasks), [date, tasks])
   const [initial] = useState(() => loadDailyReview(date))
   const [win, setWin] = useState(initial?.win ?? '')
   const [learned, setLearned] = useState(initial?.learned ?? '')
@@ -24,7 +26,7 @@ export function DailyReviewCard({
   const [message, setMessage] = useState('')
 
   const save = (finish: boolean) => {
-    saveDailyReview(date, { win, learned, tomorrow }, finish)
+    saveDailyReview(date, { win, learned, tomorrow, execution }, finish)
     if (finish) setComplete(true)
     setMessage(finish ? '오늘의 업무를 닫았습니다.' : '회고를 저장했습니다.')
   }
@@ -35,7 +37,7 @@ export function DailyReviewCard({
         <div>
           <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-teal-700 dark:text-teal-300">Shutdown review</p>
           <CardTitle className="mt-1 flex items-center gap-2 text-lg"><ClipboardCheck className="size-4" />오늘 업무 닫기</CardTitle>
-          <p className="mt-1 text-xs text-muted-foreground">완료한 일 {completedTasks} · 오늘 기록 {journalCount}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{execution.planned ? `Top 3 ${execution.completed}/${execution.planned} 완료 · 미완료 ${execution.open}` : '확정된 Top 3 없음'} · 오늘 기록 {journalCount}</p>
         </div>
         {complete ? <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-2.5 py-1 text-[10px] font-medium text-teal-700 dark:bg-teal-950/40 dark:text-teal-300"><CheckCircle2 className="size-3" />완료</span> : null}
       </CardHeader>
