@@ -47,7 +47,13 @@ import {
 import { createJournalEntryKey, localDateKey } from '@/lib/personal-assistant'
 import { cn } from '@/lib/utils'
 import { sourceSystemLabel, type SourceSystem } from '@/lib/provenance'
-import { createImportRunSummary, type ImportRunOutcome, type ImportRunSummary } from '@/lib/import-run'
+import {
+  appendImportRunHistory,
+  createImportRunSummary,
+  loadImportRunHistory,
+  type ImportRunOutcome,
+  type ImportRunSummary,
+} from '@/lib/import-run'
 
 export function IntakeCenter({
   onOpenJournal,
@@ -73,6 +79,7 @@ export function IntakeCenter({
   const [updateModes, setUpdateModes] = useState<Map<string, 'version' | 'new'>>(new Map())
   const [comparison, setComparison] = useState<{ candidate: IntakeCandidate; current: DocEntry } | null>(null)
   const [runSummary, setRunSummary] = useState<ImportRunSummary | null>(null)
+  const [runHistory, setRunHistory] = useState<ImportRunSummary[]>(() => loadImportRunHistory())
 
   const selectedCandidates = useMemo(
     () => candidates.filter((candidate) => selected.has(candidate.fingerprint) && !candidate.duplicate),
@@ -288,11 +295,13 @@ export function IntakeCenter({
         }
       }
       setMessage(`${imported.length}개를 반영했습니다.${versioned ? ` 기존 문서 새 버전 ${versioned}개.` : ''}${failed ? ` ${failed}개 실패` : ''}`)
-      setRunSummary(createImportRunSummary(
+      const summary = createImportRunSummary(
         outcomes,
         candidates.filter((candidate) => candidate.changeState === 'unchanged').length,
         notionSourceName || undefined,
-      ))
+      )
+      setRunSummary(summary)
+      setRunHistory(appendImportRunHistory(summary))
     } finally {
       setImporting(false)
     }
@@ -481,6 +490,24 @@ export function IntakeCenter({
                 ))}
               </div>
             ) : null}
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {runHistory.length ? (
+        <Card className="gap-3 py-4" role="region" aria-label="최근 가져오기 실행">
+          <CardHeader className="px-5"><CardTitle className="flex items-center gap-2"><History className="size-4 text-violet-500" />최근 가져오기 실행</CardTitle></CardHeader>
+          <CardContent className="space-y-1 px-3 sm:px-4">
+            {runHistory.slice(0, 5).map((run) => {
+              const applied = run.newDocuments + run.newVersions + run.journals
+              return (
+                <button key={run.completedAt} type="button" onClick={() => setRunSummary(run)} className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-muted/60">
+                  <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-violet-50 text-violet-700 dark:bg-violet-950 dark:text-violet-200"><FileArchive className="size-3.5" /></span>
+                  <span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium">{run.sourceName || '가져오기 실행'}</span><span className="block truncate text-[10px] text-muted-foreground">{new Date(run.completedAt).toLocaleString('ko-KR')} · 반영 {applied} · 건너뜀 {run.skipped} · 실패 {run.failed}</span></span>
+                  <ArrowRight className="size-3.5 opacity-0 group-hover:opacity-100" />
+                </button>
+              )
+            })}
           </CardContent>
         </Card>
       ) : null}

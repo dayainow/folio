@@ -175,7 +175,17 @@ test.describe('Folio core flows (P66)', () => {
       content: '# Roadmap\n\nUpdated plan',
       notes: ['Notion 반영 전', 'Notion 변경 반영'],
     })
-    await importedItem.click()
+    await summary.getByRole('button', { name: '실행 요약 닫기' }).click()
+    await expect(summary).toBeHidden()
+    await page.reload()
+    await docs.first().click()
+    await page.getByRole('tab', { name: '수집함', exact: true }).click()
+    const recentRuns = page.getByRole('region', { name: '최근 가져오기 실행' })
+    await expect(recentRuns).toBeVisible()
+    await recentRuns.getByRole('button', { name: /workspace-next\.zip.*반영 1.*건너뜀 1.*실패 0/ }).click()
+    const restoredSummary = page.getByRole('region', { name: '가져오기 실행 요약' })
+    await expect(restoredSummary).toBeVisible()
+    await restoredSummary.getByRole('button', { name: /Roadmap.*새 버전/ }).click()
     await expect(page).toHaveURL(/#docs\/write$/)
   })
 

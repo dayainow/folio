@@ -23,6 +23,9 @@ export type ImportRunSummary = {
   outcomes: ImportRunOutcome[]
 }
 
+const STORAGE_KEY = 'folio_import_runs_v1'
+const MAX_RUNS = 20
+
 export function createImportRunSummary(
   outcomes: ImportRunOutcome[],
   skipped: number,
@@ -41,3 +44,27 @@ export function createImportRunSummary(
   }
 }
 
+export function loadImportRunHistory(): ImportRunSummary[] {
+  if (typeof window === 'undefined') return []
+  try {
+    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]') as ImportRunSummary[]
+    return Array.isArray(parsed)
+      ? parsed.filter((run) => Boolean(run?.completedAt) && Array.isArray(run.outcomes)).slice(0, MAX_RUNS)
+      : []
+  } catch {
+    return []
+  }
+}
+
+export function saveImportRunHistory(runs: ImportRunSummary[]): void {
+  if (typeof window === 'undefined') return
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(runs.slice(0, MAX_RUNS)))
+}
+
+export function appendImportRunHistory(run: ImportRunSummary): ImportRunSummary[] {
+  const next = [run, ...loadImportRunHistory().filter((item) => item.completedAt !== run.completedAt)]
+    .sort((a, b) => b.completedAt.localeCompare(a.completedAt))
+    .slice(0, MAX_RUNS)
+  saveImportRunHistory(next)
+  return next
+}

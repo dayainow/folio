@@ -1,7 +1,13 @@
-import { describe, expect, it } from 'vitest'
-import { createImportRunSummary, type ImportRunOutcome } from '@/lib/import-run'
+import { beforeEach, describe, expect, it } from 'vitest'
+import {
+  appendImportRunHistory,
+  createImportRunSummary,
+  loadImportRunHistory,
+  type ImportRunOutcome,
+} from '@/lib/import-run'
 
 describe('import run summary', () => {
+  beforeEach(() => localStorage.clear())
   it('counts each outcome and identical skipped items', () => {
     const outcomes: ImportRunOutcome[] = [
       { fingerprint: 'new', title: 'New', kind: 'new_document', route: 'docs', targetId: 'doc-new' },
@@ -31,5 +37,19 @@ describe('import run summary', () => {
       outcomes: [],
     })
   })
-})
 
+  it('persists recent runs newest first without duplicating the same completion', () => {
+    const older = createImportRunSummary([], 1, 'older.zip', new Date('2026-08-18T09:00:00.000Z'))
+    const newer = createImportRunSummary([], 2, 'newer.zip', new Date('2026-08-18T10:00:00.000Z'))
+    appendImportRunHistory(older)
+    appendImportRunHistory(newer)
+    appendImportRunHistory(newer)
+
+    expect(loadImportRunHistory().map((run) => run.sourceName)).toEqual(['newer.zip', 'older.zip'])
+  })
+
+  it('ignores malformed persisted history', () => {
+    localStorage.setItem('folio_import_runs_v1', '{broken')
+    expect(loadImportRunHistory()).toEqual([])
+  })
+})
