@@ -9,6 +9,11 @@ export type DailyPlan = {
   updatedAt: string
 }
 
+export type DailyPlanSuggestion = {
+  taskIds: string[]
+  carriedTaskIds: string[]
+}
+
 const STORAGE_KEY = 'folio_daily_plans_v1'
 
 function taskScore(task: Task, date: string, weeklyPlan: WeeklyPlan | null): number {
@@ -27,6 +32,28 @@ export function recommendDailyTaskIds(tasks: Task[], date: string, weeklyPlan: W
     .sort((a, b) => b.score - a.score || a.index - b.index)
     .slice(0, 3)
     .map(({ task }) => task.id)
+}
+
+function previousDateKey(date: string): string {
+  const previous = new Date(`${date}T00:00:00.000Z`)
+  previous.setUTCDate(previous.getUTCDate() - 1)
+  return previous.toISOString().slice(0, 10)
+}
+
+export function suggestDailyPlan(
+  tasks: Task[],
+  date: string,
+  weeklyPlan: WeeklyPlan | null,
+  plans = loadDailyPlans(),
+): DailyPlanSuggestion {
+  const openIds = new Set(tasks.filter((task) => task.status !== 'done').map((task) => task.id))
+  const previous = plans[previousDateKey(date)]
+  const carriedTaskIds = (previous?.taskIds ?? []).filter((id) => openIds.has(id)).slice(0, 3)
+  const recommended = recommendDailyTaskIds(tasks, date, weeklyPlan).filter((id) => !carriedTaskIds.includes(id))
+  return {
+    carriedTaskIds,
+    taskIds: [...carriedTaskIds, ...recommended].slice(0, 3),
+  }
 }
 
 export function moveDailyTask(taskIds: string[], taskId: string, direction: -1 | 1): string[] {

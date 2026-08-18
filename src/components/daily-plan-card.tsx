@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ArrowDown, ArrowRight, ArrowUp, Check, CheckCircle2, Circle, Plus, RotateCcw, Sparkles, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { saveTasksWithFallback, type Task } from '@/lib/board'
-import { completeDailyTask, loadDailyPlan, moveDailyTask, recommendDailyTaskIds, saveDailyPlan } from '@/lib/daily-plan'
+import { completeDailyTask, loadDailyPlan, moveDailyTask, saveDailyPlan, suggestDailyPlan } from '@/lib/daily-plan'
 import { findWeeklyPlanForDate } from '@/lib/weekly-review'
 import { cn } from '@/lib/utils'
 
@@ -16,9 +16,12 @@ export function DailyPlanCard({ date, tasks, onOpenBoard }: { date: string; task
   const [ready, setReady] = useState(false)
   const [message, setMessage] = useState('')
   const [completing, setCompleting] = useState<string | null>(null)
+  const [carriedTaskIds, setCarriedTaskIds] = useState<string[]>([])
 
   const recommend = useCallback(() => {
-    setTaskIds(recommendDailyTaskIds(localTasks, date, findWeeklyPlanForDate(date)))
+    const suggestion = suggestDailyPlan(localTasks, date, findWeeklyPlanForDate(date))
+    setTaskIds(suggestion.taskIds)
+    setCarriedTaskIds(suggestion.carriedTaskIds)
     setConfirmed(false)
     setMessage('')
   }, [date, localTasks])
@@ -27,11 +30,13 @@ export function DailyPlanCard({ date, tasks, onOpenBoard }: { date: string; task
 
   useEffect(() => {
     const stored = loadDailyPlan(date)
+    const suggestion = suggestDailyPlan(tasks, date, findWeeklyPlanForDate(date))
+    setCarriedTaskIds(suggestion.carriedTaskIds)
     if (stored) {
       setTaskIds(stored.taskIds.filter((id) => tasks.some((task) => task.id === id)))
       setConfirmed(true)
     } else {
-      setTaskIds(recommendDailyTaskIds(tasks, date, findWeeklyPlanForDate(date)))
+      setTaskIds(suggestion.taskIds)
     }
     setReady(true)
   }, [date, tasks])
@@ -39,6 +44,7 @@ export function DailyPlanCard({ date, tasks, onOpenBoard }: { date: string; task
   if (!ready || (openTasks.length === 0 && taskIds.length === 0)) return null
 
   const selectedTasks = taskIds.map((id) => localTasks.find((task) => task.id === id)).filter((task): task is Task => Boolean(task))
+  const activeCarriedTaskIds = carriedTaskIds.filter((id) => taskIds.includes(id) && localTasks.some((task) => task.id === id && task.status !== 'done'))
   const candidates = openTasks.filter((task) => !taskIds.includes(task.id)).slice(0, 3)
   const confirm = () => {
     saveDailyPlan(date, taskIds)
@@ -72,7 +78,7 @@ export function DailyPlanCard({ date, tasks, onOpenBoard }: { date: string; task
             <span className="flex size-8 items-center justify-center rounded-xl bg-sky-600 text-white"><Sparkles className="size-4" /></span>
             <div><p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-sky-700 dark:text-sky-300">Daily plan</p><h2 id="daily-plan-title" className="text-sm font-semibold">오늘의 Top 3</h2></div>
           </div>
-          <p className="mt-2 text-xs text-muted-foreground">상태·마감·우선순위·주간 초점을 반영한 추천입니다.</p>
+          <p className="mt-2 text-xs text-muted-foreground">{activeCarriedTaskIds.length ? `어제 미완료 ${activeCarriedTaskIds.length}개를 먼저 이어오고, 남은 자리는 우선순위로 채웠습니다.` : '상태·마감·우선순위·주간 초점을 반영한 추천입니다.'}</p>
         </div>
         <Button variant="ghost" size="sm" className="self-start gap-1.5 rounded-full text-xs" onClick={recommend}><RotateCcw className="size-3.5" />다시 추천</Button>
       </div>
@@ -83,7 +89,10 @@ export function DailyPlanCard({ date, tasks, onOpenBoard }: { date: string; task
             <span className={cn('flex size-7 shrink-0 items-center justify-center rounded-lg text-xs font-semibold', index === 0 ? 'bg-sky-600 text-white' : 'bg-muted text-muted-foreground')}>{index + 1}</span>
             <button type="button" className="min-w-0 flex-1 text-left" onClick={() => onOpenBoard(task.id)}>
               <span className={cn('block truncate text-sm font-medium', task.status === 'done' && 'text-muted-foreground line-through')}>{task.title}</span>
-              <span className="text-[10px] text-muted-foreground">{task.status === 'done' ? '완료' : task.status === 'in_progress' ? '진행 중' : task.status === 'review' ? '검토 중' : '대기'} · {task.priority === 'high' ? '높음' : task.priority === 'medium' ? '보통' : '낮음'}</span>
+              <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                {task.status === 'done' ? '완료' : task.status === 'in_progress' ? '진행 중' : task.status === 'review' ? '검토 중' : '대기'} · {task.priority === 'high' ? '높음' : task.priority === 'medium' ? '보통' : '낮음'}
+                {carriedTaskIds.includes(task.id) && task.status !== 'done' ? <span className="rounded-full bg-amber-50 px-1.5 py-0.5 font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">어제에서 이월</span> : null}
+              </span>
             </button>
             <div className="flex gap-0.5">
               <Button variant="ghost" size="icon" className="size-7" onClick={() => void complete(task)} disabled={task.status === 'done' || completing === task.id} aria-label={task.status === 'done' ? `${task.title} 완료됨` : `${task.title} 완료 처리`}>{task.status === 'done' ? <Check className="size-3.5 text-teal-600" /> : <Circle className="size-3.5" />}</Button>

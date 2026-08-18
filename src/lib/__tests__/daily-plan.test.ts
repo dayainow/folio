@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { completeDailyTask, loadDailyPlan, moveDailyTask, recommendDailyTaskIds, saveDailyPlan } from '@/lib/daily-plan'
+import { completeDailyTask, loadDailyPlan, moveDailyTask, recommendDailyTaskIds, saveDailyPlan, suggestDailyPlan } from '@/lib/daily-plan'
 import type { Task } from '@/lib/board'
 
 const task = (id: string, partial: Partial<Task> = {}): Task => ({
@@ -42,5 +42,22 @@ describe('daily top three plan', () => {
     expect(next[0]).toBe(tasks[0])
     expect(next[1]).toMatchObject({ id: 'b', status: 'done', updatedAt: '2026-08-18T09:30:00.000Z' })
     expect(tasks[1]?.status).toBe('in_progress')
+  })
+
+  it('carries only unfinished tasks from the immediately previous day and fills open slots', () => {
+    const tasks = [
+      task('carry-b'),
+      task('carry-a', { priority: 'low' }),
+      task('finished', { status: 'done' }),
+      task('recommended', { priority: 'high', dueDate: '2026-08-18' }),
+    ]
+    const plans = {
+      '2026-08-17': { date: '2026-08-17', taskIds: ['carry-a', 'finished', 'carry-b'], confirmedAt: '2026-08-17T01:00:00.000Z', updatedAt: '2026-08-17T01:00:00.000Z' },
+    }
+    expect(suggestDailyPlan(tasks, '2026-08-18', null, plans)).toEqual({
+      carriedTaskIds: ['carry-a', 'carry-b'],
+      taskIds: ['carry-a', 'carry-b', 'recommended'],
+    })
+    expect(suggestDailyPlan(tasks, '2026-08-19', null, plans).carriedTaskIds).toEqual([])
   })
 })

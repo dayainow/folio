@@ -159,4 +159,39 @@ test.describe('Folio core flows (P66)', () => {
     })).toBe('done')
     await expect(dailyPlan.getByRole('button', { name: '오늘 마감 업무 완료됨' })).toBeVisible()
   })
+
+  test('unfinished top three tasks carry into the next day before new recommendations', async ({ page }) => {
+    await page.addInitScript(() => {
+      const dateKey = (value: Date) => [value.getFullYear(), String(value.getMonth() + 1).padStart(2, '0'), String(value.getDate()).padStart(2, '0')].join('-')
+      const today = new Date()
+      const previous = new Date(today)
+      previous.setDate(previous.getDate() - 1)
+      const todayKey = dateKey(today)
+      const previousKey = dateKey(previous)
+      const base = { description: '', tags: [], priority: 'low', createdAt: previous.toISOString(), updatedAt: previous.toISOString() }
+      localStorage.setItem('workspace_tasks', JSON.stringify([
+        { ...base, id: 'carry', title: '어제 미완료 업무', status: 'in_progress' },
+        { ...base, id: 'finished', title: '어제 완료 업무', status: 'done' },
+        { ...base, id: 'new', title: '오늘 새 추천', status: 'backlog', priority: 'high', dueDate: todayKey },
+      ]))
+      localStorage.setItem('folio_daily_plans_v1', JSON.stringify({
+        [previousKey]: {
+          date: previousKey,
+          taskIds: ['carry', 'finished'],
+          confirmedAt: previous.toISOString(),
+          updatedAt: previous.toISOString(),
+        },
+      }))
+    })
+    await page.goto('/')
+    const dailyPlan = page.getByRole('region', { name: '오늘의 Top 3' })
+    await expect(dailyPlan.getByText('어제에서 이월', { exact: true })).toBeVisible()
+    await expect(dailyPlan.getByText(/어제 미완료 1개를 먼저 이어오고/)).toBeVisible()
+    await expect(dailyPlan.getByText('어제 완료 업무', { exact: true })).toHaveCount(0)
+    await dailyPlan.getByRole('button', { name: 'Top 3 확정' }).click()
+    await expect.poll(async () => page.evaluate(() => {
+      const plans = JSON.parse(localStorage.getItem('folio_daily_plans_v1') || '{}') as Record<string, { taskIds: string[] }>
+      return Object.values(plans).find((plan) => plan.taskIds.includes('new'))?.taskIds
+    })).toEqual(['carry', 'new'])
+  })
 })
