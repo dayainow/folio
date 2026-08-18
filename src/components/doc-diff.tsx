@@ -3,7 +3,7 @@
 /**
  * P59 — 문서 버전 Diff 뷰어 (라인/단어 · 복원 · 체크아웃)
  */
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
@@ -44,6 +44,15 @@ export function DocDiffViewer({
     () => diffWords(before.content, after.content),
     [before.content, after.content],
   )
+
+  useEffect(() => {
+    if (!open) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [onClose, open])
 
   if (!open) return null
 

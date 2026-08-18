@@ -13,6 +13,7 @@ import {
   History,
   Inbox,
   RefreshCw,
+  GitCompare,
   ShieldCheck,
   Sparkles,
   Upload,
@@ -23,6 +24,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { saveDocWithFallback, loadDocsWithFallback, type DocEntry } from '@/lib/docs'
 import { createDocSnapshot } from '@/lib/doc-versions'
+import { DocDiffViewer } from '@/components/doc-diff'
 import { loadJournalsWithFallback, saveJournalWithFallback } from '@/lib/journal'
 import {
   appendIntakeHistory,
@@ -67,6 +69,7 @@ export function IntakeCenter({
     () => loadImportConnectionAttempts().notion,
   )
   const [updateModes, setUpdateModes] = useState<Map<string, 'version' | 'new'>>(new Map())
+  const [comparison, setComparison] = useState<{ candidate: IntakeCandidate; current: DocEntry } | null>(null)
 
   const selectedCandidates = useMemo(
     () => candidates.filter((candidate) => selected.has(candidate.fingerprint) && !candidate.duplicate),
@@ -284,6 +287,14 @@ export function IntakeCenter({
     })
   }
 
+  const openComparison = async (candidate: IntakeCandidate) => {
+    if (!candidate.existingTargetId) return
+    const docs = await loadDocsWithFallback()
+    const current = docs.find((doc) => doc.id === candidate.existingTargetId)
+    if (current) setComparison({ candidate, current })
+    else setMessage('연결된 기존 문서를 찾지 못했습니다. 별도 문서로 가져와주세요.')
+  }
+
   return (
     <div className="mx-auto w-full max-w-6xl space-y-5 pb-8">
       <section className="relative overflow-hidden rounded-[1.6rem] border border-violet-900/10 bg-[linear-gradient(135deg,rgba(245,243,255,.96),rgba(255,255,255,.98)_55%,rgba(240,253,250,.92))] p-5 dark:border-violet-300/10 dark:bg-[linear-gradient(135deg,rgba(35,27,55,.85),rgba(12,18,26,.98)_58%,rgba(17,42,39,.8))] sm:p-7">
@@ -442,9 +453,14 @@ export function IntakeCenter({
                     </span>
                     <span className="mt-1 block truncate text-[11px] text-muted-foreground">{candidate.relativePath} · {candidate.resolvedDate}</span>
                     {candidate.changeState === 'changed' && candidate.route === 'docs' && candidate.existingTargetId ? (
-                      <span className="mt-2 inline-flex rounded-lg border bg-background p-0.5" role="group" aria-label={`${candidate.title} 변경 반영 방식`}>
-                        <button type="button" className={cn('rounded-md px-2 py-1 text-[10px]', updateModes.get(candidate.fingerprint) !== 'new' ? 'bg-violet-100 font-semibold text-violet-900 dark:bg-violet-950 dark:text-violet-100' : 'text-muted-foreground')} onClick={() => setUpdateModes((current) => new Map(current).set(candidate.fingerprint, 'version'))}>새 버전 반영</button>
-                        <button type="button" className={cn('rounded-md px-2 py-1 text-[10px]', updateModes.get(candidate.fingerprint) === 'new' ? 'bg-violet-100 font-semibold text-violet-900 dark:bg-violet-950 dark:text-violet-100' : 'text-muted-foreground')} onClick={() => setUpdateModes((current) => new Map(current).set(candidate.fingerprint, 'new'))}>별도 문서 추가</button>
+                      <span className="mt-2 flex flex-wrap items-center gap-1.5">
+                        <span className="inline-flex rounded-lg border bg-background p-0.5" role="group" aria-label={`${candidate.title} 변경 반영 방식`}>
+                          <button type="button" className={cn('rounded-md px-2 py-1 text-[10px]', updateModes.get(candidate.fingerprint) !== 'new' ? 'bg-violet-100 font-semibold text-violet-900 dark:bg-violet-950 dark:text-violet-100' : 'text-muted-foreground')} onClick={() => setUpdateModes((current) => new Map(current).set(candidate.fingerprint, 'version'))}>새 버전 반영</button>
+                          <button type="button" className={cn('rounded-md px-2 py-1 text-[10px]', updateModes.get(candidate.fingerprint) === 'new' ? 'bg-violet-100 font-semibold text-violet-900 dark:bg-violet-950 dark:text-violet-100' : 'text-muted-foreground')} onClick={() => setUpdateModes((current) => new Map(current).set(candidate.fingerprint, 'new'))}>별도 문서 추가</button>
+                        </span>
+                        <button type="button" className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-medium text-violet-700 hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-violet-950/50" onClick={() => void openComparison(candidate)}>
+                          <GitCompare className="size-3" />변경 비교
+                        </button>
                       </span>
                     ) : null}
                     {candidate.warnings.length ? <span className="mt-1.5 flex flex-wrap gap-1"><Badge variant="outline" className="text-[9px] text-amber-700 dark:text-amber-300">검토 필요</Badge>{candidate.warnings.map((warning) => <Badge key={warning} variant="outline" className="text-[9px] text-amber-700 dark:text-amber-300">{warning}</Badge>)}</span> : null}
@@ -472,6 +488,15 @@ export function IntakeCenter({
             ))}
           </CardContent>
         </Card>
+      ) : null}
+
+      {comparison ? (
+        <DocDiffViewer
+          open
+          onClose={() => setComparison(null)}
+          before={{ label: '현재 Folio', title: comparison.current.title, content: comparison.current.content }}
+          after={{ label: 'Notion 변경본', title: comparison.candidate.title, content: comparison.candidate.content }}
+        />
       ) : null}
     </div>
   )
