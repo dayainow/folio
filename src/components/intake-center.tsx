@@ -12,6 +12,7 @@ import {
   FolderOpen,
   History,
   Inbox,
+  RefreshCw,
   ShieldCheck,
   Sparkles,
   Upload,
@@ -33,6 +34,12 @@ import {
 } from '@/lib/intake'
 import { readObsidianMarkdownFiles, uniqueDocTitle } from '@/lib/obsidian'
 import { readNotionExport } from '@/lib/notion-import'
+import {
+  loadImportConnectionAttempts,
+  recordImportConnectionAttempt,
+  summarizeImportConnection,
+  type ImportConnectionAttempt,
+} from '@/lib/import-connection'
 import { createJournalEntryKey, localDateKey } from '@/lib/personal-assistant'
 import { cn } from '@/lib/utils'
 import { sourceSystemLabel, type SourceSystem } from '@/lib/provenance'
@@ -54,6 +61,10 @@ export function IntakeCenter({
   const [parsing, setParsing] = useState(false)
   const [importing, setImporting] = useState(false)
   const [message, setMessage] = useState('')
+  const [notionSourceName, setNotionSourceName] = useState('')
+  const [notionAttempt, setNotionAttempt] = useState<ImportConnectionAttempt | undefined>(
+    () => loadImportConnectionAttempts().notion,
+  )
 
   const selectedCandidates = useMemo(
     () => candidates.filter((candidate) => selected.has(candidate.fingerprint) && !candidate.duplicate),
@@ -67,6 +78,10 @@ export function IntakeCenter({
       review: candidates.filter((candidate) => candidate.reviewState === 'needs_review').length,
     }),
     [candidates],
+  )
+  const notionConnection = useMemo(
+    () => summarizeImportConnection('notion', history, notionAttempt),
+    [history, notionAttempt],
   )
 
   const prepareFiles = async (files: FileList | File[], sourceSystem: SourceSystem = 'obsidian') => {
@@ -95,6 +110,7 @@ export function IntakeCenter({
     setParsing(true)
     setMessage('')
     try {
+      setNotionSourceName(file.name)
       const [{ notes, databases, attachments }, docs, journals] = await Promise.all([
         readNotionExport(file),
         loadDocsWithFallback(),
@@ -109,7 +125,9 @@ export function IntakeCenter({
       setSelected(new Set(next.filter((candidate) => candidate.reviewState === 'ready').map((candidate) => candidate.fingerprint)))
       setMessage(`${next.length}개 Notion 항목을 분석했습니다.${databases ? ` 데이터베이스 ${databases}개를 표 문서로 변환했습니다.` : ''}${attachments ? ` 첨부파일 ${attachments}개는 경로만 보존하고 제외했습니다.` : ''}`)
     } catch {
-      setMessage('Notion ZIP을 읽지 못했습니다. Markdown & CSV 형식으로 다시 내보내주세요.')
+      const error = 'Notion ZIP을 읽지 못했습니다. Markdown & CSV 형식으로 다시 내보내주세요.'
+      setNotionAttempt(recordImportConnectionAttempt({ system: 'notion', state: 'error', sourceName: file.name, attemptedAt: new Date().toISOString(), error }))
+      setMessage(error)
     } finally {
       setParsing(false)
     }
@@ -195,6 +213,15 @@ export function IntakeCenter({
         )
         setSelected(new Set())
         window.dispatchEvent(new CustomEvent('folio-journals-changed'))
+        const notionImports = imported.filter((item) => item.provenance?.system === 'notion')
+        if (notionImports.length) {
+          setNotionAttempt(recordImportConnectionAttempt({
+            system: 'notion',
+            state: 'ready',
+            sourceName: notionSourceName || 'Notion export.zip',
+            attemptedAt: notionImports[0].importedAt,
+          }))
+        }
       }
       setMessage(`${imported.length}개를 새 기록으로 가져왔습니다.${failed ? ` ${failed}개 실패` : ''}`)
     } finally {
@@ -310,6 +337,35 @@ export function IntakeCenter({
           </CardContent>
         </Card>
       </div>
+
+      <Card role="region" aria-label="Notion 가져오기 상태" className="overflow-hidden border-violet-900/10 py-0 dark:border-violet-300/10">
+        <CardContent className="grid gap-4 p-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:p-6">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-sm font-semibold">Notion 가져오기</p>
+              <Badge variant={notionConnection.state === 'error' ? 'destructive' : notionConnection.state === 'ready' ? 'default' : 'secondary'}>
+                {notionConnection.state === 'error' ? '확인 필요' : notionConnection.state === 'ready' ? '가져옴' : '아직 가져오지 않음'}
+              </Badge>
+              <span className="text-xs tabular-nums text-muted-foreground">누적 {notionConnection.importedCount}개</span>
+            </div>
+            <p className="mt-2 text-xs leading-5 text-muted-foreground">
+              {notionConnection.state === 'never'
+                ? 'Notion에서 Markdown & CSV ZIP을 내보내면 원본 경로와 수집 시각을 보존합니다.'
+                : notionConnection.state === 'error'
+                  ? notionConnection.lastError
+                  : `마지막 가져오기 ${new Date(notionConnection.lastImportedAt ?? '').toLocaleString('ko-KR')}`}
+            </p>
+            {notionConnection.lastSourceName || notionConnection.lastPath ? (
+              <p className="mt-1 truncate text-[11px] text-muted-foreground">
+                {[notionConnection.lastSourceName, notionConnection.lastPath].filter(Boolean).join(' · ')}
+              </p>
+            ) : null}
+          </div>
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => notionRef.current?.click()} disabled={parsing}>
+            <RefreshCw className="size-3.5" />{notionConnection.state === 'never' ? 'ZIP 선택' : '다시 가져오기'}
+          </Button>
+        </CardContent>
+      </Card>
 
       {candidates.length ? (
         <Card className="gap-0 overflow-hidden py-0">

@@ -62,6 +62,47 @@ test.describe('Folio core flows (P66)', () => {
     await expect(surface.first()).toBeVisible({ timeout: 10000 })
   })
 
+  test('Notion intake shows the latest import connection status', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('folio_intake_history_v1', JSON.stringify([{
+        fingerprint: 'notion-roadmap',
+        fileName: 'Roadmap.md',
+        relativePath: 'Notion/Planning/Roadmap.md',
+        title: 'Roadmap',
+        route: 'docs',
+        targetId: 'notion-doc',
+        importedAt: '2026-08-18T09:00:00.000Z',
+        provenance: {
+          system: 'notion',
+          fingerprint: 'notion-roadmap',
+          path: 'Notion/Planning/Roadmap.md',
+          importedAt: '2026-08-18T09:00:00.000Z',
+          syncState: 'imported',
+        },
+      }]))
+      localStorage.setItem('folio_import_connections_v1', JSON.stringify({
+        notion: {
+          system: 'notion',
+          state: 'ready',
+          sourceName: 'workspace.zip',
+          attemptedAt: '2026-08-18T09:00:00.000Z',
+        },
+      }))
+    })
+    await page.goto('/')
+    const docs = page.getByRole('tab', { name: /문서|Docs|ドキュメント/i }).or(
+      page.getByRole('button', { name: /문서|Docs/i }),
+    )
+    await docs.first().click()
+    await page.getByRole('tab', { name: '수집함', exact: true }).click()
+    const connection = page.getByRole('region', { name: 'Notion 가져오기 상태' })
+    await expect(connection).toBeVisible()
+    await expect(connection.getByText('가져옴', { exact: true })).toBeVisible()
+    await expect(connection.getByText('누적 1개', { exact: true })).toBeVisible()
+    await expect(connection.getByText(/workspace\.zip · Notion\/Planning\/Roadmap\.md/)).toBeVisible()
+    await expect(connection.getByRole('button', { name: '다시 가져오기' })).toBeVisible()
+  })
+
   test('board tab shows kanban columns for DnD', async ({ page }) => {
     await page.goto('/')
     const board = page.getByRole('tab', { name: /일정|보드|Board|ボード/i }).or(
