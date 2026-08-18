@@ -3,6 +3,7 @@ import {
   appendImportRunHistory,
   createImportRunSummary,
   loadImportRunHistory,
+  retryCandidateFromOutcome,
   type ImportRunOutcome,
 } from '@/lib/import-run'
 
@@ -51,5 +52,14 @@ describe('import run summary', () => {
   it('ignores malformed persisted history', () => {
     localStorage.setItem('folio_import_runs_v1', '{broken')
     expect(loadImportRunHistory()).toEqual([])
+  })
+
+  it('exposes retry data only for failed outcomes', () => {
+    const candidate = {
+      fingerprint: 'retry',
+      title: 'Retry me',
+    } as ImportRunOutcome['retryCandidate']
+    expect(retryCandidateFromOutcome({ fingerprint: 'retry', title: 'Retry me', kind: 'failed', route: 'docs', retryCandidate: candidate })).toBe(candidate)
+    expect(retryCandidateFromOutcome({ fingerprint: 'done', title: 'Done', kind: 'new_document', route: 'docs' })).toBeNull()
   })
 })

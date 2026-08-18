@@ -189,6 +189,71 @@ test.describe('Folio core flows (P66)', () => {
     await expect(page).toHaveURL(/#docs\/write$/)
   })
 
+  test('a persisted failed Notion item can be prepared alone for a safe retry', async ({ page }) => {
+    await page.addInitScript(() => {
+      const candidate = {
+        fileName: 'Broken.md',
+        relativePath: 'Notion/Workspace/Broken.md',
+        title: 'Broken import',
+        date: null,
+        content: '# Broken import\n\nRetry content',
+        tags: [],
+        frontmatter: { source: 'manual', type: 'doc' },
+        source: 'manual',
+        noteType: 'doc',
+        route: 'docs',
+        resolvedDate: '2026-08-18',
+        category: 'Obsidian Import',
+        fingerprint: 'retry-fingerprint',
+        warnings: ['created가 없어 오늘 날짜 사용', 'tags 없음'],
+        duplicate: false,
+        provenance: {
+          system: 'notion',
+          fingerprint: 'retry-fingerprint',
+          path: 'Notion/Workspace/Broken.md',
+          importedAt: '2026-08-18T11:00:00.000Z',
+          syncState: 'imported',
+        },
+        reviewState: 'needs_review',
+        changeState: 'new',
+      }
+      localStorage.setItem('folio_import_runs_v1', JSON.stringify([{
+        completedAt: '2026-08-18T11:00:00.000Z',
+        sourceName: 'failed-workspace.zip',
+        newDocuments: 0,
+        newVersions: 0,
+        journals: 0,
+        skipped: 0,
+        failed: 1,
+        outcomes: [{
+          fingerprint: candidate.fingerprint,
+          title: candidate.title,
+          kind: 'failed',
+          route: 'docs',
+          error: 'storage unavailable',
+          retryCandidate: candidate,
+          retryMode: 'new',
+        }],
+      }]))
+      localStorage.setItem('folio_intake_history_v1', '[]')
+      localStorage.setItem('workspace_docs', '[]')
+    })
+    await page.goto('/')
+    const docs = page.getByRole('tab', { name: /문서|Docs|ドキュメント/i }).or(
+      page.getByRole('button', { name: /문서|Docs/i }),
+    )
+    await docs.first().click()
+    await page.getByRole('tab', { name: '수집함', exact: true }).click()
+    const recentRuns = page.getByRole('region', { name: '최근 가져오기 실행' })
+    await recentRuns.getByRole('button', { name: /failed-workspace\.zip.*실패 1/ }).click()
+    const summary = page.getByRole('region', { name: '가져오기 실행 요약' })
+    await expect(summary.getByText('storage unavailable')).toBeVisible()
+    await summary.getByRole('button', { name: /Broken import.*실패.*다시 준비/ }).click()
+    await expect(page.getByText(/“Broken import” 실패 항목만 다시 준비했습니다/)).toBeVisible()
+    await expect(page.getByRole('checkbox', { name: 'Broken import 가져오기' })).toBeChecked()
+    await expect(page.getByRole('button', { name: '1개 가져오기' })).toBeEnabled()
+  })
+
   test('board tab shows kanban columns for DnD', async ({ page }) => {
     await page.goto('/')
     const board = page.getByRole('tab', { name: /일정|보드|Board|ボード/i }).or(

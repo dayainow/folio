@@ -53,6 +53,7 @@ import {
   loadImportRunHistory,
   type ImportRunOutcome,
   type ImportRunSummary,
+  retryCandidateFromOutcome,
 } from '@/lib/import-run'
 
 export function IntakeCenter({
@@ -269,6 +270,8 @@ export function IntakeCenter({
             kind: 'failed',
             route: candidate.route,
             error: error instanceof Error ? error.message : '저장하지 못했습니다.',
+            retryCandidate: candidate,
+            retryMode: updateModes.get(candidate.fingerprint) ?? 'new',
           })
         }
       }
@@ -323,6 +326,34 @@ export function IntakeCenter({
     const current = docs.find((doc) => doc.id === candidate.existingTargetId)
     if (current) setComparison({ candidate, current })
     else setMessage('연결된 기존 문서를 찾지 못했습니다. 별도 문서로 가져와주세요.')
+  }
+
+  const prepareFailedRetry = async (outcome: ImportRunOutcome) => {
+    const stored = retryCandidateFromOutcome(outcome)
+    if (!stored) return
+    const [docs, journals] = await Promise.all([loadDocsWithFallback(), loadJournalsWithFallback()])
+    const fingerprints = intakeFingerprintsFromTagSets([
+      ...docs.map((doc) => doc.tags ?? []),
+      ...Object.values(journals).map((entry) => entry.tags ?? []),
+    ])
+    const refreshed = buildIntakeCandidates(
+      [stored],
+      history,
+      new Date(),
+      fingerprints,
+      stored.provenance.system,
+    )[0]
+    if (!refreshed || refreshed.duplicate) {
+      setMessage(`“${outcome.title}”은 이미 반영되어 재시도하지 않았습니다.`)
+      setRunSummary(null)
+      return
+    }
+    setCandidates([refreshed])
+    setSelected(new Set([refreshed.fingerprint]))
+    setUpdateModes(new Map([[refreshed.fingerprint, outcome.retryMode ?? 'new']]))
+    setNotionSourceName(runSummary?.sourceName ?? notionSourceName)
+    setRunSummary(null)
+    setMessage(`“${outcome.title}” 실패 항목만 다시 준비했습니다. 내용을 확인한 뒤 가져오세요.`)
   }
 
   return (
@@ -479,13 +510,17 @@ export function IntakeCenter({
                   <button
                     key={outcome.fingerprint}
                     type="button"
-                    disabled={!outcome.targetId || outcome.kind === 'failed'}
-                    onClick={() => outcome.route === 'journal' ? onOpenJournal(outcome.targetId!, outcome.date ?? localDateKey()) : onOpenDoc(outcome.targetId!)}
+                    disabled={outcome.kind === 'failed' ? !outcome.retryCandidate : !outcome.targetId}
+                    onClick={() => outcome.kind === 'failed'
+                      ? void prepareFailedRetry(outcome)
+                      : outcome.route === 'journal'
+                        ? onOpenJournal(outcome.targetId!, outcome.date ?? localDateKey())
+                        : onOpenDoc(outcome.targetId!)}
                     className="flex w-full items-center gap-3 px-3 py-2.5 text-left enabled:hover:bg-muted/50 disabled:cursor-default"
                   >
                     <span className="min-w-0 flex-1"><span className="block truncate text-xs font-medium">{outcome.title}</span>{outcome.error ? <span className="block truncate text-[10px] text-red-600 dark:text-red-300">{outcome.error}</span> : null}</span>
                     <Badge variant={outcome.kind === 'failed' ? 'destructive' : 'secondary'}>{runOutcomeLabel(outcome.kind)}</Badge>
-                    {outcome.targetId ? <ArrowRight className="size-3.5 text-muted-foreground" /> : null}
+                    {outcome.kind === 'failed' && outcome.retryCandidate ? <span className="inline-flex items-center gap-1 text-[10px] font-medium text-red-700 dark:text-red-300"><RefreshCw className="size-3" />다시 준비</span> : outcome.targetId ? <ArrowRight className="size-3.5 text-muted-foreground" /> : null}
                   </button>
                 ))}
               </div>

@@ -1,4 +1,4 @@
-import type { IntakeRoute } from '@/lib/intake'
+import type { IntakeCandidate, IntakeRoute } from '@/lib/intake'
 
 export type ImportRunOutcomeKind = 'new_document' | 'new_version' | 'journal' | 'failed'
 
@@ -10,6 +10,8 @@ export type ImportRunOutcome = {
   targetId?: string
   date?: string
   error?: string
+  retryCandidate?: IntakeCandidate
+  retryMode?: 'version' | 'new'
 }
 
 export type ImportRunSummary = {
@@ -67,4 +69,8 @@ export function appendImportRunHistory(run: ImportRunSummary): ImportRunSummary[
     .slice(0, MAX_RUNS)
   saveImportRunHistory(next)
   return next
+}
+
+export function retryCandidateFromOutcome(outcome: ImportRunOutcome): IntakeCandidate | null {
+  return outcome.kind === 'failed' && outcome.retryCandidate ? outcome.retryCandidate : null
 }
