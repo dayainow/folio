@@ -84,6 +84,14 @@ export function IntakeCenter({
     () => candidates.filter((candidate) => selected.has(candidate.fingerprint) && !candidate.duplicate),
     [candidates, selected],
   )
+  const actionableCandidates = useMemo(
+    () => candidates.filter((candidate) => candidate.changeState !== 'unchanged' && !candidate.duplicate),
+    [candidates],
+  )
+  const unchangedCandidates = useMemo(
+    () => candidates.filter((candidate) => candidate.changeState === 'unchanged' || candidate.duplicate),
+    [candidates],
+  )
   const routeCounts = useMemo(
     () => ({
       journal: candidates.filter((candidate) => candidate.route === 'journal').length,
@@ -384,7 +392,7 @@ export function IntakeCenter({
               <p className="mt-1 text-xs text-muted-foreground">원본은 바꾸지 않고, 새 항목과 변경 항목만 찾아냅니다.</p>
               <div className="mt-4 flex flex-wrap justify-center gap-2">
                 <Button size="sm" className="gap-1.5" onClick={() => notionRef.current?.click()} disabled={parsing}>
-                  <FileArchive className="size-3.5" />Notion에서 가져오기
+                  <FileArchive className={cn('size-3.5', parsing && 'animate-pulse')} />{parsing ? '내용 확인 중…' : 'Notion에서 가져오기'}
                 </Button>
                 <Button variant="outline" size="sm" className="gap-1.5" onClick={() => filesRef.current?.click()} disabled={parsing}>
                   <Upload className="size-3.5" />Markdown 파일
@@ -501,8 +509,8 @@ export function IntakeCenter({
       {candidates.length ? (
         <Card className="gap-0 overflow-hidden py-0">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3 sm:px-5">
-            <div><p className="text-sm font-semibold">분류 결과</p><p className="mt-0.5 text-[11px] text-muted-foreground">신규 {changeCounts.new} · 변경 {changeCounts.changed} · 동일 {changeCounts.unchanged}. 변경분 중 안전한 항목만 기본 선택합니다.</p></div>
-            <div className="flex flex-wrap items-center gap-2">
+            <div><p className="text-sm font-semibold">확인할 변경 사항</p><p className="mt-0.5 text-[11px] text-muted-foreground">신규 {changeCounts.new} · 변경 {changeCounts.changed}{changeCounts.unchanged ? ` · 자동 건너뜀 ${changeCounts.unchanged}` : ''}</p></div>
+            {actionableCandidates.length ? <div className="flex flex-wrap items-center gap-2">
               <Button variant="ghost" size="sm" onClick={() => setSelected(new Set(candidates.filter((candidate) => candidate.reviewState === 'ready').map((candidate) => candidate.fingerprint)))} disabled={importing}>
                 안전 항목 선택
               </Button>
@@ -512,10 +520,10 @@ export function IntakeCenter({
               <Button size="sm" onClick={() => void importSelected()} disabled={!selectedCandidates.length || importing} className="gap-1.5">
                 <Inbox className="size-3.5" />{importing ? '가져오는 중…' : `${selectedCandidates.length}개 가져오기`}
               </Button>
-            </div>
+            </div> : null}
           </div>
-          <ul className="divide-y">
-            {candidates.map((candidate) => (
+          {actionableCandidates.length ? <ul className="divide-y">
+            {actionableCandidates.map((candidate) => (
               <li key={`${candidate.relativePath}-${candidate.fingerprint}`} className={cn(candidate.duplicate && 'bg-muted/35 opacity-65')}>
                 <div className="grid gap-3 px-4 py-4 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center sm:px-5">
                   <input type="checkbox" aria-label={`${candidate.title} 가져오기`} className={candidate.duplicate ? 'cursor-not-allowed' : 'cursor-pointer'} checked={selected.has(candidate.fingerprint) && !candidate.duplicate} disabled={candidate.duplicate} onChange={() => toggleCandidate(candidate)} />
@@ -546,7 +554,15 @@ export function IntakeCenter({
                 </div>
               </li>
             ))}
-          </ul>
+          </ul> : <div className="px-5 py-8 text-center" role="status"><CheckCircle2 className="mx-auto size-6 text-teal-600" /><p className="mt-2 text-sm font-semibold">이미 최신 상태입니다</p><p className="mt-1 text-xs text-muted-foreground">새로 반영할 내용이 없습니다.</p></div>}
+          {unchangedCandidates.length ? (
+            <details className="group border-t bg-muted/15">
+              <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-4 py-2 text-xs font-medium text-muted-foreground [&::-webkit-details-marker]:hidden"><span>동일해서 건너뜀 {unchangedCandidates.length}개</span><ChevronDown className="size-3.5 transition-transform group-open:rotate-180" /></summary>
+              <ul className="divide-y border-t">
+                {unchangedCandidates.map((candidate) => <li key={`unchanged-${candidate.relativePath}-${candidate.fingerprint}`} className="flex items-center gap-3 px-5 py-3 text-muted-foreground"><CheckCircle2 className="size-3.5 shrink-0" /><span className="min-w-0 flex-1"><span className="block truncate text-xs font-medium">{candidate.title}</span><span className="block truncate text-[10px]">{candidate.relativePath}</span></span><Badge variant="secondary">변경 없음</Badge></li>)}
+              </ul>
+            </details>
+          ) : null}
         </Card>
       ) : null}
 
