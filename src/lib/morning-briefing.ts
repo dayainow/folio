@@ -12,6 +12,16 @@ export type MorningBriefing = {
   weeklyFocus: string[]
 }
 
+export function hasMorningBriefingSignals(briefing: MorningBriefing): boolean {
+  return Boolean(
+    briefing.firstAction
+    || briefing.carriedTasks.length
+    || briefing.dueToday.length
+    || briefing.overdue.length
+    || briefing.weeklyFocus.length,
+  )
+}
+
 export function buildMorningBriefing(
   date: string,
   tasks: Task[],

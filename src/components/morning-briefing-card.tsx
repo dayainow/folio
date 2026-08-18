@@ -1,21 +1,23 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useMemo, useSyncExternalStore } from 'react'
 import { ArrowRight, CalendarClock, CornerDownRight, Sunrise, Target } from 'lucide-react'
 import type { Task } from '@/lib/board'
 import type { DailyReview } from '@/lib/daily-review'
 import { loadDailyPlans } from '@/lib/daily-plan'
-import { buildMorningBriefing, type MorningBriefing } from '@/lib/morning-briefing'
+import { buildMorningBriefing, hasMorningBriefingSignals } from '@/lib/morning-briefing'
 import { findWeeklyPlanForDate } from '@/lib/weekly-review'
 
+const subscribeToHydration = () => () => undefined
+
 export function MorningBriefingCard({ date, tasks, previousReview, onOpenBoard }: { date: string; tasks: Task[]; previousReview: DailyReview | null; onOpenBoard: (taskId?: string) => void }) {
-  const [briefing, setBriefing] = useState<MorningBriefing | null>(null)
+  const hydrated = useSyncExternalStore(subscribeToHydration, () => true, () => false)
+  const briefing = useMemo(
+    () => hydrated ? buildMorningBriefing(date, tasks, previousReview, findWeeklyPlanForDate(date), loadDailyPlans()) : null,
+    [date, hydrated, previousReview, tasks],
+  )
 
-  useEffect(() => {
-    setBriefing(buildMorningBriefing(date, tasks, previousReview, findWeeklyPlanForDate(date), loadDailyPlans()))
-  }, [date, previousReview, tasks])
-
-  if (!briefing) return null
+  if (!briefing || !hasMorningBriefingSignals(briefing)) return null
 
   return (
     <section aria-labelledby="morning-briefing-title" className="folio-surface overflow-hidden rounded-[1.5rem]">

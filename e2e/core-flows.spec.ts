@@ -30,6 +30,23 @@ test.describe('Folio core flows (P66)', () => {
     await expect(anyControl.first()).toBeVisible({ timeout: 8000 })
   })
 
+  test('empty today experience gives one clear first action on mobile', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('workspace_tasks', '[]')
+      localStorage.setItem('workspace_docs', '[]')
+      localStorage.setItem('workspace_journals', '{}')
+    })
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto('/')
+
+    await expect(page.getByRole('heading', { name: '오늘, 한 가지만 시작해볼까요?' })).toBeVisible()
+    await expect(page.getByRole('region', { name: '오늘 시작 전, 이것만 확인하세요' })).toHaveCount(0)
+    await expect(page.getByRole('region', { name: '오늘의 흐름' })).toHaveCount(0)
+    await page.getByRole('button', { name: '첫 메모 남기기' }).last().click()
+    await expect(page.getByPlaceholder('지금 떠오른 생각이나 있었던 일을 적어보세요.')).toBeFocused()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
+  })
+
   test('journal write tab accepts input and can save locally', async ({ page }) => {
     await page.goto('/')
     const journalTab = page.getByRole('tab', { name: /일지|Journal|ジャーナル/i }).or(

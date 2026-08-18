@@ -174,6 +174,7 @@ export function PersonalAssistantHome({
     return [...docs, ...journals].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 3)
   }, [data.docs, data.journals])
   const memories = useMemo(() => selectMemoryMoments(data.journals, now), [data.journals, now])
+  const workspaceIsEmpty = !loading && activeTasks.length === 0 && todayEntries.length === 0 && data.docs.length === 0
   const selectedMode = CAPTURE_MODES.find((mode) => mode.value === captureMode) ?? CAPTURE_MODES[0]!
   const journeyPhase = dailyJourneyPhase(now)
 
@@ -187,8 +188,9 @@ export function PersonalAssistantHome({
     onOpenDocs()
   }
 
-  const primaryAction =
-    journeyPhase === 'plan'
+  const primaryAction = workspaceIsEmpty
+    ? { label: '첫 메모 남기기', icon: PenLine, action: focusCapture }
+    : journeyPhase === 'plan'
       ? { label: '오늘 계획 보기', icon: CalendarDays, action: () => onOpenBoard() }
       : journeyPhase === 'capture'
         ? { label: '지금 기록하기', icon: PenLine, action: focusCapture }
@@ -248,7 +250,7 @@ export function PersonalAssistantHome({
   }
 
   return (
-    <div className="folio-home mx-auto w-full max-w-6xl space-y-6 pb-8">
+    <div className="folio-home mx-auto w-full max-w-6xl space-y-6 pb-8" aria-busy={loading}>
       <section className="folio-hero relative overflow-hidden rounded-[2rem] p-6 sm:p-9">
         <div aria-hidden className="folio-hero-orbit absolute -right-14 -top-20 size-64 rounded-full" />
         <div aria-hidden className="absolute -bottom-24 left-[42%] size-52 rounded-full bg-emerald-200/15 blur-3xl dark:bg-emerald-400/5" />
@@ -294,47 +296,65 @@ export function PersonalAssistantHome({
 
       <MorningBriefingCard date={today} tasks={data.tasks} previousReview={previousReview} onOpenBoard={onOpenBoard} />
 
-      <section aria-labelledby="daily-journey-title" className="folio-surface rounded-[1.5rem] p-4">
-        <div className="mb-2 flex items-center justify-between gap-3 px-1">
-          <div>
-            <h2 id="daily-journey-title" className="text-sm font-semibold">오늘의 흐름</h2>
+      {workspaceIsEmpty ? (
+        <section aria-labelledby="getting-started-title" className="folio-surface flex flex-col gap-4 rounded-[1.5rem] p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+          <div className="max-w-2xl">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-teal-700 dark:text-teal-300">Your first step</p>
+            <h2 id="getting-started-title" className="mt-1.5 text-lg font-semibold tracking-tight">오늘, 한 가지만 시작해볼까요?</h2>
+            <p className="mt-1.5 text-sm leading-6 text-muted-foreground">짧은 메모를 남기거나 기존 자료를 가져오면 Folio가 다음 행동을 정리해드려요.</p>
           </div>
-          <p className="text-[11px] text-muted-foreground">필요한 단계만 누르세요.</p>
-        </div>
-        <div className="grid gap-2 sm:grid-cols-3">
-          {journeySteps.map((step, index) => {
-            const Icon = step.icon
-            const active = journeyPhase === step.id
-            return (
-              <button
-                key={step.id}
-                type="button"
-                onClick={() => handleJourneyAction(step.id)}
-                aria-current={active ? 'step' : undefined}
-                className={cn(
-                  'group relative rounded-xl border px-3 py-3 text-left transition-colors hover:bg-muted/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600',
-                  active
-                    ? 'border-teal-300 bg-teal-50/80 shadow-[0_12px_30px_-24px_rgba(13,148,136,0.8)] dark:border-teal-700 dark:bg-teal-950/35'
-                    : 'border-border/70 bg-background hover:bg-muted/35',
-                )}
-              >
-                <div className="flex items-center gap-2.5">
-                  <span className={cn('flex size-8 shrink-0 items-center justify-center rounded-lg', active ? 'bg-teal-600 text-white' : 'bg-muted text-muted-foreground group-hover:text-foreground')}>
-                    <Icon className="size-3.5" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-[9px] font-semibold tracking-[0.14em] text-muted-foreground">0{index + 1} · {step.eyebrow}</p>
-                    <h3 className="mt-0.5 truncate text-xs font-semibold">{step.title}</h3>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <Button className="gap-2 rounded-full" onClick={focusCapture}>
+              <PenLine className="size-3.5" />첫 메모 남기기
+            </Button>
+            <Button variant="outline" className="gap-2 rounded-full" onClick={openIntake}>
+              <Inbox className="size-3.5" />자료 가져오기
+            </Button>
+          </div>
+        </section>
+      ) : (
+        <section aria-labelledby="daily-journey-title" className="folio-surface rounded-[1.5rem] p-4">
+          <div className="mb-2 flex items-center justify-between gap-3 px-1">
+            <div>
+              <h2 id="daily-journey-title" className="text-sm font-semibold">오늘의 흐름</h2>
+            </div>
+            <p className="text-[11px] text-muted-foreground">필요한 단계만 누르세요.</p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {journeySteps.map((step, index) => {
+              const Icon = step.icon
+              const active = journeyPhase === step.id
+              return (
+                <button
+                  key={step.id}
+                  type="button"
+                  onClick={() => handleJourneyAction(step.id)}
+                  aria-current={active ? 'step' : undefined}
+                  className={cn(
+                    'group relative rounded-xl border px-3 py-3 text-left transition-colors hover:bg-muted/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600',
+                    active
+                      ? 'border-teal-300 bg-teal-50/80 shadow-[0_12px_30px_-24px_rgba(13,148,136,0.8)] dark:border-teal-700 dark:bg-teal-950/35'
+                      : 'border-border/70 bg-background hover:bg-muted/35',
+                  )}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className={cn('flex size-8 shrink-0 items-center justify-center rounded-lg', active ? 'bg-teal-600 text-white' : 'bg-muted text-muted-foreground group-hover:text-foreground')}>
+                      <Icon className="size-3.5" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-[9px] font-semibold tracking-[0.14em] text-muted-foreground">0{index + 1} · {step.eyebrow}</p>
+                      <h3 className="mt-0.5 truncate text-xs font-semibold">{step.title}</h3>
+                    </div>
+                    <span className={cn('ml-auto shrink-0 rounded-full px-2 py-1 text-[9px] font-medium', active ? 'bg-teal-600 text-white' : 'bg-muted text-muted-foreground')}>
+                      {active ? '지금' : step.status}
+                    </span>
                   </div>
-                  <span className={cn('ml-auto shrink-0 rounded-full px-2 py-1 text-[9px] font-medium', active ? 'bg-teal-600 text-white' : 'bg-muted text-muted-foreground')}>
-                    {active ? '지금' : step.status}
-                  </span>
-                </div>
-              </button>
-            )
-          })}
-        </div>
-      </section>
+                </button>
+              )
+            })}
+          </div>
+        </section>
+      )}
 
       <WeeklyFocusCard date={today} tasks={data.tasks} onOpenBoard={onOpenBoard} />
 
@@ -452,13 +472,18 @@ export function PersonalAssistantHome({
               <div className="rounded-2xl bg-teal-50 p-4 text-center dark:bg-teal-950/30">
                 <CheckCircle2 className="mx-auto size-5 text-teal-600" />
                 <p className="mt-2 text-sm font-medium">열린 할 일이 없어요</p>
-                <p className="mt-1 text-[11px] text-muted-foreground">마음 가볍게 기록에 집중해도 좋아요.</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">해야 할 일이 생기면 첫 업무부터 가볍게 시작하세요.</p>
+                <Button variant="outline" size="sm" className="mt-3 rounded-full bg-background" onClick={() => onOpenBoard()}>
+                  첫 업무 만들기
+                </Button>
               </div>
             ) : null}
-            <Button variant="ghost" size="sm" className="mt-1 w-full justify-between rounded-xl text-xs" onClick={() => onOpenBoard()}>
-              일정 전체 보기
-              <ArrowRight className="size-3.5" />
-            </Button>
+            {activeTasks.length > 0 ? (
+              <Button variant="ghost" size="sm" className="mt-1 w-full justify-between rounded-xl text-xs" onClick={() => onOpenBoard()}>
+                일정 전체 보기
+                <ArrowRight className="size-3.5" />
+              </Button>
+            ) : null}
           </CardContent>
         </Card>
       </div>

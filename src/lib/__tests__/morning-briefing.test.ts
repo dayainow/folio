@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Task } from '@/lib/board'
-import { buildMorningBriefing } from '@/lib/morning-briefing'
+import { buildMorningBriefing, hasMorningBriefingSignals } from '@/lib/morning-briefing'
 
 const task = (id: string, partial: Partial<Task> = {}): Task => ({
   id, title: id, description: '', status: 'backlog', priority: 'medium', tags: [], createdAt: '2026-08-17T00:00:00.000Z', updatedAt: '2026-08-17T00:00:00.000Z', ...partial,
@@ -34,5 +34,11 @@ describe('morning briefing', () => {
       '2026-08-17': { date: '2026-08-17', taskIds: ['carry'], confirmedAt: '2026-08-17T08:00:00.000Z', updatedAt: '2026-08-17T08:00:00.000Z' },
     })
     expect(briefing).toMatchObject({ firstAction: 'carry', firstActionTaskId: 'carry' })
+  })
+
+  it('does not surface a briefing until there is something useful to review', () => {
+    const empty = buildMorningBriefing('2026-08-18', [], null, null, {})
+    expect(hasMorningBriefingSignals(empty)).toBe(false)
+    expect(hasMorningBriefingSignals({ ...empty, weeklyFocus: ['출시 준비'] })).toBe(true)
   })
 })
