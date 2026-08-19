@@ -32,11 +32,20 @@ function shareDir() {
   return path.join(process.cwd(), '.data', 'shares')
 }
 
+export function isValidShareToken(token: string): boolean {
+  return /^[A-Za-z0-9_-]{16,128}$/.test(token)
+}
+
+function sharePath(token: string): string {
+  if (!isValidShareToken(token)) throw new Error('invalid_share_token')
+  return path.join(shareDir(), `${token}.json`)
+}
+
 async function persist(share: StoredShare) {
   try {
     await mkdir(shareDir(), { recursive: true })
     await writeFile(
-      path.join(shareDir(), `${share.token}.json`),
+      sharePath(share.token),
       `${JSON.stringify(share)}\n`,
       'utf8',
     )
@@ -46,8 +55,9 @@ async function persist(share: StoredShare) {
 }
 
 async function loadFromDisk(token: string): Promise<StoredShare | null> {
+  if (!isValidShareToken(token)) return null
   try {
-    const raw = await readFile(path.join(shareDir(), `${token}.json`), 'utf8')
+    const raw = await readFile(sharePath(token), 'utf8')
     return JSON.parse(raw) as StoredShare
   } catch {
     return null
@@ -55,11 +65,13 @@ async function loadFromDisk(token: string): Promise<StoredShare | null> {
 }
 
 export async function putShare(share: StoredShare): Promise<void> {
+  if (!isValidShareToken(share.token)) throw new Error('invalid_share_token')
   g().map.set(share.token, share)
   await persist(share)
 }
 
 export async function getShare(token: string): Promise<StoredShare | null> {
+  if (!isValidShareToken(token)) return null
   const mem = g().map.get(token)
   if (mem) return mem
   const disk = await loadFromDisk(token)
@@ -68,9 +80,10 @@ export async function getShare(token: string): Promise<StoredShare | null> {
 }
 
 export async function deleteShare(token: string): Promise<boolean> {
+  if (!isValidShareToken(token)) return false
   g().map.delete(token)
   try {
-    await unlink(path.join(shareDir(), `${token}.json`))
+    await unlink(sharePath(token))
     return true
   } catch {
     return true

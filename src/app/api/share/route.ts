@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getShare, putShare, type StoredShare } from '@/lib/share-server-store'
+import { getShare, isValidShareToken, putShare, type StoredShare } from '@/lib/share-server-store'
 import type { ShareSnapshot } from '@/lib/share-links'
 
 export const runtime = 'nodejs'
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
   if (!token || !snapshot?.html || !snapshot?.markdown || !snapshot?.title) {
     return NextResponse.json({ error: 'missing_fields' }, { status: 400 })
   }
-  if (token.length < 16 || token.length > 128) {
+  if (!isValidShareToken(token)) {
     return NextResponse.json({ error: 'invalid_token' }, { status: 400 })
   }
 
