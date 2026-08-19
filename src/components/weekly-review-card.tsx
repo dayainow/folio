@@ -28,7 +28,7 @@ export function WeeklyReviewCard({ anchor, journals, tasks }: { anchor: string; 
 
   return (
     <details className="folio-surface group rounded-[1.5rem]">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 [&::-webkit-details-marker]:hidden sm:p-5">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-[1.5rem] p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 [&::-webkit-details-marker]:hidden sm:p-5">
         <div className="flex items-start gap-3">
           <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-700 dark:bg-teal-950/40 dark:text-teal-300"><CalendarRange className="size-4" /></span>
           <div><h2 className="text-sm font-semibold">주간 리뷰</h2><p className="mt-1 text-xs text-muted-foreground">{snapshot.from}–{snapshot.to} · 기록 {snapshot.journalDays}일 · 완료 {snapshot.completedTasks.length}개</p></div>

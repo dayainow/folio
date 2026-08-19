@@ -320,6 +320,7 @@ export function PersonalAssistantHome({
                   key={mode.value}
                   type="button"
                   onClick={() => setCaptureMode(mode.value)}
+                  aria-pressed={captureMode === mode.value}
                   className={cn(
                     'rounded-full px-3 py-1.5 text-xs transition-colors',
                     captureMode === mode.value
@@ -333,8 +334,11 @@ export function PersonalAssistantHome({
             </div>
           </CardHeader>
           <CardContent className="px-5 sm:px-6">
+            <label htmlFor="quick-capture-content" className="sr-only">빠른 기록 내용</label>
             <Textarea
+              id="quick-capture-content"
               ref={captureRef}
+              aria-describedby="quick-capture-status"
               value={capture}
               onChange={(event) => {
                 setCapture(event.target.value)
@@ -351,7 +355,7 @@ export function PersonalAssistantHome({
               placeholder={selectedMode.placeholder}
             />
             <div className="mt-3 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className={cn('text-[11px] text-muted-foreground', savedMessage && 'text-teal-700 dark:text-teal-300')} role="status">
+              <p id="quick-capture-status" className={cn('text-[11px] text-muted-foreground', savedMessage && 'text-teal-700 dark:text-teal-300')} role="status">
                 {savedMessage || '⌘/Ctrl + Enter로 빠르게 저장'}
               </p>
               <Button onClick={() => void saveCapture()} disabled={!capture.trim() || saving} className="h-11 w-full gap-1.5 rounded-full px-5 sm:h-9 sm:w-auto">
@@ -420,7 +424,7 @@ export function PersonalAssistantHome({
       <WeeklyReviewCard anchor={today} journals={data.journals} tasks={data.tasks} />
 
       <details className="folio-surface group rounded-[1.5rem]">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 [&::-webkit-details-marker]:hidden sm:p-5">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-[1.5rem] p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 [&::-webkit-details-marker]:hidden sm:p-5">
           <div>
             <h2 className="text-sm font-semibold">지난 기록 돌아보기</h2>
             <p className="mt-1 text-xs text-muted-foreground">필요할 때만 과거의 맥락을 펼쳐보세요.</p>

@@ -42,7 +42,7 @@ export function DailyReviewCard({
         onToggle={(event) => setExpanded(event.currentTarget.open)}
         className="group"
       >
-        <summary className="flex cursor-pointer list-none items-start justify-between gap-4 px-5 py-5 [&::-webkit-details-marker]:hidden sm:px-6">
+        <summary className="flex cursor-pointer list-none items-start justify-between gap-4 rounded-[1.5rem] px-5 py-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 [&::-webkit-details-marker]:hidden sm:px-6">
           <div>
             <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-teal-700 dark:text-teal-300">Shutdown review</p>
             <CardTitle className="mt-1 flex items-center gap-2 text-lg"><ClipboardCheck className="size-4" />오늘 업무 닫기</CardTitle>
