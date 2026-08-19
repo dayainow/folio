@@ -9,12 +9,28 @@ import { buildMorningBriefing, hasMorningBriefingSignals } from '@/lib/morning-b
 import { findWeeklyPlanForDate } from '@/lib/weekly-review'
 
 const subscribeToHydration = () => () => undefined
+let weeklyPlansRevision = 0
+const subscribeToWeeklyPlans = (onStoreChange: () => void) => {
+  const handleChange = () => {
+    weeklyPlansRevision += 1
+    onStoreChange()
+  }
+  window.addEventListener('folio-weekly-plan-changed', handleChange)
+  return () => window.removeEventListener('folio-weekly-plan-changed', handleChange)
+}
+const getWeeklyPlansSnapshot = () => weeklyPlansRevision
 
 export function MorningBriefingCard({ date, tasks, previousReview, onOpenBoard }: { date: string; tasks: Task[]; previousReview: DailyReview | null; onOpenBoard: (taskId?: string) => void }) {
   const hydrated = useSyncExternalStore(subscribeToHydration, () => true, () => false)
+  const weeklyPlanRevision = useSyncExternalStore(subscribeToWeeklyPlans, getWeeklyPlansSnapshot, () => 0)
   const briefing = useMemo(
-    () => hydrated ? buildMorningBriefing(date, tasks, previousReview, findWeeklyPlanForDate(date), loadDailyPlans()) : null,
-    [date, hydrated, previousReview, tasks],
+    () => {
+      if (!hydrated) return null
+      // The revision creates a fresh local-storage read boundary after a weekly-plan event.
+      void weeklyPlanRevision
+      return buildMorningBriefing(date, tasks, previousReview, findWeeklyPlanForDate(date), loadDailyPlans())
+    },
+    [date, hydrated, previousReview, tasks, weeklyPlanRevision],
   )
 
   if (!briefing || !hasMorningBriefingSignals(briefing)) return null

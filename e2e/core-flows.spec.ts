@@ -384,6 +384,9 @@ test.describe('Folio core flows (P66)', () => {
       const plans = JSON.parse(localStorage.getItem('folio_weekly_plans_v1') || '{}') as Record<string, { focus?: string[] }>
       return Object.values(plans)[0]?.focus?.[0]
     })).toBe('고객 피드백 정리')
+    const briefing = page.getByRole('region', { name: '오늘 시작 전, 이것만 확인하세요' })
+    await expect(briefing).toBeVisible()
+    await expect(briefing.getByText('고객 피드백 정리')).toBeVisible()
   })
 
   test('weekly focus creates one executable backlog task', async ({ page }) => {
