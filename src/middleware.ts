@@ -4,6 +4,11 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { createCsrfToken, CSRF_COOKIE, CSRF_HEADER, verifyCsrfTokens } from '@/lib/csrf'
+import {
+  canUseLocalSensitiveApis,
+  hasValidApiBearer,
+  isSensitiveApiPath,
+} from '@/lib/sensitive-api-auth'
 
 const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
 
@@ -11,6 +16,11 @@ export async function middleware(request: NextRequest) {
   const response = NextResponse.next({
     request: { headers: request.headers },
   })
+  const sensitiveApi = isSensitiveApiPath(request.nextUrl.pathname)
+  const apiSecret = process.env.FOLIO_API_SECRET?.trim()
+  const bearerAuthenticated = sensitiveApi
+    ? await hasValidApiBearer(request, apiSecret)
+    : false
 
   // CSRF 쿠키 보장
   if (!request.cookies.get(CSRF_COOKIE)?.value) {
@@ -30,7 +40,7 @@ export async function middleware(request: NextRequest) {
       request.nextUrl.pathname.startsWith('/api/mcp/') ||
       request.nextUrl.pathname.startsWith('/api/health') ||
       request.nextUrl.pathname.startsWith('/api/runtime')
-    if (!skip) {
+    if (!skip && !bearerAuthenticated) {
       const check = verifyCsrfTokens(
         request.method,
         request.cookies.get(CSRF_COOKIE)?.value,
@@ -48,15 +58,17 @@ export async function middleware(request: NextRequest) {
   // Supabase 세션 갱신 (env 있을 때만)
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (
+  const supabaseConfigured = Boolean(
     url &&
     anon &&
     !url.includes('placeholder') &&
     !url.includes('your-') &&
-    !anon.includes('your-')
-  ) {
+    !anon.includes('your-'),
+  )
+  let sessionAuthenticated = false
+  if (supabaseConfigured) {
     try {
-      const supabase = createServerClient(url, anon, {
+      const supabase = createServerClient(url!, anon!, {
         cookies: {
           getAll() {
             return request.cookies.getAll()
@@ -68,10 +80,34 @@ export async function middleware(request: NextRequest) {
           },
         },
       })
-      await supabase.auth.getUser()
+      const { data } = await supabase.auth.getUser()
+      sessionAuthenticated = Boolean(data.user)
     } catch {
       /* env/네트워크 실패 무시 */
     }
+  }
+
+  if (sensitiveApi && !bearerAuthenticated && !sessionAuthenticated) {
+    if (
+      canUseLocalSensitiveApis({
+        requestUrl: request.url,
+        nodeEnv: process.env.NODE_ENV,
+        allowProductionLoopback: process.env.FOLIO_ALLOW_LOCAL_API === '1',
+        apiSecretConfigured: Boolean(apiSecret),
+        supabaseConfigured,
+      })
+    ) {
+      return response
+    }
+
+    const authConfigured = Boolean(apiSecret) || supabaseConfigured
+    return NextResponse.json(
+      { error: authConfigured ? 'authentication_required' : 'api_auth_not_configured' },
+      {
+        status: authConfigured ? 401 : 503,
+        headers: authConfigured ? { 'WWW-Authenticate': 'Bearer' } : undefined,
+      },
+    )
   }
 
   return response
