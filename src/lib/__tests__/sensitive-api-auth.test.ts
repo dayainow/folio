@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
-import { middleware } from '@/middleware'
+import { proxy } from '@/proxy'
 import {
   canUseLocalSensitiveApis,
   hasValidApiBearer,
@@ -73,7 +73,7 @@ describe('sensitive API authentication', () => {
 
   it('closes sensitive production APIs when authentication is not configured', async () => {
     configureEnv({ nodeEnv: 'production' })
-    const response = await middleware(new NextRequest('https://folio.example/api/beacon/folio'))
+    const response = await proxy(new NextRequest('https://folio.example/api/beacon/folio'))
 
     expect(response.status).toBe(503)
     await expect(response.json()).resolves.toMatchObject({ error: 'api_auth_not_configured' })
@@ -81,7 +81,7 @@ describe('sensitive API authentication', () => {
 
   it('requires credentials when production API authentication is configured', async () => {
     configureEnv({ nodeEnv: 'production', apiSecret: 'correct-secret' })
-    const response = await middleware(new NextRequest('https://folio.example/api/jira/issues'))
+    const response = await proxy(new NextRequest('https://folio.example/api/jira/issues'))
 
     expect(response.status).toBe(401)
     expect(response.headers.get('www-authenticate')).toBe('Bearer')
@@ -89,7 +89,7 @@ describe('sensitive API authentication', () => {
 
   it('accepts a valid bearer credential and bypasses browser-only CSRF checks', async () => {
     configureEnv({ nodeEnv: 'production', apiSecret: 'correct-secret' })
-    const response = await middleware(
+    const response = await proxy(
       new NextRequest('https://folio.example/api/ai/generate', {
         method: 'POST',
         headers: { authorization: 'Bearer correct-secret' },
@@ -102,7 +102,7 @@ describe('sensitive API authentication', () => {
 
   it('allows an unconfigured sensitive API only on a local development host', async () => {
     configureEnv({ nodeEnv: 'development' })
-    const response = await middleware(new NextRequest('http://localhost:3456/api/beacon/folio'))
+    const response = await proxy(new NextRequest('http://localhost:3456/api/beacon/folio'))
 
     expect(response.status).toBe(200)
     expect(response.headers.get('x-middleware-next')).toBe('1')
