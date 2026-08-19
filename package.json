@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "next dev -p 3456",
     "build": "next build --webpack",
-    "start": "next start",
+    "start": "node scripts/start-standalone.mjs",
+    "package:standalone": "npm run build && node scripts/prepare-standalone.mjs",
+    "release:check": "node scripts/release-check.mjs",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
