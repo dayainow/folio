@@ -42,9 +42,34 @@ test.describe('Folio core flows (P66)', () => {
     await expect(page.getByRole('heading', { name: '오늘, 한 가지만 시작해볼까요?' })).toBeVisible()
     await expect(page.getByRole('region', { name: '오늘 시작 전, 이것만 확인하세요' })).toHaveCount(0)
     await expect(page.getByRole('region', { name: '오늘의 흐름' })).toHaveCount(0)
+    await expect(page.getByRole('region', { name: '연결된 업무 맥락' })).toHaveCount(0)
     await page.getByRole('button', { name: '첫 메모 남기기' }).last().click()
     await expect(page.getByPlaceholder('지금 떠오른 생각이나 있었던 일을 적어보세요.')).toBeFocused()
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
+  })
+
+  test('today surfaces connected context only when imported material exists', async ({ page }) => {
+    await page.addInitScript(() => {
+      const timestamp = new Date().toISOString()
+      localStorage.setItem('workspace_docs', JSON.stringify([{
+        id: 'connected-context',
+        title: '제품 전략',
+        content: '# 제품 전략',
+        category: 'Notion Import',
+        source: 'manual',
+        noteType: 'doc',
+        tags: ['source-system:notion'],
+        provenance: { system: 'notion', fingerprint: 'context-1', path: '제품 전략', importedAt: timestamp, syncState: 'imported' },
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      }]))
+    })
+    await page.goto('/')
+
+    const context = page.getByRole('region', { name: '연결된 업무 맥락' })
+    await expect(context).toBeVisible()
+    await expect(context.getByRole('button', { name: /notion · 제품 전략/ })).toBeVisible()
+    await expect(page.getByRole('region', { name: '오늘의 흐름' })).toHaveCount(0)
   })
 
   test('journal write tab accepts input and can save locally', async ({ page }) => {

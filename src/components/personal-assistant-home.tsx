@@ -197,42 +197,6 @@ export function PersonalAssistantHome({
         : { label: '오늘 정리하기', icon: ClipboardCheck, action: () => onOpenJournal(today, today) }
   const PrimaryActionIcon = primaryAction.icon
 
-  const journeySteps = [
-    {
-      id: 'plan' as const,
-      eyebrow: 'START',
-      title: '방향 잡기',
-      status: activeTasks.length > 0 ? `${activeTasks.length}개 진행 예정` : '계획 열기',
-      icon: CalendarDays,
-    },
-    {
-      id: 'capture' as const,
-      eyebrow: 'FLOW',
-      title: '흐름 남기기',
-      status: todayEntries.length > 0 ? `${todayEntries.length}개 기록됨` : '빠른 기록',
-      icon: PenLine,
-    },
-    {
-      id: 'review' as const,
-      eyebrow: 'CLOSE',
-      title: '하루 정리하기',
-      status: '일지 정리',
-      icon: ClipboardCheck,
-    },
-  ]
-
-  const handleJourneyAction = (step: (typeof journeySteps)[number]['id']) => {
-    if (step === 'plan') {
-      onOpenBoard()
-      return
-    }
-    if (step === 'capture') {
-      focusCapture()
-      return
-    }
-    onOpenJournal(today, today)
-  }
-
   const saveCapture = async () => {
     const content = capture.trim()
     if (!content || saving) return
@@ -312,62 +276,20 @@ export function PersonalAssistantHome({
             </Button>
           </div>
         </section>
-      ) : (
-        <section aria-labelledby="daily-journey-title" className="folio-surface rounded-[1.5rem] p-4">
-          <div className="mb-2 flex items-center justify-between gap-3 px-1">
-            <div>
-              <h2 id="daily-journey-title" className="text-sm font-semibold">오늘의 흐름</h2>
-            </div>
-            <p className="text-[11px] text-muted-foreground">필요한 단계만 누르세요.</p>
-          </div>
-          <div className="grid gap-2 sm:grid-cols-3">
-            {journeySteps.map((step, index) => {
-              const Icon = step.icon
-              const active = journeyPhase === step.id
-              return (
-                <button
-                  key={step.id}
-                  type="button"
-                  onClick={() => handleJourneyAction(step.id)}
-                  aria-current={active ? 'step' : undefined}
-                  className={cn(
-                    'group relative rounded-xl border px-3 py-3 text-left transition-colors hover:bg-muted/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600',
-                    active
-                      ? 'border-teal-300 bg-teal-50/80 shadow-[0_12px_30px_-24px_rgba(13,148,136,0.8)] dark:border-teal-700 dark:bg-teal-950/35'
-                      : 'border-border/70 bg-background hover:bg-muted/35',
-                  )}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <span className={cn('flex size-8 shrink-0 items-center justify-center rounded-lg', active ? 'bg-teal-600 text-white' : 'bg-muted text-muted-foreground group-hover:text-foreground')}>
-                      <Icon className="size-3.5" />
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-[9px] font-semibold tracking-[0.14em] text-muted-foreground">0{index + 1} · {step.eyebrow}</p>
-                      <h3 className="mt-0.5 truncate text-xs font-semibold">{step.title}</h3>
-                    </div>
-                    <span className={cn('ml-auto shrink-0 rounded-full px-2 py-1 text-[9px] font-medium', active ? 'bg-teal-600 text-white' : 'bg-muted text-muted-foreground')}>
-                      {active ? '지금' : step.status}
-                    </span>
-                  </div>
-                </button>
-              )
-            })}
-          </div>
-        </section>
-      )}
+      ) : null}
 
       <WeeklyFocusCard date={today} tasks={data.tasks} onOpenBoard={onOpenBoard} />
 
       <DailyPlanCard date={today} tasks={data.tasks} onOpenBoard={onOpenBoard} />
 
-      <section aria-labelledby="context-title" className="flex flex-col gap-3 rounded-[1.4rem] border border-foreground/10 bg-card/55 p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <Inbox className="size-4 text-teal-700 dark:text-teal-300" />
-            <h2 id="context-title" className="text-sm font-semibold">연결된 업무 맥락</h2>
-            <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">{sourcedContext.length ? `${sourcedContext.length}개 최근 항목` : '준비됨'}</span>
-          </div>
-          {sourcedContext.length ? (
+      {sourcedContext.length > 0 ? (
+        <section aria-labelledby="context-title" className="flex flex-col gap-3 rounded-[1.4rem] border border-foreground/10 bg-card/55 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <Inbox className="size-4 text-teal-700 dark:text-teal-300" />
+              <h2 id="context-title" className="text-sm font-semibold">연결된 업무 맥락</h2>
+              <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">{sourcedContext.length}개 최근 항목</span>
+            </div>
             <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
               {sourcedContext.map((item) => (
                 <button key={`${item.kind}-${item.id}`} type="button" className="max-w-56 truncate text-left text-xs text-muted-foreground hover:text-foreground" onClick={() => item.kind === 'doc' ? onOpenDocs(item.id) : onOpenJournal(item.id, data.journals[item.id]?.date ?? today)}>
@@ -375,12 +297,12 @@ export function PersonalAssistantHome({
                 </button>
               ))}
             </div>
-          ) : <p className="mt-1 text-xs text-muted-foreground">Obsidian·Markdown 자료를 가져오면 오늘의 업무와 함께 기억해드려요.</p>}
-        </div>
-        <Button variant="outline" size="sm" className="shrink-0 gap-1.5 rounded-full" onClick={openIntake}>
-          <Inbox className="size-3.5" />자료 가져오기
-        </Button>
-      </section>
+          </div>
+          <Button variant="outline" size="sm" className="shrink-0 gap-1.5 rounded-full" onClick={openIntake}>
+            <Inbox className="size-3.5" />자료 더 가져오기
+          </Button>
+        </section>
+      ) : null}
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
         <Card className="folio-surface gap-4 border-0 py-6">
