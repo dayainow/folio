@@ -43,8 +43,7 @@ describe('public share response', () => {
     const rendered = renderToStaticMarkup(
       createElement(ReactMarkdown, {
         remarkPlugins: [remarkGfm],
-        children: '# 문서\n\n<img src=x onerror="alert(1)"><script>alert(1)</script>',
-      }),
+      }, '# 문서\n\n<img src=x onerror="alert(1)"><script>alert(1)</script>'),
     )
 
     expect(rendered).toContain('<h1>문서</h1>')

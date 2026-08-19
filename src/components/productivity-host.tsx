@@ -4,6 +4,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { QuickCaptureModal } from '@/components/quick-capture'
 import { CommandPalette } from '@/components/command-palette'
 import { ShortcutHelpDialog, ShortcutSettingsPanel } from '@/components/shortcut-settings'
@@ -40,6 +41,7 @@ export function ProductivityHost({
   onOpenBoardTab,
   onOpenProcessTab,
 }: ProductivityHostProps) {
+  const router = useRouter()
   const [captureOpen, setCaptureOpen] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
@@ -78,7 +80,7 @@ export function ProductivityHost({
           onFocusSearch?.()
           break
         case 'open-guide':
-          window.location.assign('/guide')
+          router.push('/guide')
           break
         case 'open-export':
           window.dispatchEvent(new Event('folio:open-export'))
@@ -88,7 +90,7 @@ export function ProductivityHost({
           break
       }
     },
-    [onNewDoc, onNewTask, onFocusSearch, onOpenJournalTab],
+    [onNewDoc, onNewTask, onFocusSearch, onOpenJournalTab, router],
   )
 
   useEffect(() => {
@@ -155,7 +157,7 @@ export function ProductivityHost({
       openShortcutSettings: () => setSettingsOpen(true),
       openThemeSettings: () => window.dispatchEvent(new Event('folio:open-theme-settings')),
       openHelp: () => setHelpOpen(true),
-      openGuide: () => window.location.assign('/guide'),
+      openGuide: () => router.push('/guide'),
     }),
     [
       onOpenJournalTab,
@@ -165,6 +167,7 @@ export function ProductivityHost({
       onNewDoc,
       onNewTask,
       onFocusSearch,
+      router,
     ],
   )
 

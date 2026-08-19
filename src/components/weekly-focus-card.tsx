@@ -14,11 +14,25 @@ export function WeeklyFocusCard({ date, tasks, onOpenBoard }: { date: string; ta
 
   const refreshPlan = useCallback(() => setPlan(findWeeklyPlanForDate(date)), [date])
   useEffect(() => {
-    refreshPlan()
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled) refreshPlan()
+    })
     window.addEventListener('folio-weekly-plan-changed', refreshPlan)
-    return () => window.removeEventListener('folio-weekly-plan-changed', refreshPlan)
+    return () => {
+      cancelled = true
+      window.removeEventListener('folio-weekly-plan-changed', refreshPlan)
+    }
   }, [refreshPlan])
-  useEffect(() => setLocalTasks(tasks), [tasks])
+  useEffect(() => {
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled) setLocalTasks(tasks)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [tasks])
 
   const openTitles = useMemo(
     () => new Set(localTasks.filter((task) => task.status !== 'done').map((task) => task.title.trim().toLocaleLowerCase())),

@@ -29,7 +29,15 @@ export function DailyPlanCard({ date, tasks, onOpenBoard }: { date: string; task
     setMessage('')
   }, [date, localTasks])
 
-  useEffect(() => setLocalTasks(tasks), [tasks])
+  useEffect(() => {
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled) setLocalTasks(tasks)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [tasks])
 
   useEffect(() => {
     const sync = () => setTimeStore(loadTimeStore())
@@ -45,16 +53,24 @@ export function DailyPlanCard({ date, tasks, onOpenBoard }: { date: string; task
   }, [timeStore?.activeTaskId])
 
   useEffect(() => {
-    const stored = loadDailyPlan(date)
-    const suggestion = suggestDailyPlan(tasks, date, findWeeklyPlanForDate(date))
-    setCarriedTaskIds(suggestion.carriedTaskIds)
-    if (stored) {
-      setTaskIds(stored.taskIds.filter((id) => tasks.some((task) => task.id === id)))
-      setConfirmed(true)
-    } else {
-      setTaskIds(suggestion.taskIds)
+    let cancelled = false
+    queueMicrotask(() => {
+      if (cancelled) return
+      const stored = loadDailyPlan(date)
+      const suggestion = suggestDailyPlan(tasks, date, findWeeklyPlanForDate(date))
+      setCarriedTaskIds(suggestion.carriedTaskIds)
+      if (stored) {
+        setTaskIds(stored.taskIds.filter((id) => tasks.some((task) => task.id === id)))
+        setConfirmed(true)
+      } else {
+        setTaskIds(suggestion.taskIds)
+        setConfirmed(false)
+      }
+      setReady(true)
+    })
+    return () => {
+      cancelled = true
     }
-    setReady(true)
   }, [date, tasks])
 
   if (!ready || (openTasks.length === 0 && taskIds.length === 0)) return null
