@@ -77,6 +77,19 @@ test.describe('Folio core flows (P66)', () => {
     await expect(page.getByRole('region', { name: '오늘의 흐름' })).toHaveCount(0)
   })
 
+  test('historical activity does not reopen first-time guidance', async ({ page }) => {
+    await page.addInitScript(() => {
+      const timestamp = new Date(Date.now() - 86_400_000).toISOString()
+      localStorage.setItem('workspace_journals', JSON.stringify({
+        historical: { id: 'historical', date: timestamp.slice(0, 10), content: '지난 업무 기록', tags: [], createdAt: timestamp, updatedAt: timestamp },
+      }))
+    })
+    await page.goto('/')
+
+    await expect(page.getByRole('heading', { name: '오늘, 한 가지만 시작해볼까요?' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: '첫 메모 남기기' })).toHaveCount(0)
+  })
+
   test('journal write tab accepts input and can save locally', async ({ page }) => {
     await page.goto('/')
     const journalTab = page.getByRole('tab', { name: /일지|Journal|ジャーナル/i }).or(

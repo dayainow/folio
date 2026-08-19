@@ -29,6 +29,7 @@ import {
   dailyJourneyPhase,
   journalExcerpt,
   journalTitle,
+  isWorkspaceEmpty,
   localDateKey,
   selectMemoryMoments,
 } from '@/lib/personal-assistant'
@@ -174,7 +175,7 @@ export function PersonalAssistantHome({
     return [...docs, ...journals].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 3)
   }, [data.docs, data.journals])
   const memories = useMemo(() => selectMemoryMoments(data.journals, now), [data.journals, now])
-  const workspaceIsEmpty = !loading && activeTasks.length === 0 && todayEntries.length === 0 && data.docs.length === 0
+  const workspaceIsEmpty = !loading && isWorkspaceEmpty(data.journals, data.docs, data.tasks)
   const selectedMode = CAPTURE_MODES.find((mode) => mode.value === captureMode) ?? CAPTURE_MODES[0]!
   const journeyPhase = dailyJourneyPhase(now)
 

@@ -5,6 +5,7 @@ import {
   dailyJourneyPhase,
   journalExcerpt,
   journalTitle,
+  isWorkspaceEmpty,
   localDateKey,
   selectMemoryMoments,
 } from '@/lib/personal-assistant'
@@ -43,6 +44,13 @@ describe('personal assistant helpers', () => {
     expect(dailyJourneyPhase(new Date(2026, 7, 13, 9))).toBe('plan')
     expect(dailyJourneyPhase(new Date(2026, 7, 13, 14))).toBe('capture')
     expect(dailyJourneyPhase(new Date(2026, 7, 13, 20))).toBe('review')
+  })
+
+  it('treats historical journals and completed tasks as existing workspace history', () => {
+    expect(isWorkspaceEmpty({}, [], [])).toBe(true)
+    expect(isWorkspaceEmpty({ old: entry('2026-08-01', '지난 기록') }, [], [])).toBe(false)
+    expect(isWorkspaceEmpty({}, [], [{ id: 'done', status: 'done' }])).toBe(false)
+    expect(isWorkspaceEmpty({ blank: entry('2026-08-01', '   ') }, [], [])).toBe(true)
   })
 
   it('resurfaces anchored memories before recent fallback entries', () => {

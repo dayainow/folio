@@ -2,6 +2,16 @@ import type { JournalEntry } from '@/lib/journal'
 
 export type DailyJourneyPhase = 'plan' | 'capture' | 'review'
 
+export function isWorkspaceEmpty(
+  journals: Record<string, Pick<JournalEntry, 'content'>>,
+  docs: readonly unknown[],
+  tasks: readonly unknown[],
+): boolean {
+  return docs.length === 0
+    && tasks.length === 0
+    && !Object.values(journals).some((entry) => entry.content.trim())
+}
+
 export function dailyJourneyPhase(date = new Date()): DailyJourneyPhase {
   const hour = date.getHours()
   if (hour < 11) return 'plan'
