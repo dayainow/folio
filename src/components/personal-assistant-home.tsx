@@ -350,11 +350,11 @@ export function PersonalAssistantHome({
               className="min-h-36 resize-y border-0 bg-muted/45 px-4 py-3 text-sm leading-6 shadow-inner focus-visible:bg-background"
               placeholder={selectedMode.placeholder}
             />
-            <div className="mt-3 flex items-center justify-between gap-3">
+            <div className="mt-3 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className={cn('text-[11px] text-muted-foreground', savedMessage && 'text-teal-700 dark:text-teal-300')} role="status">
                 {savedMessage || '⌘/Ctrl + Enter로 빠르게 저장'}
               </p>
-              <Button onClick={() => void saveCapture()} disabled={!capture.trim() || saving} className="gap-1.5 rounded-full px-5">
+              <Button onClick={() => void saveCapture()} disabled={!capture.trim() || saving} className="h-11 w-full gap-1.5 rounded-full px-5 sm:h-9 sm:w-auto">
                 <Send className="size-3.5" />
                 {saving ? '저장 중…' : '새 기록 저장'}
               </Button>

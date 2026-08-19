@@ -57,11 +57,11 @@ export function DailyReviewCard({
           <ReviewField label="오늘 가장 잘한 일" value={win} onChange={setWin} placeholder="작더라도 분명한 진전 한 가지" />
           <ReviewField label="배운 점 또는 막힌 점" value={learned} onChange={setLearned} placeholder="다음에는 다르게 해볼 점" />
           <ReviewField label="내일의 첫 행동" value={tomorrow} onChange={setTomorrow} placeholder="업무를 시작하면 가장 먼저 할 일" suggestion={tomorrowSuggestion} />
-          <div className="flex items-center justify-between gap-3 lg:col-span-3">
+          <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between lg:col-span-3">
             <p className="text-[11px] text-muted-foreground" role="status">{message || '완료하면 내일 Today에서 다시 이어갈 수 있습니다.'}</p>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="gap-1.5 rounded-full" onClick={() => save(false)} disabled={!win.trim() && !learned.trim() && !tomorrow.trim()}><Save className="size-3.5" />저장</Button>
-              <Button size="sm" className="gap-1.5 rounded-full" onClick={() => save(true)} disabled={!win.trim() && !learned.trim() && !tomorrow.trim()}><CheckCircle2 className="size-3.5" />업무 닫기</Button>
+            <div className="grid grid-cols-2 gap-2 sm:flex">
+              <Button variant="outline" size="sm" className="h-11 gap-1.5 rounded-full sm:h-8" onClick={() => save(false)} disabled={!win.trim() && !learned.trim() && !tomorrow.trim()}><Save className="size-3.5" />저장</Button>
+              <Button size="sm" className="h-11 gap-1.5 rounded-full sm:h-8" onClick={() => save(true)} disabled={!win.trim() && !learned.trim() && !tomorrow.trim()}><CheckCircle2 className="size-3.5" />업무 닫기</Button>
             </div>
           </div>
         </CardContent>

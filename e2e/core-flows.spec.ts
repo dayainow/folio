@@ -44,7 +44,11 @@ test.describe('Folio core flows (P66)', () => {
     await expect(page.getByRole('region', { name: '오늘의 흐름' })).toHaveCount(0)
     await expect(page.getByRole('region', { name: '연결된 업무 맥락' })).toHaveCount(0)
     await page.getByRole('button', { name: '첫 메모 남기기' }).last().click()
-    await expect(page.getByPlaceholder('지금 떠오른 생각이나 있었던 일을 적어보세요.')).toBeFocused()
+    const capture = page.getByPlaceholder('지금 떠오른 생각이나 있었던 일을 적어보세요.')
+    await expect(capture).toBeFocused()
+    await capture.fill('모바일에서 남긴 첫 메모')
+    await page.getByRole('button', { name: '새 기록 저장' }).click()
+    await expect(page.getByText('새 기록으로 저장했어요.')).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
   })
 
@@ -484,6 +488,7 @@ test.describe('Folio core flows (P66)', () => {
         [date]: { date, taskIds: ['review-done', 'review-open'], confirmedAt: now.toISOString(), updatedAt: now.toISOString() },
       }))
     })
+    await page.setViewportSize({ width: 390, height: 844 })
     await page.goto('/')
     const shutdownReview = page.getByText('오늘 업무 닫기', { exact: true })
     if (!(await page.getByRole('textbox', { name: '내일의 첫 행동' }).isVisible())) await shutdownReview.click()
@@ -493,6 +498,7 @@ test.describe('Folio core flows (P66)', () => {
     await page.getByRole('textbox', { name: '오늘 가장 잘한 일' }).fill('Top 3 한 가지를 끝냈다')
     await page.getByRole('button', { name: '업무 닫기', exact: true }).click()
     await expect(page.getByText('오늘의 업무를 닫았습니다.')).toBeVisible()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
     await expect.poll(async () => page.evaluate(() => {
       const reviews = JSON.parse(localStorage.getItem('folio_daily_reviews_v1') || '{}') as Record<string, { tomorrow: string; execution?: { planned: number; completed: number; open: number } }>
       return Object.values(reviews)[0]
