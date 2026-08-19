@@ -6,6 +6,8 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Download, Lock, Loader2 } from 'lucide-react'
@@ -13,7 +15,6 @@ import { Download, Lock, Loader2 } from 'lucide-react'
 type SharePayload = {
   title: string
   type: string
-  html: string
   markdown: string
   views: number
   downloads: number
@@ -163,21 +164,12 @@ export default function SharePage() {
                 </Button>
               </div>
             ) : null}
-            <article
-              className="prose prose-sm dark:prose-invert max-w-none"
-              dangerouslySetInnerHTML={{
-                __html: data.html.includes('<body') ? extractBody(data.html) : data.html,
-              }}
-            />
+            <article className="prose prose-sm dark:prose-invert max-w-none">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{data.markdown}</ReactMarkdown>
+            </article>
           </div>
         ) : null}
       </main>
     </div>
   )
-}
-
-function extractBody(html: string): string {
-  const m = html.match(/<body[^>]*>([\s\S]*)<\/body>/i)
-  if (!m?.[1]) return html
-  return m[1].replace(/<footer[\s\S]*?<\/footer>/i, '')
 }

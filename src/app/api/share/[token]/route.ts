@@ -63,7 +63,6 @@ export async function GET(request: Request, ctx: Ctx) {
     expiresAt: share.expiresAt,
     views: share.views + 1,
     downloads: share.downloads,
-    html: share.snapshot.html,
     markdown: share.snapshot.markdown,
     meta: share.snapshot.meta ?? {},
   })
