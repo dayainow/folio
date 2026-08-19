@@ -8,6 +8,10 @@ const failures = []
 const warnings = []
 const packageJson = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'))
 
+if (String(packageJson.version).includes('-')) {
+  failures.push(`정식 릴리스 버전에 prerelease 표기를 사용할 수 없습니다: ${packageJson.version}`)
+}
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
 if (Boolean(supabaseUrl) !== Boolean(supabaseKey)) {

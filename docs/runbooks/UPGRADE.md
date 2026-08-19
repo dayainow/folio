@@ -4,18 +4,18 @@
 
 ---
 
-## 0. v4.1 (4.0 → 4.1-wip)
+## 0. v4.1 (4.0 → 4.1)
 
 | 구분 | 예 | 의미 |
 |------|----|------|
-| WIP | `4.1.0-wip` | Phase 39 · P67 AI 기능 진행 중 |
-| 정식 | `4.1.0` | Phase 39 완료 예정 |
+| 정식 | `4.1.0` | Phase 39 · P67 AI 기능 완료 |
+| Patch | `4.1.x` | 버그픽스 · 보안 업데이트 |
 
 체크리스트:
 
-- [ ] `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` 중 설정 (없으면 로컬 폴백)
-- [ ] 사이드바 AI · 의미검색 · 편집/분석 스모크
-- [ ] `npm ci` · lint · typecheck · test · test:coverage · qa:smoke
+- [x] `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` 선택 설정 (없으면 로컬 폴백)
+- [x] 사이드바 AI · 의미검색 · 편집/분석 스모크
+- [x] `npm ci` · lint · typecheck · test · qa · Standalone 패키징
 
 ---
 

@@ -39,7 +39,7 @@ export function FullExportButton() {
                 docs,
                 tasks,
                 projects,
-                version: process.env.NEXT_PUBLIC_FOLIO_VERSION ?? process.env.npm_package_version ?? '4.1.0-wip',
+                version: process.env.NEXT_PUBLIC_FOLIO_VERSION ?? process.env.npm_package_version ?? '4.1.0',
               },
               (r, label) => setProgress(0.15 + r * 0.85, label),
             )
