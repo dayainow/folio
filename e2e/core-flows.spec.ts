@@ -460,6 +460,8 @@ test.describe('Folio core flows (P66)', () => {
       }))
     })
     await page.goto('/')
+    const shutdownReview = page.getByText('오늘 업무 닫기', { exact: true })
+    if (!(await page.getByRole('textbox', { name: '내일의 첫 행동' }).isVisible())) await shutdownReview.click()
     await expect(page.getByText(/Top 3 1\/2 완료 · 미완료 1/)).toBeVisible()
     await page.getByRole('button', { name: '내일 첫 행동으로 제안 적용: Top 3 미완료 업무' }).click()
     await expect(page.getByRole('textbox', { name: '내일의 첫 행동' })).toHaveValue('Top 3 미완료 업무')

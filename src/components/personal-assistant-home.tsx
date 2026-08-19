@@ -492,6 +492,7 @@ export function PersonalAssistantHome({
         date={today}
         tasks={data.tasks}
         journalCount={todayEntries.length}
+        initiallyExpanded={journeyPhase === 'review'}
       />
 
       <WeeklyReviewCard anchor={today} journals={data.journals} tasks={data.tasks} />
