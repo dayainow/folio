@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { CalendarRange, CheckCircle2, ChevronDown, Target } from 'lucide-react'
+import { CheckCircle2, ChevronDown, Target } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -27,11 +27,11 @@ export function WeeklyReviewCard({ anchor, journals, tasks }: { anchor: string; 
   }
 
   return (
-    <details className="folio-surface group rounded-[1.5rem]">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-[1.5rem] p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 [&::-webkit-details-marker]:hidden sm:p-5">
-        <div className="flex items-start gap-3">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-700 dark:bg-teal-950/40 dark:text-teal-300"><CalendarRange className="size-4" /></span>
-          <div><h2 className="text-sm font-semibold">주간 리뷰</h2><p className="mt-1 text-xs text-muted-foreground">{snapshot.from}–{snapshot.to} · 기록 {snapshot.journalDays}일 · 완료 {snapshot.completedTasks.length}개</p></div>
+    <details className="folio-surface group overflow-hidden rounded-[1.35rem]">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 rounded-[1.35rem] px-5 py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 [&::-webkit-details-marker]:hidden sm:px-6">
+        <div className="min-w-0">
+          <h2 className="text-[15px] font-semibold">주간 리뷰</h2>
+          <p className="mt-1 truncate text-xs text-muted-foreground">{snapshot.from}–{snapshot.to} · 기록 {snapshot.journalDays}일 · 완료 {snapshot.completedTasks.length}개</p>
         </div>
         <div className="flex items-center gap-2">{complete ? <span className="rounded-full bg-teal-50 px-2 py-1 text-[10px] font-medium text-teal-700 dark:bg-teal-950/40 dark:text-teal-300">완료</span> : null}<ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" /></div>
       </summary>
@@ -47,12 +47,12 @@ export function WeeklyReviewCard({ anchor, journals, tasks }: { anchor: string; 
         </div>
         <section className="space-y-2"><h3 className="flex items-center gap-1.5 text-xs font-semibold"><Target className="size-3.5" />다음 주 핵심 초점 3가지</h3>{focus.map((value, index) => <Input key={index} value={value} onChange={(event) => setFocus((current) => current.map((item, itemIndex) => itemIndex === index ? event.target.value : item))} placeholder={`${index + 1}순위 목표`} className="h-9 text-xs" aria-label={`${index + 1}순위 목표`} />)}</section>
         <label className="block space-y-1.5"><span className="text-xs font-semibold">한 주를 마치며</span><Textarea value={reflection} onChange={(event) => setReflection(event.target.value)} rows={3} placeholder="유지할 것과 다음 주에 바꿀 것을 적어보세요." className="text-sm" /></label>
-        <div className="flex items-center justify-between gap-3"><p className="text-[11px] text-muted-foreground" role="status">{message || '저장 전에는 다음 주 계획으로 확정되지 않습니다.'}</p><div className="flex gap-2"><Button variant="outline" size="sm" className="rounded-full" onClick={() => save(false)} disabled={!focus.some((item) => item.trim()) && !reflection.trim()}>저장</Button><Button size="sm" className="gap-1.5 rounded-full" onClick={() => save(true)} disabled={!focus.some((item) => item.trim())}><CheckCircle2 className="size-3.5" />주간 리뷰 완료</Button></div></div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><p className="text-[11px] text-muted-foreground" role="status">{message || '저장 전에는 다음 주 계획으로 확정되지 않습니다.'}</p><div className="grid grid-cols-2 gap-2 sm:flex"><Button variant="outline" size="sm" className="h-11 rounded-full sm:h-9" onClick={() => save(false)} disabled={!focus.some((item) => item.trim()) && !reflection.trim()}>저장</Button><Button size="sm" className="h-11 gap-1.5 rounded-full sm:h-9" onClick={() => save(true)} disabled={!focus.some((item) => item.trim())}><CheckCircle2 className="size-3.5" />리뷰 완료</Button></div></div>
       </div>
     </details>
   )
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
-  return <div className="rounded-xl bg-muted/35 p-3"><p className="text-[10px] text-muted-foreground">{label}</p><p className="mt-1 text-lg font-semibold tabular-nums">{value}</p></div>
+  return <div className="rounded-xl border border-foreground/[0.07] bg-background p-3"><p className="text-[10px] text-muted-foreground">{label}</p><p className="mt-1 text-lg font-semibold tabular-nums">{value}</p></div>
 }

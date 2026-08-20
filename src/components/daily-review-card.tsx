@@ -1,7 +1,7 @@
 'use client'
 
 import { useId, useMemo, useState } from 'react'
-import { CheckCircle2, ChevronDown, ClipboardCheck, Sparkles, Save } from 'lucide-react'
+import { CheckCircle2, ChevronDown, Sparkles, Save } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
@@ -36,20 +36,19 @@ export function DailyReviewCard({
   }
 
   return (
-    <Card className="folio-surface gap-0 border-0 py-0">
+    <Card className="folio-surface gap-0 rounded-[1.35rem] border-0 py-0">
       <details
         open={expanded}
         onToggle={(event) => setExpanded(event.currentTarget.open)}
         className="group"
       >
-        <summary className="flex cursor-pointer list-none items-start justify-between gap-4 rounded-[1.5rem] px-5 py-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 [&::-webkit-details-marker]:hidden sm:px-6">
-          <div>
-            <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-teal-700 dark:text-teal-300">Shutdown review</p>
-            <CardTitle className="mt-1 flex items-center gap-2 text-lg"><ClipboardCheck className="size-4" />오늘 업무 닫기</CardTitle>
-            <p className="mt-1 text-xs text-muted-foreground">{execution.planned ? `Top 3 ${execution.completed}/${execution.planned} 완료 · 미완료 ${execution.open}` : '확정된 Top 3 없음'} · 오늘 기록 {journalCount}</p>
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 rounded-[1.35rem] px-5 py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 [&::-webkit-details-marker]:hidden sm:px-6">
+          <div className="min-w-0">
+            <CardTitle className="text-[15px] font-semibold">오늘 업무 정리</CardTitle>
+            <p className="mt-1 truncate text-xs text-muted-foreground">{execution.planned ? `Top 3 ${execution.completed}/${execution.planned} 완료 · 미완료 ${execution.open}` : '확정된 Top 3 없음'} · 기록 {journalCount}</p>
           </div>
           <span className="flex shrink-0 items-center gap-2">
-            {complete ? <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-2.5 py-1 text-[10px] font-medium text-teal-700 dark:bg-teal-950/40 dark:text-teal-300"><CheckCircle2 className="size-3" />완료</span> : <span className="hidden text-[11px] text-muted-foreground sm:inline">{expanded ? '접기' : '하루 정리하기'}</span>}
+            {complete ? <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-2.5 py-1 text-[10px] font-medium text-teal-700 dark:bg-teal-950/40 dark:text-teal-300"><CheckCircle2 className="size-3" />완료</span> : <span className="hidden text-[11px] font-medium text-muted-foreground sm:inline">{expanded ? '접기' : '정리하기'}</span>}
             <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
           </span>
         </summary>
@@ -72,5 +71,5 @@ export function DailyReviewCard({
 
 function ReviewField({ label, value, onChange, placeholder, suggestion }: { label: string; value: string; onChange: (value: string) => void; placeholder: string; suggestion?: string | null }) {
   const id = useId()
-  return <div className="space-y-1.5"><label htmlFor={id} className="block text-xs font-semibold">{label}</label><Textarea id={id} value={value} onChange={(event) => onChange(event.target.value)} rows={3} className="min-h-24 resize-y bg-muted/35 text-sm" placeholder={placeholder} />{suggestion && !value.trim() ? <button type="button" onClick={() => onChange(suggestion)} aria-label={`내일 첫 행동으로 제안 적용: ${suggestion}`} className="flex max-w-full items-center gap-1.5 rounded-lg bg-sky-50 px-2.5 py-1.5 text-left text-[11px] font-medium text-sky-700 transition-colors hover:bg-sky-100 dark:bg-sky-950/35 dark:text-sky-300 dark:hover:bg-sky-950/55"><Sparkles className="size-3 shrink-0" /><span className="truncate">제안 적용 · {suggestion}</span></button> : null}</div>
+  return <div className="space-y-1.5"><label htmlFor={id} className="block text-xs font-semibold">{label}</label><Textarea id={id} value={value} onChange={(event) => onChange(event.target.value)} rows={3} className="min-h-24 resize-y rounded-xl border-foreground/10 bg-background text-sm shadow-none focus-visible:ring-2 focus-visible:ring-foreground/10" placeholder={placeholder} />{suggestion && !value.trim() ? <button type="button" onClick={() => onChange(suggestion)} aria-label={`내일 첫 행동으로 제안 적용: ${suggestion}`} className="flex max-w-full items-center gap-1.5 rounded-lg bg-sky-50 px-2.5 py-1.5 text-left text-[11px] font-medium text-sky-700 transition-colors hover:bg-sky-100 dark:bg-sky-950/35 dark:text-sky-300 dark:hover:bg-sky-950/55"><Sparkles className="size-3 shrink-0" /><span className="truncate">제안 적용 · {suggestion}</span></button> : null}</div>
 }
