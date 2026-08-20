@@ -10,7 +10,6 @@ import {
   ChevronDown,
   FileText,
   Inbox,
-  Lightbulb,
   PenLine,
   RefreshCw,
   Send,
@@ -312,16 +311,13 @@ export function PersonalAssistantHome({
       ) : null}
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
-        <Card className="folio-surface gap-4 border-0 py-6">
-          <CardHeader className="gap-3 px-5 sm:px-6">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-teal-700 dark:text-teal-300">Quick capture</p>
-                <CardTitle className="mt-1 text-lg">지금 바로 남기기</CardTitle>
-              </div>
-              <Lightbulb className="size-5 text-amber-500" />
+        <Card className="folio-surface gap-0 border-0 py-0">
+          <CardHeader className="gap-4 border-b border-foreground/[0.07] px-5 py-5 sm:flex sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <div>
+              <CardTitle className="text-lg">빠른 기록</CardTitle>
+              <p className="mt-1 text-xs text-muted-foreground">떠오른 것을 잊기 전에 남겨보세요.</p>
             </div>
-            <div className="flex flex-wrap gap-1.5" aria-label="기록 종류">
+            <div className="flex w-fit flex-wrap gap-0.5 rounded-xl bg-muted/60 p-1" aria-label="기록 종류">
               {CAPTURE_MODES.map((mode) => (
                 <button
                   key={mode.value}
@@ -329,10 +325,10 @@ export function PersonalAssistantHome({
                   onClick={() => setCaptureMode(mode.value)}
                   aria-pressed={captureMode === mode.value}
                   className={cn(
-                    'rounded-full px-3 py-1.5 text-xs transition-colors',
+                    'rounded-lg px-3 py-1.5 text-xs transition-colors',
                     captureMode === mode.value
-                      ? 'bg-foreground text-background'
-                      : 'bg-muted/70 text-muted-foreground hover:bg-muted hover:text-foreground',
+                      ? 'bg-background font-medium text-foreground shadow-sm ring-1 ring-foreground/[0.06]'
+                      : 'text-muted-foreground hover:text-foreground',
                   )}
                 >
                   {mode.label}
@@ -340,7 +336,7 @@ export function PersonalAssistantHome({
               ))}
             </div>
           </CardHeader>
-          <CardContent className="px-5 sm:px-6">
+          <CardContent className="px-5 py-5 sm:px-6">
             <label htmlFor="quick-capture-content" className="sr-only">빠른 기록 내용</label>
             <Textarea
               id="quick-capture-content"
@@ -358,7 +354,7 @@ export function PersonalAssistantHome({
                 }
               }}
               rows={6}
-              className="min-h-36 resize-y border-0 bg-muted/45 px-4 py-3 text-sm leading-6 shadow-inner focus-visible:bg-background"
+              className="min-h-32 resize-y rounded-xl border-foreground/10 bg-background px-4 py-3 text-sm leading-6 shadow-none focus-visible:border-foreground/20 focus-visible:ring-2 focus-visible:ring-foreground/10 sm:min-h-36"
               placeholder={selectedMode.placeholder}
             />
             <div className="mt-3 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -367,31 +363,35 @@ export function PersonalAssistantHome({
               </p>
               <Button onClick={() => void saveCapture()} disabled={!capture.trim() || saving} className="h-11 w-full gap-1.5 rounded-full px-5 sm:h-9 sm:w-auto">
                 <Send className="size-3.5" />
-                {saving ? '저장 중…' : '새 기록 저장'}
+                {saving ? '저장 중…' : '기록 저장'}
               </Button>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="folio-surface gap-3 border-0 py-6">
-          <CardHeader className="flex-row items-center justify-between px-5">
+        <Card className="folio-surface gap-0 border-0 py-0">
+          <CardHeader className="flex-row items-center justify-between border-b border-foreground/[0.07] px-5 py-5">
             <div>
-              <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-sky-700 dark:text-sky-300">Tasks</p>
-              <CardTitle className="mt-1 text-lg">오늘 할 일</CardTitle>
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-lg">오늘 할 일</CardTitle>
+                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">{loading ? '–' : activeTasks.length}</span>
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">지금 집중할 일을 확인하세요.</p>
             </div>
-            <Button variant="ghost" size="icon" className="size-8 rounded-full" onClick={() => void refresh()} aria-label="오늘 할 일 새로고침">
+            <Button variant="ghost" size="icon" className="size-8 rounded-full text-muted-foreground" onClick={() => void refresh()} aria-label="오늘 할 일 새로고침">
               <RefreshCw className={cn('size-3.5', loading && 'animate-spin')} />
             </Button>
           </CardHeader>
-          <CardContent className="space-y-2 px-5">
+          <CardContent className="px-5 py-4">
+            <div className="divide-y divide-foreground/[0.07]">
             {activeTasks.slice(0, 4).map((task) => (
               <button
                 key={task.id}
                 type="button"
                 onClick={() => onOpenBoard(task.id)}
-                className="group flex w-full items-start gap-3 rounded-xl p-2.5 text-left transition-colors hover:bg-muted/70"
+                className="group flex w-full items-start gap-3 px-1 py-3 text-left transition-colors hover:text-foreground"
               >
-                <span className={cn('mt-0.5 size-2.5 shrink-0 rounded-full', task.status === 'in_progress' ? 'bg-blue-500' : task.status === 'review' ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-600')} />
+                <span className={cn('mt-0.5 size-3 shrink-0 rounded-full border-2 border-background ring-1 ring-foreground/10', task.status === 'in_progress' ? 'bg-blue-500' : task.status === 'review' ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-600')} />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium">{task.title}</span>
                   <span className="mt-0.5 block text-[11px] text-muted-foreground">
@@ -401,13 +401,14 @@ export function PersonalAssistantHome({
                 <ArrowRight className="mt-0.5 size-3.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
               </button>
             ))}
+            </div>
             {!loading && activeTasks.length === 0 ? (
-              <div className="rounded-2xl bg-teal-50 p-4 text-center dark:bg-teal-950/30">
-                <CheckCircle2 className="mx-auto size-5 text-teal-600" />
+              <div className="rounded-2xl border border-dashed border-foreground/10 bg-muted/20 px-4 py-6 text-center">
+                <CheckCircle2 className="mx-auto size-5 text-teal-600 dark:text-teal-400" />
                 <p className="mt-2 text-sm font-medium">열린 할 일이 없어요</p>
-                <p className="mt-1 text-[11px] text-muted-foreground">해야 할 일이 생기면 첫 업무부터 가볍게 시작하세요.</p>
-                <Button variant="outline" size="sm" className="mt-3 rounded-full bg-background" onClick={() => onOpenBoard()}>
-                  첫 업무 만들기
+                <p className="mt-1 text-[11px] text-muted-foreground">새로운 일이 생기면 여기에 추가해보세요.</p>
+                <Button variant="outline" size="sm" className="mt-3 rounded-full bg-background shadow-none" onClick={() => onOpenBoard()}>
+                  할 일 추가
                 </Button>
               </div>
             ) : null}
