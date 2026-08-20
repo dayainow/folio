@@ -431,79 +431,68 @@ export function PersonalAssistantHome({
 
       <WeeklyReviewCard anchor={today} journals={data.journals} tasks={data.tasks} />
 
-      <details className="folio-surface group rounded-[1.5rem]">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-[1.5rem] p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 [&::-webkit-details-marker]:hidden sm:p-5">
-          <div>
-            <h2 className="text-sm font-semibold">지난 기록 돌아보기</h2>
-            <p className="mt-1 text-xs text-muted-foreground">필요할 때만 과거의 맥락을 펼쳐보세요.</p>
+      <details className="folio-surface group overflow-hidden rounded-[1.35rem]">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 rounded-[1.35rem] px-5 py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 [&::-webkit-details-marker]:hidden sm:px-6">
+          <div className="min-w-0">
+            <h2 className="text-[15px] font-semibold">기록 보관함</h2>
+            <p className="mt-1 truncate text-xs text-muted-foreground">지난 기록 {memories.length}개 · 최근 문서 {recentDocs.length}개</p>
           </div>
           <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
         </summary>
-        <div className="border-t p-4 sm:p-5">
-        {memories.length > 0 ? (
-          <div className="grid gap-3 md:grid-cols-3">
-            {memories.map((memory, index) => (
-              <button
-                key={memory.entryKey}
-                type="button"
-                onClick={() => onOpenJournal(memory.entryKey, memory.entry.date)}
-                className={cn(
-                  'group min-h-44 overflow-hidden rounded-2xl border p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-lg',
-                  index === 0
-                    ? 'border-amber-200/70 bg-amber-50/70 dark:border-amber-800/40 dark:bg-amber-950/20'
-                    : index === 1
-                      ? 'border-violet-200/70 bg-violet-50/60 dark:border-violet-800/40 dark:bg-violet-950/20'
-                      : 'border-sky-200/70 bg-sky-50/60 dark:border-sky-800/40 dark:bg-sky-950/20',
-                )}
-              >
-                <div className="flex items-center justify-between gap-3 text-[11px] text-muted-foreground">
-                  <span className="inline-flex items-center gap-1">
-                    <Clock3 className="size-3.5" /> {memory.label}
-                  </span>
-                  <span>{memory.entry.date}</span>
-                </div>
-                <h3 className="mt-5 line-clamp-2 text-base font-semibold leading-6">{journalTitle(memory.entry.content)}</h3>
-                <p className="mt-2 line-clamp-2 text-xs leading-5 text-muted-foreground">{journalExcerpt(memory.entry.content)}</p>
-                <span className="mt-4 inline-flex items-center gap-1 text-xs font-medium opacity-70 transition-opacity group-hover:opacity-100">
-                  다시 읽기 <ArrowRight className="size-3.5" />
-                </span>
-              </button>
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-2xl border border-dashed p-7 text-center">
-            <CalendarDays className="mx-auto size-6 text-muted-foreground" />
-            <p className="mt-3 text-sm font-medium">기록이 쌓이면 지난 기억을 꺼내드릴게요</p>
-            <p className="mt-1 text-xs text-muted-foreground">오늘부터 짧게라도 남겨보세요.</p>
-          </div>
-        )}
+        <div className="space-y-6 border-t px-5 py-5 sm:px-6">
+          <section aria-labelledby="memory-title">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h3 id="memory-title" className="text-xs font-semibold">지난 기록</h3>
+              <span className="text-[11px] text-muted-foreground">필요한 맥락을 다시 꺼내보세요.</span>
+            </div>
+            {memories.length > 0 ? (
+              <div className="grid gap-2 md:grid-cols-3">
+                {memories.map((memory) => (
+                  <button
+                    key={memory.entryKey}
+                    type="button"
+                    onClick={() => onOpenJournal(memory.entryKey, memory.entry.date)}
+                    className="group rounded-xl border border-foreground/[0.08] bg-background p-4 text-left transition-colors hover:bg-muted/35"
+                  >
+                    <div className="flex items-center justify-between gap-3 text-[10px] text-muted-foreground">
+                      <span className="inline-flex items-center gap-1"><Clock3 className="size-3" />{memory.label}</span>
+                      <span>{memory.entry.date}</span>
+                    </div>
+                    <h4 className="mt-3 line-clamp-1 text-sm font-semibold">{journalTitle(memory.entry.content)}</h4>
+                    <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{journalExcerpt(memory.entry.content)}</p>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-xl border border-dashed border-foreground/10 px-4 py-5 text-center">
+                <CalendarDays className="mx-auto size-5 text-muted-foreground" />
+                <p className="mt-2 text-sm font-medium">기록이 쌓이면 지난 기억을 꺼내드릴게요</p>
+              </div>
+            )}
+          </section>
+
+          {recentDocs.length > 0 ? (
+            <section aria-labelledby="recent-docs-title">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <h3 id="recent-docs-title" className="text-xs font-semibold">최근 문서</h3>
+                <Button variant="ghost" size="sm" className="h-7 rounded-full text-xs" onClick={() => onOpenDocs()}>전체 보기</Button>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-3">
+                {recentDocs.map((doc) => (
+                  <button key={doc.id} type="button" onClick={() => onOpenDocs(doc.id)} className="group flex items-center gap-3 rounded-xl border border-foreground/[0.08] bg-background p-3 text-left transition-colors hover:bg-muted/35">
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground"><FileText className="size-3.5" /></span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium">{doc.title || '제목 없는 문서'}</span>
+                      <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">{doc.category || '문서'}</span>
+                    </span>
+                    <ArrowRight className="size-3.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                  </button>
+                ))}
+              </div>
+            </section>
+          ) : null}
         </div>
       </details>
-
-      {recentDocs.length > 0 ? (
-        <section className="rounded-2xl border bg-muted/20 p-4 sm:p-5">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold">최근 이어서 볼 문서</h2>
-            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => onOpenDocs()}>
-              전체 보기
-            </Button>
-          </div>
-          <div className="grid gap-2 sm:grid-cols-3">
-            {recentDocs.map((doc) => (
-              <button key={doc.id} type="button" onClick={() => onOpenDocs(doc.id)} className="group flex items-center gap-3 rounded-xl bg-background p-3 text-left ring-1 ring-foreground/10 transition-colors hover:bg-muted/40">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300">
-                  <FileText className="size-4" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium">{doc.title || '제목 없는 문서'}</span>
-                  <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">{doc.category || '문서'}</span>
-                </span>
-                <ArrowRight className="size-3.5 text-muted-foreground opacity-0 group-hover:opacity-100" />
-              </button>
-            ))}
-          </div>
-        </section>
-      ) : null}
 
       <div className="flex items-center justify-center gap-2 py-1 text-[11px] text-muted-foreground">
         <SunMedium className="size-3.5 text-amber-500" />
