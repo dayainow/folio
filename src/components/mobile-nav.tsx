@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * P44/P57 — 하단 네비 + FAB · 동기화 뱃지 · 햅틱 · 활성 인디케이터
+ * P44/P57 — 하단 네비 · 문맥 행동 · 동기화 뱃지 · 햅틱
  */
 import { useEffect, useState } from 'react'
 import { BookOpen, FileText, Kanban, PenLine, Save, Plus, Sparkles } from 'lucide-react'
@@ -23,7 +23,7 @@ const SIDE_ITEMS: Array<{
   { value: 'board', labelKey: 'nav.board', icon: Kanban },
 ]
 
-/** P42/P44/P57 — 하단 네비 + 중앙 FAB 클러스터 */
+/** P42/P44/P57 — 하단 네비 + 화면에 맞는 중앙 행동 */
 export function MobileNav({
   value,
   onChange,
@@ -72,17 +72,36 @@ export function MobileNav({
     onChange(tab)
   }
 
+  const centerAction = value === 'journal' && onSave
+    ? {
+        label: t('common.quickSave'),
+        icon: Save,
+        run: onSave,
+      }
+    : value === 'docs' && onNew
+      ? {
+          label: t('common.new'),
+          icon: Plus,
+          run: onNew,
+        }
+      : {
+          label: t('common.writeAria'),
+          icon: PenLine,
+          run: onWrite ?? (() => onChange('journal')),
+        }
+  const CenterActionIcon = centerAction.icon
+
   return (
     <nav
       aria-label={t('nav.mobileMain')}
-      className="md:hidden fixed bottom-0 inset-x-0 z-50 border-t border-gray-100 dark:border-gray-800 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 pb-[env(safe-area-inset-bottom)]"
+      className="folio-mobile-nav fixed inset-x-3 bottom-[calc(0.65rem+env(safe-area-inset-bottom))] z-50 rounded-[1.4rem] border bg-background/90 shadow-lg backdrop-blur-xl md:hidden"
     >
       {pending > 0 ? (
-        <p className="px-3 pt-1 text-center text-[10px] text-amber-700 dark:text-amber-400" role="status">
+        <p className="border-b px-3 py-1 text-center text-[10px] text-amber-700 dark:text-amber-400" role="status">
           오프라인 변경 {pending}건 동기화 대기
         </p>
       ) : null}
-      <ul className="mx-auto grid h-[4.25rem] max-w-6xl grid-cols-5 items-end px-1">
+      <ul className="mx-auto grid h-16 max-w-6xl grid-cols-5 items-center px-1.5">
         {left.map((item) => {
           const Icon = item.icon
           const active = value === item.value
@@ -93,16 +112,10 @@ export function MobileNav({
                 onClick={() => select(item.value)}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'relative flex h-14 w-full min-h-[48px] flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors active:scale-[0.97]',
-                  active ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
+                  'relative flex h-12 w-full min-h-[48px] flex-col items-center justify-center gap-0.5 rounded-xl text-[10px] font-medium transition-colors active:scale-[0.97]',
+                  active ? 'bg-muted/80 text-foreground' : 'text-muted-foreground hover:text-foreground',
                 )}
               >
-                {active ? (
-                  <span
-                    aria-hidden
-                    className="absolute top-1 h-0.5 w-5 rounded-full bg-foreground"
-                  />
-                ) : null}
                 <Icon className={cn('h-5 w-5', active && 'stroke-[2.25]')} aria-hidden />
                 <span>{t(item.labelKey)}</span>
               </button>
@@ -110,48 +123,18 @@ export function MobileNav({
           )
         })}
 
-        <li className="relative flex h-14 justify-center pb-1">
-          <div className="absolute -top-7 flex items-end gap-2">
-            {onSave && (
-              <button
-                type="button"
-                onClick={() => {
-                  hapticTap()
-                  onSave()
-                }}
-                aria-label={t('common.quickSave')}
-                className="flex h-12 w-12 min-h-[48px] min-w-[48px] items-center justify-center rounded-full border border-gray-200 bg-background text-foreground shadow-md dark:border-gray-700 active:scale-95"
-              >
-                <Save className="h-5 w-5" aria-hidden />
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => {
-                hapticTap()
-                if (onWrite) onWrite()
-                else select('journal')
-              }}
-              aria-label={t('common.writeAria')}
-              className="flex h-14 w-14 min-h-[48px] min-w-[48px] flex-col items-center justify-center rounded-full bg-foreground text-background shadow-lg ring-4 ring-background transition-transform active:scale-95"
-            >
-              <PenLine className="h-5 w-5" aria-hidden />
-              <span className="text-[9px] font-semibold leading-none">{t('common.write')}</span>
-            </button>
-            {onNew && (
-              <button
-                type="button"
-                onClick={() => {
-                  hapticTap()
-                  onNew()
-                }}
-                aria-label={t('common.new')}
-                className="flex h-12 w-12 min-h-[48px] min-w-[48px] items-center justify-center rounded-full border border-gray-200 bg-background text-foreground shadow-md dark:border-gray-700 active:scale-95"
-              >
-                <Plus className="h-5 w-5" aria-hidden />
-              </button>
-            )}
-          </div>
+        <li className="relative flex h-12 justify-center">
+          <button
+            type="button"
+            onClick={() => {
+              hapticTap()
+              centerAction.run()
+            }}
+            aria-label={centerAction.label}
+            className="absolute -top-3 flex size-14 min-h-[48px] min-w-[48px] items-center justify-center rounded-full bg-foreground text-background shadow-lg ring-[5px] ring-background transition-transform active:scale-95"
+          >
+            <CenterActionIcon className="size-5" aria-hidden />
+          </button>
         </li>
 
         {right.map((item) => {
@@ -164,16 +147,10 @@ export function MobileNav({
                 onClick={() => select(item.value)}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'relative flex h-14 w-full min-h-[48px] flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors active:scale-[0.97]',
-                  active ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
+                  'relative flex h-12 w-full min-h-[48px] flex-col items-center justify-center gap-0.5 rounded-xl text-[10px] font-medium transition-colors active:scale-[0.97]',
+                  active ? 'bg-muted/80 text-foreground' : 'text-muted-foreground hover:text-foreground',
                 )}
               >
-                {active ? (
-                  <span
-                    aria-hidden
-                    className="absolute top-1 h-0.5 w-5 rounded-full bg-foreground"
-                  />
-                ) : null}
                 <Icon className={cn('h-5 w-5', active && 'stroke-[2.25]')} aria-hidden />
                 <span>{t(item.labelKey)}</span>
               </button>

@@ -681,10 +681,10 @@ export default function Home() {
         )}
         role="banner"
       >
-        <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-3 sm:gap-5">
+        <div className="mx-auto flex h-[3.75rem] max-w-[1600px] items-center gap-3 sm:gap-5">
           <div className="flex shrink-0 items-center gap-2">
             <span
-              className="folio-wordmark relative inline-flex items-center gap-2 text-xl font-semibold tracking-[-0.065em] text-foreground"
+              className="folio-wordmark relative inline-flex items-center gap-2 text-[1.15rem] font-semibold tracking-[-0.055em] text-foreground"
               style={{ fontFamily: 'var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif' }}
             >
               <span className="folio-brand-mark"><SpriteIcon name="folio-mark" className="size-4.5" /></span>
@@ -697,7 +697,7 @@ export default function Home() {
           </div>
 
           <nav aria-label={t('nav.main')} className="hidden min-w-0 flex-1 md:block">
-            <ul className="folio-primary-nav flex items-center gap-1">
+            <ul className="folio-primary-nav flex w-fit items-center gap-0.5 rounded-xl bg-muted/35 p-1">
               {(
                 [
                   { value: 'assistant' as const, labelKey: 'nav.assistant', assistantIcon: true },
@@ -712,7 +712,7 @@ export default function Home() {
                     onClick={() => handleTabChange(item.value)}
                     aria-current={tab === item.value ? 'page' : undefined}
                     className={cn(
-                      'inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-xs transition-all',
+                      'inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs transition-colors',
                       tab === item.value
                         ? 'folio-nav-active font-semibold text-foreground'
                         : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
@@ -734,7 +734,7 @@ export default function Home() {
                 >
                   <summary
                     className={cn(
-                      'flex h-9 cursor-pointer list-none items-center gap-1 rounded-full px-3.5 text-xs text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground [&::-webkit-details-marker]:hidden',
+                      'flex h-8 cursor-pointer list-none items-center gap-1 rounded-lg px-3 text-xs text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground [&::-webkit-details-marker]:hidden',
                       (tab === 'projects' || tab === 'process') &&
                         'folio-nav-active font-semibold text-foreground',
                     )}
