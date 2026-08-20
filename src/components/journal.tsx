@@ -550,11 +550,6 @@ export const JournalPanel = memo(function JournalPanel({
           : 'grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6'
       }
     >
-      <div className="col-span-full mb-3 flex justify-end">
-        <Button type="button" variant="outline" size="sm" onClick={createMemo}>
-          + 새 메모
-        </Button>
-      </div>
       <JournalEditor
         writingFirst={writingFirst}
         date={date}
@@ -564,6 +559,7 @@ export const JournalPanel = memo(function JournalPanel({
         saveState={saveState}
         saveError={saveError}
         onSave={() => void save({ notify: notifyOnSave })}
+        onCreateMemo={createMemo}
         fileInputRef={fileInputRef}
         onImportChange={importObsidian}
         importing={importing}

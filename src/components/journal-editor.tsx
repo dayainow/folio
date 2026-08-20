@@ -29,6 +29,9 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  MoreHorizontal,
+  Plus,
   Upload,
   Tags,
 } from 'lucide-react'
@@ -53,6 +56,7 @@ export type JournalEditorProps = {
   saveState: JournalSaveState
   saveError: string | null
   onSave: () => void
+  onCreateMemo: () => void
   fileInputRef: RefObject<HTMLInputElement | null>
   onImportChange: (e: ChangeEvent<HTMLInputElement>) => void
   importing: boolean
@@ -88,6 +92,7 @@ export function JournalEditor({
   saveState,
   saveError,
   onSave,
+  onCreateMemo,
   fileInputRef,
   onImportChange,
   importing,
@@ -116,14 +121,14 @@ export function JournalEditor({
   return (
     <Card
       className={cn(
-        'overflow-hidden rounded-2xl border border-gray-100 bg-card shadow-sm dark:border-gray-800',
+        'folio-surface overflow-hidden rounded-[1.35rem] border-0 bg-card shadow-none',
         writingFirst && 'flex flex-col',
       )}
     >
       {/* ── 상단 툴바 ── */}
       <div
         className={cn(
-          'flex flex-wrap items-center justify-between gap-3 border-b border-gray-200/80 bg-gray-50/90 px-3 py-2.5 dark:border-gray-800 dark:bg-gray-900/60',
+          'flex items-center justify-between gap-2 border-b border-foreground/[0.07] bg-muted/20 px-3 py-2.5',
           writingFirst ? 'px-3' : 'px-4',
         )}
         role="toolbar"
@@ -131,7 +136,7 @@ export function JournalEditor({
       >
         <div
           ref={dateSwipeRef}
-          className="flex items-center gap-2 touch-pan-y"
+          className="flex min-w-0 items-center gap-0.5 touch-pan-y"
           title="좌우로 쓸어 날짜 이동"
         >
           <Button
@@ -144,7 +149,7 @@ export function JournalEditor({
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <div className="flex min-w-[7.5rem] items-center justify-center gap-2 rounded-lg px-2 py-1.5">
-            <Calendar className="h-4 w-4 text-slate-400" aria-hidden />
+            <Calendar className="hidden h-3.5 w-3.5 text-muted-foreground sm:block" aria-hidden />
             <span className="text-sm font-medium tabular-nums" aria-live="polite">
               {date}
             </span>
@@ -160,7 +165,7 @@ export function JournalEditor({
           </Button>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1">
           <input
             ref={fileInputRef}
             type="file"
@@ -169,20 +174,45 @@ export function JournalEditor({
             className="hidden"
             onChange={onImportChange}
           />
-          <ExportMenu label="내보내기" size="default" items={exportItems} extra={exportExtra} />
           <Button
             type="button"
-            variant="outline"
-            disabled={importing}
-            onClick={() => fileInputRef.current?.click()}
-            aria-label={importing ? 'Obsidian 가져오는 중' : 'Obsidian 가져오기'}
+            variant="ghost"
+            size="icon"
+            className="size-9 rounded-full"
+            onClick={onCreateMemo}
+            aria-label="새 메모"
           >
-            <Upload className="h-4 w-4" aria-hidden />
-            {importing ? '가져오는 중…' : 'Obsidian 가져오기'}
+            <Plus className="h-4 w-4" aria-hidden />
           </Button>
+          <details
+            className="group/more relative"
+            onBlur={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget as Node | null)) event.currentTarget.removeAttribute('open')
+            }}
+          >
+            <summary className="flex size-9 cursor-pointer list-none items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden" aria-label="일지 도구 더보기">
+              <MoreHorizontal className="size-4" aria-hidden />
+            </summary>
+            <div className="absolute right-0 top-10 z-40 flex w-56 flex-col gap-1 rounded-xl border bg-background p-2 shadow-xl">
+              <ExportMenu label="내보내기" size="default" items={exportItems} extra={exportExtra} className="w-full justify-start rounded-lg shadow-none" />
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full justify-start gap-2 rounded-lg"
+                disabled={importing}
+                onClick={() => fileInputRef.current?.click()}
+                aria-label={importing ? 'Obsidian 가져오는 중' : 'Obsidian 가져오기'}
+              >
+                <Upload className="h-4 w-4" aria-hidden />
+                {importing ? '가져오는 중…' : 'Obsidian 가져오기'}
+              </Button>
+            </div>
+          </details>
           <Button
             type="button"
             variant="default"
+            size="sm"
+            className="h-9 rounded-full px-3"
             disabled={saveState === 'saving'}
             onClick={onSave}
             aria-busy={saveState === 'saving'}
@@ -263,7 +293,7 @@ export function JournalEditor({
       )}
 
       {/* ── 본문 ── */}
-      <div className={cn('bg-white dark:bg-card', writingFirst ? 'shrink-0 px-3 pt-2 sm:px-4' : 'p-4')}>
+      <div className={cn('bg-card', writingFirst ? 'shrink-0 px-3 pt-2 sm:px-4' : 'p-4')}>
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <PresenceBar roomId={`journal:${date}`} tab="journal" user={collabUser} />
           <div className="flex flex-wrap items-center gap-2">
@@ -296,14 +326,19 @@ export function JournalEditor({
       </div>
 
       {/* ── 하단 메타 패널 (태그 · 주석 · 커스텀 필드) ── */}
-      <div
-        className={cn(
-          'border-t border-gray-200/80 bg-gray-50/90 dark:border-gray-800 dark:bg-gray-900/60',
-          writingFirst ? 'px-3 py-2.5 sm:px-4' : 'px-4 py-3',
-        )}
-        aria-label="일지 메타"
-      >
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 lg:items-start">
+      <details className="group/meta border-t border-foreground/[0.07] bg-muted/15" open={!writingFirst}>
+        <summary aria-label="태그 및 세부 정보" className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+          <span className="inline-flex items-center gap-2"><Tags className="size-3.5 text-muted-foreground" />태그 및 세부 정보{currentTags.length ? <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">{currentTags.length}</span> : null}</span>
+          <ChevronDown className="size-4 text-muted-foreground transition-transform group-open/meta:rotate-180" />
+        </summary>
+        <div
+          className={cn(
+            'border-t border-foreground/[0.07]',
+            writingFirst ? 'px-3 py-3 sm:px-4' : 'px-4 py-3',
+          )}
+          aria-label="일지 메타"
+        >
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 lg:items-start">
           {/* 태그 */}
           <section
             className="rounded-lg border border-gray-200/80 bg-white/70 p-2.5 dark:border-gray-700 dark:bg-gray-950/50"
@@ -394,8 +429,9 @@ export function JournalEditor({
             recordId={date}
             className="rounded-lg border border-gray-200/80 bg-white/70 p-2.5 dark:border-gray-700 dark:bg-gray-950/50"
           />
+          </div>
         </div>
-      </div>
+      </details>
     </Card>
   )
 }
