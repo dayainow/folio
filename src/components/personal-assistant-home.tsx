@@ -216,46 +216,52 @@ export function PersonalAssistantHome({
 
   return (
     <div className="folio-home mx-auto w-full max-w-6xl space-y-6 pb-8" aria-busy={loading}>
-      <section className="folio-hero relative overflow-hidden rounded-[2rem] p-6 sm:p-9">
-        <div aria-hidden className="folio-hero-orbit absolute -right-14 -top-20 size-64 rounded-full" />
-        <div aria-hidden className="absolute -bottom-24 left-[42%] size-52 rounded-full bg-emerald-200/15 blur-3xl dark:bg-emerald-400/5" />
-        <div className="relative">
-          <div>
-            <div className="folio-eyebrow mb-5 inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em]">
-              <Sparkles className="size-3.5" />
-              나를 위한 기록 비서
+      <section className="folio-hero overflow-hidden rounded-[1.75rem] px-5 py-5 sm:px-7 sm:py-6">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <div className="folio-eyebrow inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em]">
+                <Sparkles className="size-3" />
+                오늘
+              </div>
+              <p className="text-xs font-medium text-muted-foreground">{formatToday(now, locale)}</p>
             </div>
-            <p className="text-xs font-medium tracking-wide text-muted-foreground">{formatToday(now, locale)}</p>
-            <h1 className="mt-2 max-w-3xl text-3xl font-semibold leading-[1.15] tracking-[-0.045em] sm:text-[2.75rem]">{greeting(now)}</h1>
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-[15px]">
-              오늘의 생각을 붙잡고, 해야 할 일을 살피고, 잊고 있던 기록을 다시 꺼내드릴게요.
+            <h1 className="mt-3 text-[1.75rem] font-semibold leading-tight tracking-[-0.04em] sm:text-[2.15rem]">{greeting(now)}</h1>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
+              기록하고, 정리하고, 가장 중요한 일에 집중하세요.
             </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Button size="sm" className="folio-primary-action h-10 gap-2 rounded-full px-5" onClick={primaryAction.action}>
-                <PrimaryActionIcon className="size-3.5" />
-                {primaryAction.label}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-10 gap-2 rounded-full border-foreground/10 bg-white/50 px-4 dark:bg-white/5"
-                onClick={openIntake}
-              >
-                <Inbox className="size-3.5" />
-                통합 수집함
-              </Button>
-            </div>
-            <p className="mt-7 text-[11px] font-medium tracking-wide text-muted-foreground">
-              오늘 기록 {loading ? '–' : todayEntries.length} · 진행할 일 {loading ? '–' : activeTasks.length} · 최근 문서 {loading ? '–' : recentDocs.length}
-            </p>
-            {previousReview?.tomorrow ? (
-              <button type="button" onClick={primaryAction.action} className="mt-3 inline-flex max-w-2xl items-center gap-2 rounded-xl border border-teal-700/10 bg-white/45 px-3 py-2 text-left text-xs text-muted-foreground transition-colors hover:bg-white/70 dark:bg-white/5 dark:hover:bg-white/10">
-                <span className="shrink-0 font-semibold text-teal-800 dark:text-teal-300">어제 정한 첫 행동</span>
-                <span className="truncate text-foreground/80">{previousReview.tomorrow}</span>
-                <ArrowRight className="size-3.5 shrink-0" />
-              </button>
-            ) : null}
           </div>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <Button size="sm" className="folio-primary-action h-10 gap-2 rounded-full px-5" onClick={primaryAction.action}>
+              <PrimaryActionIcon className="size-3.5" />
+              {primaryAction.label}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-10 gap-2 rounded-full border-foreground/10 bg-background/60 px-4 shadow-none"
+              onClick={openIntake}
+            >
+              <Inbox className="size-3.5" />
+              수집함
+            </Button>
+          </div>
+        </div>
+        <div className="mt-5 flex flex-col gap-3 border-t border-foreground/[0.07] pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4 text-[11px] font-medium text-muted-foreground" aria-label="오늘의 현황">
+            <span><strong className="font-semibold text-foreground">{loading ? '–' : todayEntries.length}</strong> 기록</span>
+            <span><strong className="font-semibold text-foreground">{loading ? '–' : activeTasks.length}</strong> 할 일</span>
+            <span><strong className="font-semibold text-foreground">{loading ? '–' : recentDocs.length}</strong> 최근 문서</span>
+          </div>
+          {previousReview?.tomorrow ? (
+            <button type="button" onClick={primaryAction.action} className="group flex min-w-0 items-center gap-2 text-left text-xs text-muted-foreground transition-colors hover:text-foreground">
+              <span className="shrink-0 font-semibold text-teal-800 dark:text-teal-300">첫 행동</span>
+              <span className="truncate">{previousReview.tomorrow}</span>
+              <ArrowRight className="size-3.5 shrink-0 transition-transform group-hover:translate-x-0.5" />
+            </button>
+          ) : (
+            <span className="text-[11px] text-muted-foreground">작은 기록부터 가볍게 시작해보세요.</span>
+          )}
         </div>
       </section>
 

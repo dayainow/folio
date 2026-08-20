@@ -218,38 +218,23 @@ html.folio-mobile-fs body {
 }
 
 .folio-hero {
-  border: 1px solid color-mix(in oklab, var(--folio-jade) 18%, var(--border));
-  background:
-    linear-gradient(115deg, color-mix(in oklab, var(--card) 94%, var(--folio-jade) 6%), color-mix(in oklab, var(--card) 97%, white) 58%, color-mix(in oklab, var(--card) 91%, #e8dcc3));
-  box-shadow: 0 28px 70px -48px color-mix(in oklab, var(--folio-jade) 70%, black), inset 0 1px 0 rgb(255 255 255 / 75%);
+  border: 1px solid color-mix(in oklab, var(--border) 82%, transparent);
+  background: color-mix(in oklab, var(--card) 94%, var(--folio-jade) 2%);
+  box-shadow: 0 18px 55px -46px color-mix(in oklab, var(--foreground) 50%, transparent), inset 0 1px 0 rgb(255 255 255 / 70%);
 }
 
 .dark .folio-hero {
-  background: linear-gradient(120deg, color-mix(in oklab, var(--card) 89%, var(--folio-jade) 11%), var(--card) 58%, color-mix(in oklab, var(--card) 91%, #443824));
-  box-shadow: 0 32px 75px -52px black, inset 0 1px 0 rgb(255 255 255 / 7%);
-}
-
-.folio-hero-orbit {
-  border: 1px solid color-mix(in oklab, var(--folio-jade) 15%, transparent);
-  background: radial-gradient(circle at 35% 35%, color-mix(in oklab, var(--folio-jade) 20%, transparent), transparent 65%);
-  box-shadow: 0 0 0 2.5rem color-mix(in oklab, var(--folio-jade) 3%, transparent);
+  background: color-mix(in oklab, var(--card) 96%, var(--folio-jade) 2%);
+  box-shadow: 0 20px 55px -44px black, inset 0 1px 0 rgb(255 255 255 / 6%);
 }
 
 .folio-eyebrow {
   color: var(--folio-jade);
 }
 
-.folio-eyebrow::before {
-  content: '';
-  width: 1.5rem;
-  height: 1px;
-  background: currentColor;
-  opacity: 0.55;
-}
-
 .folio-primary-action {
-  background: linear-gradient(145deg, color-mix(in oklab, var(--primary) 88%, black), var(--primary));
-  box-shadow: 0 10px 24px -14px var(--primary), inset 0 1px 0 rgb(255 255 255 / 20%);
+  background: var(--primary);
+  box-shadow: 0 8px 20px -14px var(--primary), inset 0 1px 0 rgb(255 255 255 / 16%);
 }
 
 .folio-surface {
