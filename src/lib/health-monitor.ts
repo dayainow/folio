@@ -233,7 +233,7 @@ export async function overallHealth(): Promise<OverallHealth> {
   let badgeLabel = '정상'
   let summary = '저장·연동 상태가 정상입니다'
 
-  // 우선순위: 클라우드 끊김 → Beacon 미연동 → 정상
+  // 선택한 저장 경로만 상태 경고에 반영한다. Beacon 미연결은 로컬 모드에서 정상이다.
   if (
     (cloudRelevant && cloudOk === false) ||
     (supabase.configured && !supabase.connected)
@@ -241,13 +241,13 @@ export async function overallHealth(): Promise<OverallHealth> {
     level = 'cloud-disconnected'
     badgeLabel = '클라우드 연결 끊김'
     summary = supabase.message
-  } else if (!beacon.available || (beaconRelevant && beaconOk === false)) {
+  } else if (beaconRelevant && (!beacon.available || beaconOk === false)) {
     level = 'beacon-unlinked'
     badgeLabel = 'Beacon 미연동'
     summary = beacon.message
-  } else if (!localOk || beacon.dbOk === false) {
+  } else if (!localOk || (beaconRelevant && beacon.dbOk === false)) {
     level = 'degraded'
-    badgeLabel = 'Beacon 미연동'
+    badgeLabel = !localOk ? '로컬 저장 확인' : 'Beacon 확인 필요'
     summary = !localOk ? storage.message : beacon.message
   }
 

@@ -136,7 +136,7 @@ export function HealthStatus() {
     return () => document.removeEventListener('mousedown', onPointer)
   }, [open])
 
-  const level: HealthLevel = health?.level ?? 'beacon-unlinked'
+  const level: HealthLevel = health?.level ?? 'ok'
   const styles = badgeStyles(level)
   const label = health?.badgeLabel ?? (loading ? '점검 중' : '상태 미확인')
 
@@ -148,7 +148,9 @@ export function HealthStatus() {
         ? health.supabase.connected &&
           (health.storage.mode !== 'cloud' || health.supabase.authenticated)
         : null
-  const beaconOk = health?.beacon.available ?? null
+  const beaconOk = health?.storage.beaconRelevant
+    ? (health.beacon.available ?? null)
+    : null
 
   return (
     <>
@@ -231,7 +233,13 @@ export function HealthStatus() {
                 icon={<Database className="h-3.5 w-3.5" />}
                 title="Beacon"
                 ok={beaconOk}
-                detail={health?.beacon.message ?? '—'}
+                detail={
+                  health?.storage.beaconRelevant
+                    ? (health.beacon.message ?? '—')
+                    : health?.beacon.available
+                      ? '선택 확장 · 연결됨'
+                      : '선택 확장 · 연결하지 않아도 사용할 수 있습니다'
+                }
               />
             </div>
 

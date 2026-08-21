@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
-import { ChevronDown, Cloud, Database, HardDrive } from 'lucide-react';
+import { ChevronDown, Cloud, Database, HardDrive, Puzzle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   getStorageMode,
@@ -13,7 +13,14 @@ import {
 } from '@/lib/storage';
 import { useEscapeToClose, useFocusTrap } from '@/lib/a11y';
 
-const MODES: StorageMode[] = ['local', 'cloud', 'beacon'];
+export const PRIMARY_STORAGE_MODES: StorageMode[] = ['local', 'cloud'];
+export const EXTENSION_STORAGE_MODES: StorageMode[] = ['beacon'];
+
+const MODE_DESCRIPTIONS: Record<StorageMode, string> = {
+  local: '이 기기에 빠르고 안전하게 저장',
+  cloud: '로그인한 기기에서 동기화',
+  beacon: '프로젝트 파일과 고급 동기화',
+};
 
 function ModeIcon({ mode, className }: { mode: StorageMode; className?: string }) {
   if (mode === 'cloud') return <Cloud className={className} />;
@@ -141,11 +148,11 @@ export function StorageModeToggle() {
           aria-label="저장 모드 선택"
           className="absolute right-0 top-full z-50 mt-1 w-48 rounded-xl border border-gray-100 dark:border-gray-800 bg-background shadow-lg p-1"
         >
-          {MODES.map((m) => {
+          {PRIMARY_STORAGE_MODES.map((m) => {
             const disabled =
-              (m === 'beacon' && !beaconOk) || (m === 'cloud' && !authed);
+              m === 'cloud' && !authed;
             const disabledHint =
-              m === 'cloud' && !authed ? '로그인 필요' : m === 'beacon' && !beaconOk ? '없음' : null;
+              m === 'cloud' && !authed ? '로그인 필요' : null;
             return (
               <button
                 key={m}
@@ -161,7 +168,12 @@ export function StorageModeToggle() {
                 } ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
               >
                 <ModeIcon mode={m} className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                <span className="flex-1">{STORAGE_MODE_LABELS[m]}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block">{STORAGE_MODE_LABELS[m]}</span>
+                  <span className="block truncate text-[9px] font-normal text-muted-foreground">
+                    {MODE_DESCRIPTIONS[m]}
+                  </span>
+                </span>
                 {mode === m && (
                   <span className="text-[10px] text-muted-foreground">현재</span>
                 )}
@@ -171,8 +183,38 @@ export function StorageModeToggle() {
               </button>
             );
           })}
-          <p className="px-2.5 pt-1.5 pb-1 text-[10px] text-muted-foreground leading-snug">
-            클라우드: 로그인 필요 · Beacon: `.beacon` 초기화 필요
+          <div className="mx-1 my-1.5 border-t border-gray-100 dark:border-gray-800" />
+          <div className="flex items-center gap-1.5 px-2.5 pb-1 pt-0.5 text-[9px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+            <Puzzle className="size-3" aria-hidden />
+            고급 확장
+          </div>
+          {EXTENSION_STORAGE_MODES.map((m) => (
+            <button
+              key={m}
+              type="button"
+              role="menuitemradio"
+              aria-checked={mode === m}
+              disabled={!beaconOk}
+              onClick={() => select(m)}
+              className={`w-full flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs transition-colors ${
+                mode === m
+                  ? 'bg-gray-100 dark:bg-gray-800 font-medium'
+                  : 'hover:bg-gray-50 dark:hover:bg-gray-900'
+              } ${!beaconOk ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <ModeIcon mode={m} className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              <span className="min-w-0 flex-1">
+                <span className="block">{STORAGE_MODE_LABELS[m]}</span>
+                <span className="block truncate text-[9px] font-normal text-muted-foreground">
+                  {beaconOk ? MODE_DESCRIPTIONS[m] : '프로세스 탭에서 먼저 연결'}
+                </span>
+              </span>
+              {mode === m && <span className="text-[10px] text-muted-foreground">현재</span>}
+              {!beaconOk && <span className="text-[9px] text-muted-foreground">선택</span>}
+            </button>
+          ))}
+          <p className="px-2.5 pb-1 pt-1.5 text-[10px] leading-snug text-muted-foreground">
+            기본 사용에는 Beacon이 필요하지 않습니다.
           </p>
         </div>
       )}
