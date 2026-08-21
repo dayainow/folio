@@ -26,6 +26,9 @@ import {
   Link2,
   Bookmark,
   History,
+  ChevronDown,
+  MoreHorizontal,
+  Info,
 } from 'lucide-react';
 import { loadDocsWithFallback, saveDocWithFallback, deleteDocWithFallback, loadCategories, type DocEntry } from '@/lib/docs';
 import {
@@ -190,6 +193,7 @@ export const DocsEditor = memo(function DocsEditor({
   const [exportMsg, setExportMsg] = useState<string | null>(null);
   const [exportBusy, setExportBusy] = useState(false);
   const [showVersions, setShowVersions] = useState(false);
+  const [showDocumentInfo, setShowDocumentInfo] = useState(false);
   const [diffVersion, setDiffVersion] = useState<DocVersion | null>(null);
   const draftRef = useRef({ selectedId, title, content, category, docs });
 
@@ -585,7 +589,7 @@ export const DocsEditor = memo(function DocsEditor({
       }
     >
       {/* 문서 선택기 */}
-      <Card className="rounded-2xl border border-slate-100 p-3 shadow-sm dark:border-slate-800">
+      <Card className="folio-surface rounded-[1.35rem] border-0 p-3 shadow-none">
         <div className="flex flex-wrap items-center gap-2">
           <label className="sr-only" htmlFor="docs-editor-pick">문서 선택</label>
           <select
@@ -618,7 +622,7 @@ export const DocsEditor = memo(function DocsEditor({
 
       {/* Editor */}
       <Card
-        className={`rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col ${
+        className={`folio-surface rounded-[1.35rem] border-0 shadow-none overflow-hidden flex flex-col ${
           writingFirst ? 'min-h-0 lg:h-full' : 'min-h-[500px]'
         }`}
       >
@@ -646,26 +650,7 @@ export const DocsEditor = memo(function DocsEditor({
                   <span className="font-medium truncate">{docs.find(d => d.id === selectedId)?.title}</span>
                 )}
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <DocVersionSelect
-                  docId={selectedId}
-                  onPick={(v) => {
-                    setShowVersions(true);
-                    openDiff(v);
-                  }}
-                />
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={showVersions ? 'default' : 'ghost'}
-                  className="h-8 gap-1 px-2"
-                  aria-label="버전 이력"
-                  aria-pressed={showVersions}
-                  onClick={() => setShowVersions((v) => !v)}
-                >
-                  <History className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline text-[11px]">버전</span>
-                </Button>
+              <div className="flex items-center gap-1.5 shrink-0">
                 {editing ? (
                   <>
                     <select
@@ -696,72 +681,29 @@ export const DocsEditor = memo(function DocsEditor({
                 ) : (
                   <>
                     <Badge variant="outline">{docs.find(d => d.id === selectedId)?.category}</Badge>
-                    <ShareResourceButton
-                      kind="doc"
-                      resourceId={selectedId}
-                      resourceLabel={docs.find((d) => d.id === selectedId)?.title ?? '문서'}
-                      actorName={collabUser?.name}
-                      actorId={collabUser?.id}
-                    />
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 gap-1 px-2"
-                      aria-label="북마크"
-                      onClick={() => {
-                        const doc = docs.find((d) => d.id === selectedId)
-                        if (!doc) return
-                        toggleBookmark({
-                          kind: 'doc',
-                          targetId: doc.id,
-                          title: doc.title,
-                          tags: [doc.category],
-                        })
-                        notifyBookmarksChanged()
-                      }}
-                    >
-                      <Bookmark
-                        className={`h-3.5 w-3.5 ${isBookmarked('doc', selectedId) ? 'fill-amber-400 text-amber-500' : ''}`}
-                      />
-                    </Button>
-                    <ExportMenu
-                      label="MD"
-                      items={[
-                        {
-                          id: 'md-current',
-                          label: '이 문서 Markdown',
-                          description: '개별 .md 다운로드',
-                          run: async (setProgress) => {
-                            const doc = docs.find((d) => d.id === selectedId)
-                            if (!doc) throw new Error('문서 없음')
-                            setProgress(0.5, '변환…')
-                            downloadText(
-                              docToMarkdown(doc),
-                              docFilename(doc),
-                              'text/markdown;charset=utf-8',
-                            )
-                            setProgress(1, '완료')
-                          },
-                        },
-                      ]}
-                    />
                     <Button
                       type="button"
                       size="sm"
                       variant="outline"
-                      className="gap-1 text-xs"
-                      disabled={exportBusy}
-                      onClick={() => void exportToBeacon()}
-                      aria-label="Beacon으로 export"
+                      className="h-8 gap-1.5 rounded-full px-3"
+                      onClick={startEdit}
+                      aria-label="문서 편집"
                     >
-                      {exportBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Share2 className="h-3 w-3" />}
-                      Beacon으로 export
+                      <Pencil className="size-3.5" />
+                      편집
                     </Button>
-                    <Button type="button" size="sm" variant="ghost" onClick={startEdit} aria-label="문서 편집">편집</Button>
-                    <Button type="button" size="sm" variant="ghost" onClick={() => void doDelete()} className="text-red-500 hover:text-red-600" aria-label="문서 삭제">
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+                    <details className="group/actions relative" onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) event.currentTarget.removeAttribute('open') }}>
+                      <summary aria-label="문서 작업 더보기" className="flex size-8 cursor-pointer list-none items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden"><MoreHorizontal className="size-4" /></summary>
+                      <div className="absolute right-0 top-10 z-40 flex w-60 flex-col gap-1 rounded-xl border bg-background p-2 shadow-xl">
+                        <DocVersionSelect docId={selectedId} onPick={(v) => { setShowVersions(true); openDiff(v) }} />
+                        <Button type="button" size="sm" variant="ghost" className="h-9 justify-start gap-2" aria-label="버전 이력" aria-pressed={showVersions} onClick={() => setShowVersions((v) => !v)}><History className="size-3.5" />버전 이력</Button>
+                        <ShareResourceButton kind="doc" resourceId={selectedId} resourceLabel={docs.find((d) => d.id === selectedId)?.title ?? '문서'} actorName={collabUser?.name} actorId={collabUser?.id} />
+                        <Button type="button" size="sm" variant="ghost" className="h-9 justify-start gap-2" aria-label="북마크" onClick={() => { const doc = docs.find((d) => d.id === selectedId); if (!doc) return; toggleBookmark({ kind: 'doc', targetId: doc.id, title: doc.title, tags: [doc.category] }); notifyBookmarksChanged() }}><Bookmark className={`size-3.5 ${isBookmarked('doc', selectedId) ? 'fill-amber-400 text-amber-500' : ''}`} />북마크</Button>
+                        <ExportMenu label="Markdown 내보내기" items={[{ id: 'md-current', label: '이 문서 Markdown', description: '개별 .md 다운로드', run: async (setProgress) => { const doc = docs.find((d) => d.id === selectedId); if (!doc) throw new Error('문서 없음'); setProgress(0.5, '변환…'); downloadText(docToMarkdown(doc), docFilename(doc), 'text/markdown;charset=utf-8'); setProgress(1, '완료') } }]} className="h-9 w-full justify-start rounded-md border-0 shadow-none" />
+                        <Button type="button" size="sm" variant="ghost" className="h-9 justify-start gap-2" disabled={exportBusy} onClick={() => void exportToBeacon()} aria-label="Beacon으로 export">{exportBusy ? <Loader2 className="size-3.5 animate-spin" /> : <Share2 className="size-3.5" />}Beacon으로 export</Button>
+                        <Button type="button" size="sm" variant="ghost" className="h-9 justify-start gap-2 text-red-500 hover:text-red-600" onClick={() => void doDelete()} aria-label="문서 삭제"><Trash2 className="size-3.5" />문서 삭제</Button>
+                      </div>
+                    </details>
                   </>
                 )}
               </div>
@@ -883,39 +825,6 @@ export const DocsEditor = memo(function DocsEditor({
               )}
             </div>
 
-            {selectedId && (
-              <div className="border-t border-gray-50 px-4 py-3">
-                <DocCommentsPanel
-                  targetKind="doc"
-                  targetId={selectedId}
-                  user={collabUser}
-                  mentionSuggestions={
-                    collabUser?.email ? [collabUser.email.split('@')[0]!] : []
-                  }
-                />
-              </div>
-            )}
-
-            {backlinks.length > 0 && (
-              <div className="border-t border-gray-50 px-4 py-3">
-                <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-gray-600">
-                  <Link2 className="h-3.5 w-3.5" aria-hidden />
-                  역링크 ({backlinks.length})
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {backlinks.map((d) => (
-                    <button
-                      key={d.id}
-                      type="button"
-                      onClick={() => openDocById(d.id)}
-                      className="rounded-lg border border-gray-100 bg-gray-50 px-2 py-1 text-[11px] text-gray-700 hover:bg-gray-100"
-                    >
-                      {d.title}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
@@ -929,78 +838,20 @@ export const DocsEditor = memo(function DocsEditor({
       </Card>
 
 
-      {/* 하단 메타 · 저장 */}
       {selectedId && (
-        <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-100 bg-slate-50/80 px-3 py-2.5 dark:border-slate-800 dark:bg-slate-900/50">
-          <label className="flex items-center gap-2 text-xs text-muted-foreground">
-            카테고리
-            <Input
-              value={category}
-              onChange={(e) => {
-                setCategory(e.target.value);
-                setEditing(true);
-              }}
-              className="h-11 w-40 text-xs"
-              list="docs-editor-categories"
-            />
-            <datalist id="docs-editor-categories">
-              {categories.map((c) => (
-                <option key={c} value={c} />
-              ))}
-            </datalist>
-          </label>
-          <div className="ml-auto flex flex-wrap gap-2">
-            <ExportMenu
-              label="내보내기"
-              items={[
-                {
-                  id: 'md-one',
-                  label: 'Markdown',
-                  run: async (setProgress) => {
-                    const doc = docs.find((d) => d.id === selectedId);
-                    if (!doc) throw new Error('문서 없음');
-                    setProgress(0.5, '변환…');
-                    const payload = { ...doc, title: title.trim() || doc.title, content, category };
-                    downloadText(docToMarkdown(payload), docFilename(payload), 'text/markdown;charset=utf-8');
-                    setProgress(1, '완료');
-                  },
-                },
-              ]}
-            />
-            <Button
-              type="button"
-              disabled={saveState === 'saving' || !selectedId}
-              onClick={() => void doSave({ keepEditing: true })}
-              className="gap-2"
-              aria-label="문서 저장"
-            >
-              {saveState === 'saving' ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="h-4 w-4" />
-              )}
-              {saveState === 'saved' ? '저장됨' : '저장'}
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* 링크 그래프 — writing-first: 하단 전체 폭, 고정 높이(잘림 방지) */}
-      {selectedId && (!writingFirst || docs.length > 0) && (
-        <div
-          className={
-            writingFirst
-              ? 'h-[22rem] lg:col-span-2'
-              : 'min-h-[320px] lg:col-span-2 xl:col-span-1 xl:min-h-[420px]'
-          }
-        >
-          <LinkGraphPanel
-            docs={docs}
-            selectedId={selectedId}
-            onSelectDoc={openDocById}
-            compact={writingFirst}
-          />
-        </div>
+        <details className="folio-surface group/info overflow-hidden rounded-[1.35rem]" open={showDocumentInfo} onToggle={(event) => setShowDocumentInfo(event.currentTarget.open)}>
+          <summary aria-label="문서 정보" className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+            <span className="inline-flex items-center gap-2"><Info className="size-3.5 text-muted-foreground" />문서 정보<span className="text-[10px] font-normal text-muted-foreground">댓글 · 역링크 · 링크 그래프</span></span>
+            <ChevronDown className="size-4 text-muted-foreground transition-transform group-open/info:rotate-180" />
+          </summary>
+          {showDocumentInfo ? (
+            <div className="space-y-4 border-t border-foreground/[0.07] p-4">
+              <DocCommentsPanel targetKind="doc" targetId={selectedId} user={collabUser} mentionSuggestions={collabUser?.email ? [collabUser.email.split('@')[0]!] : []} />
+              {backlinks.length > 0 ? <div><div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground"><Link2 className="size-3.5" />역링크 ({backlinks.length})</div><div className="flex flex-wrap gap-1.5">{backlinks.map((d) => <button key={d.id} type="button" onClick={() => openDocById(d.id)} className="rounded-lg border border-foreground/10 bg-background px-2 py-1 text-[11px] hover:bg-muted">{d.title}</button>)}</div></div> : null}
+              <div className={writingFirst ? 'h-[22rem]' : 'min-h-[320px]'}><LinkGraphPanel docs={docs} selectedId={selectedId} onSelectDoc={openDocById} compact={writingFirst} /></div>
+            </div>
+          ) : null}
+        </details>
       )}
 
       <DocDiffViewer
