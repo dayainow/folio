@@ -23,11 +23,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import {
   Plus,
   Search,
-  CircleDot,
   ChevronUp,
   ChevronDown,
   RefreshCw,
@@ -38,6 +36,7 @@ import {
   Pause,
   Play,
   Settings2,
+  MoreHorizontal,
 } from 'lucide-react';
 import { loadTasksWithFallback, saveTasksWithFallback, deleteTaskWithFallback, type Task, DEFAULT_COLUMNS } from '@/lib/board';
 import { loadJournalsWithFallback } from '@/lib/journal';
@@ -67,10 +66,16 @@ import { progressiveWindow } from '@/lib/progressive-list';
 const STATUS_ORDER: Task['status'][] = ['backlog', 'in_progress', 'review', 'done'];
 const DONE_BATCH_SIZE = 12;
 
-const PRIORITY_COLORS: Record<string, string> = {
-  high: 'bg-red-50 text-red-600 border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-900',
-  medium: 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-950/30 dark:text-yellow-400 dark:border-yellow-900',
-  low: 'bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700',
+const PRIORITY_DOTS: Record<Task['priority'], string> = {
+  high: 'bg-red-500',
+  medium: 'bg-amber-400',
+  low: 'bg-slate-300 dark:bg-slate-600',
+};
+
+const PRIORITY_LABELS: Record<Task['priority'], string> = {
+  high: '높음',
+  medium: '보통',
+  low: '낮음',
 };
 
 function resolveDropStatus(overId: string | number, tasks: Task[]): Task['status'] | null {
@@ -128,32 +133,18 @@ const TaskCardBody = memo(function TaskCardBody({
               />
             </Button>
           )}
-          {showActions && onMove && (
-            <>
-              {task.status !== 'backlog' && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => onMove('left')}
-                  className="h-5 w-5"
-                  aria-label="이전 컬럼으로 이동"
-                >
-                  <ChevronUp className="h-3 w-3" />
-                </Button>
-              )}
-              {task.status !== 'done' && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => onMove('right')}
-                  className="h-5 w-5"
-                  aria-label="다음 컬럼으로 이동"
-                >
-                  <ChevronDown className="h-3 w-3" />
-                </Button>
-              )}
-            </>
-          )}
+          {showActions && onMove && onEdit && onDelete ? (
+            <details className="group/actions relative" onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) event.currentTarget.removeAttribute('open') }}>
+              <summary aria-label={`${task.title} 작업 더보기`} className="flex size-6 cursor-pointer list-none items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden"><MoreHorizontal className="size-3.5" /></summary>
+              <div className="absolute right-0 top-7 z-30 flex w-40 flex-col gap-0.5 rounded-xl border bg-background p-1.5 shadow-xl">
+                {task.status !== 'backlog' ? <Button variant="ghost" size="sm" onClick={() => onMove('left')} className="h-8 justify-start gap-2 text-xs"><ChevronUp className="size-3.5" />이전 단계</Button> : null}
+                {task.status !== 'done' ? <Button variant="ghost" size="sm" onClick={() => onMove('right')} className="h-8 justify-start gap-2 text-xs"><ChevronDown className="size-3.5" />다음 단계</Button> : null}
+                <Button variant="ghost" size="sm" onClick={onEdit} className="h-8 justify-start text-xs">편집</Button>
+                {githubEnabled && !task.githubUrl && onCreateGithub ? <Button variant="ghost" size="sm" onClick={onCreateGithub} disabled={githubBusy} className="h-8 justify-start gap-2 text-xs"><GitBranch className="size-3.5" />{githubBusy ? '생성 중…' : 'GitHub 연결'}</Button> : null}
+                <Button variant="ghost" size="sm" onClick={onDelete} className="h-8 justify-start text-xs text-red-500 hover:text-red-600">삭제</Button>
+              </div>
+            </details>
+          ) : null}
         </div>
       </div>
       {task.description && (
@@ -183,9 +174,9 @@ const TaskCardBody = memo(function TaskCardBody({
         </div>
       )}
       <div className="flex flex-wrap items-center gap-1.5 mt-2">
-        <Badge variant="outline" className={`text-[10px] px-1 py-0 h-auto ${PRIORITY_COLORS[task.priority]}`}>
-          <CircleDot className="h-2.5 w-2.5 inline mr-0.5" />
-          {task.priority}
+        <Badge variant="outline" className="h-auto gap-1 border-foreground/[0.08] bg-transparent px-1.5 py-0.5 text-[10px] font-normal text-muted-foreground">
+          <span className={`size-1.5 rounded-full ${PRIORITY_DOTS[task.priority]}`} />
+          {PRIORITY_LABELS[task.priority]}
         </Badge>
         {task.tags.slice(0, 2).map(t => (
           <Badge key={t} variant="secondary" className="text-[10px] px-1 py-0 h-auto">#{t}</Badge>
@@ -249,27 +240,6 @@ const TaskCardBody = memo(function TaskCardBody({
           ) : null}
         </div>
       )}
-      {showActions && onEdit && onDelete && (
-        <>
-          <Separator className="my-2" />
-          <div className="flex flex-wrap gap-1" onPointerDown={e => e.stopPropagation()}>
-            <Button variant="ghost" size="sm" onClick={onEdit} className="h-7 text-[11px]">편집</Button>
-            {githubEnabled && !task.githubUrl && onCreateGithub && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onCreateGithub}
-                disabled={githubBusy}
-                className="h-7 text-[11px] gap-1"
-              >
-                <GitBranch className="h-3 w-3" />
-                {githubBusy ? '생성 중…' : 'GitHub'}
-              </Button>
-            )}
-            <Button variant="ghost" size="sm" onClick={onDelete} className="h-7 text-[11px] text-red-500">삭제</Button>
-          </div>
-        </>
-      )}
     </>
   );
 });
@@ -330,10 +300,10 @@ function DraggableTaskCard({
           onMove('right');
         }
       }}
-      className={`rounded-xl border bg-card p-3 shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing touch-none outline-none ${
+      className={`group/card rounded-2xl border bg-card p-3 shadow-none transition-colors hover:border-foreground/20 cursor-grab active:cursor-grabbing touch-none outline-none ${
         focused
-          ? 'border-blue-400 ring-2 ring-blue-300 dark:ring-blue-800'
-          : 'border-gray-100 dark:border-gray-700'
+          ? 'border-primary/50 ring-2 ring-primary/15'
+          : 'border-foreground/[0.08]'
       }`}
     >
       <TaskCardBody
