@@ -16,6 +16,7 @@ import {
   RefreshCw,
   Save,
   Sparkles,
+  TriangleAlert,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -437,12 +438,19 @@ export function BeaconPanel() {
       }
       if (opts?.forceBeacon && activeData.source === 'local') {
         setError('연결된 Beacon 프로젝트가 없습니다. .beacon 폴더를 직접 선택해 주세요.');
+      } else if (wantsBeacon && activeData.source === 'local') {
+        setError('Beacon에 연결하지 못해 이 기기의 업무 흐름을 사용 중입니다.');
       }
     } catch (e) {
       // Beacon은 선택 확장이다. 연결 실패가 기본 로컬 업무 흐름을 막지 않는다.
       console.warn('Beacon 연결을 건너뛰고 로컬 프로세스를 사용합니다.', e);
-      setError(null);
-      setView(loadLocalProcess());
+      const localView = loadLocalProcess();
+      setError('Beacon 연결이 중단되어 이 기기의 업무 흐름으로 안전하게 전환했습니다.');
+      setView(localView);
+      setNameDraft(localView.summary?.name ?? '');
+      setStagesDraft(localView.summary?.stages ?? []);
+      setArtifactsDraft(localView.artifacts);
+      setSnapshots([]);
     } finally {
       setLoading(false);
     }
@@ -704,7 +712,7 @@ export function BeaconPanel() {
     return (
       <div className="flex items-center justify-center py-20 text-sm text-muted-foreground gap-2">
         <Loader2 className="h-4 w-4 animate-spin" />
-        Beacon 상태 읽는 중…
+        업무 흐름 준비 중…
       </div>
     );
   }
@@ -853,7 +861,26 @@ export function BeaconPanel() {
         </label>
       </div>}
 
-      {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+      {error && !beaconConnected && (
+        <div role="status" className="flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50/70 p-4 text-amber-950 sm:flex-row sm:items-center dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+          <div className="flex min-w-0 flex-1 items-start gap-2.5">
+            <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+            <div>
+              <p className="text-xs font-medium">Beacon을 연결하지 못했습니다</p>
+              <p className="mt-0.5 text-[11px] leading-relaxed opacity-80">{error} 로컬 데이터는 그대로 보존됩니다.</p>
+            </div>
+          </div>
+          <div className="flex shrink-0 gap-2">
+            <Button type="button" size="sm" variant="ghost" className="h-8 text-xs" onClick={useLocalProvider}>
+              로컬로 계속 사용
+            </Button>
+            <Button type="button" size="sm" variant="outline" className="h-8 text-xs" disabled={loading} onClick={() => void loadFromServer({ forceBeacon: true })}>
+              다시 감지
+            </Button>
+          </div>
+        </div>
+      )}
+      {error && beaconConnected && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
 
       {gateWarnings.length > 0 && (
         <div
