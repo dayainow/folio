@@ -85,10 +85,9 @@ export async function checkStorageMode(): Promise<StorageModeHealth> {
   const mode = getStorageMode()
   const localOk = probeLocalStorage()
   const supabase = await checkSupabaseConnection()
-  const beaconAvailable = await isBeaconAvailable()
-
   const cloudRelevant = mode === 'cloud'
   const beaconRelevant = mode === 'beacon'
+  const beaconAvailable = beaconRelevant ? await isBeaconAvailable() : false
   const cloudOk = cloudRelevant ? supabase.connected && supabase.authenticated : null
   const beaconOk = beaconRelevant ? beaconAvailable : null
 
@@ -207,11 +206,21 @@ export async function checkBeaconStatus(): Promise<BeaconHealth> {
 
 /** 종합 상태 + 헤더 뱃지 레벨 */
 export async function overallHealth(): Promise<OverallHealth> {
-  const [supabase, beacon] = await Promise.all([checkSupabaseConnection(), checkBeaconStatus()])
   const mode = getStorageMode()
+  const beaconRelevant = mode === 'beacon'
+  const [supabase, beacon] = await Promise.all([
+    checkSupabaseConnection(),
+    beaconRelevant
+      ? checkBeaconStatus()
+      : Promise.resolve<BeaconHealth>({
+          available: false,
+          root: null,
+          dbOk: null,
+          message: '선택 확장 · 사용하지 않음',
+        }),
+  ])
   const localOk = probeLocalStorage()
   const cloudRelevant = mode === 'cloud'
-  const beaconRelevant = mode === 'beacon'
   const cloudOk = cloudRelevant ? supabase.connected && supabase.authenticated : null
   const beaconOk = beaconRelevant ? beacon.available : null
 

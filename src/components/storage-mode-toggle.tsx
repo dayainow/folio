@@ -16,6 +16,10 @@ import { useEscapeToClose, useFocusTrap } from '@/lib/a11y';
 export const PRIMARY_STORAGE_MODES: StorageMode[] = ['local', 'cloud'];
 export const EXTENSION_STORAGE_MODES: StorageMode[] = ['beacon'];
 
+export function shouldCheckBeaconOnMount(mode: StorageMode): boolean {
+  return mode === 'beacon';
+}
+
 const MODE_DESCRIPTIONS: Record<StorageMode, string> = {
   local: '이 기기에 빠르고 안전하게 저장',
   cloud: '로그인한 기기에서 동기화',
@@ -31,6 +35,7 @@ function ModeIcon({ mode, className }: { mode: StorageMode; className?: string }
 export function StorageModeToggle() {
   const [mode, setMode] = useState<StorageMode>('local');
   const [beaconOk, setBeaconOk] = useState(false);
+  const [beaconChecking, setBeaconChecking] = useState(false);
   const [authed, setAuthed] = useState(false);
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -40,19 +45,28 @@ export function StorageModeToggle() {
   useEscapeToClose(open, close);
   useFocusTrap(open, rootRef);
 
+  const checkBeacon = useCallback(async () => {
+    setBeaconChecking(true);
+    try {
+      const ok = await isBeaconAvailable();
+      setBeaconOk(ok);
+      if (!ok && getStorageMode() === 'beacon') {
+        setStorageMode('local');
+        setMode('local');
+      }
+    } finally {
+      setBeaconChecking(false);
+    }
+  }, []);
+
   useEffect(() => {
     const handle = window.setTimeout(() => {
-      setMode(getStorageMode());
-      void isBeaconAvailable().then((ok) => {
-        setBeaconOk(ok);
-        if (!ok && getStorageMode() === 'beacon') {
-          setStorageMode('local');
-          setMode('local');
-        }
-      });
+      const current = getStorageMode();
+      setMode(current);
+      if (shouldCheckBeaconOnMount(current)) void checkBeacon();
     }, 0);
     return () => window.clearTimeout(handle);
-  }, []);
+  }, [checkBeacon]);
 
   useEffect(() => subscribeStorageMode(setMode), []);
 
@@ -126,7 +140,11 @@ export function StorageModeToggle() {
         size="sm"
         variant="outline"
         className="h-7 gap-1.5 text-xs max-w-[160px]"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          const next = !open;
+          setOpen(next);
+          if (next && !beaconChecking) void checkBeacon();
+        }}
         title="저장 모드"
         aria-label={`저장 모드, 현재 ${STORAGE_MODE_LABELS[mode]}`}
         aria-expanded={open}
@@ -194,23 +212,27 @@ export function StorageModeToggle() {
               type="button"
               role="menuitemradio"
               aria-checked={mode === m}
-              disabled={!beaconOk}
+              disabled={!beaconOk || beaconChecking}
               onClick={() => select(m)}
               className={`w-full flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs transition-colors ${
                 mode === m
                   ? 'bg-gray-100 dark:bg-gray-800 font-medium'
                   : 'hover:bg-gray-50 dark:hover:bg-gray-900'
-              } ${!beaconOk ? 'opacity-50 cursor-not-allowed' : ''}`}
+              } ${!beaconOk || beaconChecking ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <ModeIcon mode={m} className="h-3.5 w-3.5 shrink-0" aria-hidden />
               <span className="min-w-0 flex-1">
                 <span className="block">{STORAGE_MODE_LABELS[m]}</span>
                 <span className="block truncate text-[9px] font-normal text-muted-foreground">
-                  {beaconOk ? MODE_DESCRIPTIONS[m] : '프로세스 탭에서 먼저 연결'}
+                  {beaconChecking
+                    ? '연결 확인 중…'
+                    : beaconOk
+                      ? MODE_DESCRIPTIONS[m]
+                      : '프로세스 탭에서 먼저 연결'}
                 </span>
               </span>
               {mode === m && <span className="text-[10px] text-muted-foreground">현재</span>}
-              {!beaconOk && <span className="text-[9px] text-muted-foreground">선택</span>}
+              {!beaconOk && !beaconChecking && <span className="text-[9px] text-muted-foreground">선택</span>}
             </button>
           ))}
           <p className="px-2.5 pb-1 pt-1.5 text-[10px] leading-snug text-muted-foreground">

@@ -21,5 +21,6 @@ describe('overall health optional integrations', () => {
     expect(health.beacon.available).toBe(false)
     expect(health.level).toBe('ok')
     expect(health.badgeLabel).toBe('정상')
+    expect(fetch).not.toHaveBeenCalled()
   })
 })
