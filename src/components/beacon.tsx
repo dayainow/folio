@@ -8,11 +8,14 @@ import {
   Camera,
   CheckCircle2,
   Circle,
+  Database,
   FolderOpen,
   GitCompare,
+  HardDrive,
   Loader2,
   RefreshCw,
   Save,
+  Sparkles,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -53,6 +56,10 @@ import {
 } from '@/lib/beacon-timeline-consent';
 import { showAppToast } from '@/lib/health-monitor';
 import { loadLocalProcess, saveLocalProcess } from '@/lib/local-process';
+import {
+  getProcessProviderPreference,
+  setProcessProviderPreference,
+} from '@/lib/process-provider';
 
 const AUTO_SNAPSHOT_MS = 5 * 60 * 1000;
 
@@ -104,54 +111,6 @@ function formatWhen(iso: string | null | undefined): string {
   });
 }
 
-function EmptyState({
-  message,
-  onPick,
-  onRefresh,
-  loading,
-}: {
-  message: string;
-  onPick: () => void;
-  onRefresh: () => void;
-  loading: boolean;
-}) {
-  return (
-    <Card className="rounded-2xl border border-dashed border-gray-200 dark:border-gray-800 p-10 bg-card text-center">
-      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gray-50 dark:bg-gray-900">
-        <Activity className="h-5 w-5 text-gray-400" />
-      </div>
-      <h2 className="text-base font-semibold tracking-tight">{message}</h2>
-      <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
-        프로젝트 루트에서 Beacon CLI로 <code className="text-xs">.beacon/</code> 를 초기화한 뒤
-        새로고침하거나, 로컬 <code className="text-xs">.beacon</code> 폴더를 직접 선택하세요.
-      </p>
-      <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="h-8 text-xs gap-1.5"
-          disabled={loading}
-          onClick={onRefresh}
-        >
-          {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-          서버에서 다시 읽기
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          className="h-8 text-xs gap-1.5 bg-gray-900 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900"
-          disabled={loading}
-          onClick={onPick}
-        >
-          <FolderOpen className="h-3.5 w-3.5" />
-          .beacon 폴더 선택
-        </Button>
-      </div>
-    </Card>
-  );
-}
-
 function ProjectCard({
   view,
   nameDraft,
@@ -168,7 +127,7 @@ function ProjectCard({
     <Card className="rounded-2xl border border-gray-100 dark:border-gray-800 p-5 bg-card shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <div className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Beacon 프로세스</div>
+          <div className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">업무 흐름</div>
           {editable ? (
             <label className="mt-1 block">
               <span className="sr-only">프로젝트 이름</span>
@@ -192,7 +151,11 @@ function ProjectCard({
           <p className="mt-0.5 text-[11px] text-muted-foreground">
             초기화 {formatWhen(summary.initializedAt)}
             {summary.scannedAt ? ` · 스캔 ${formatWhen(summary.scannedAt)}` : ''}
-            {view.source === 'file-picker' ? ' · 로컬 폴더' : ' · 서버 FS · Folio 편집 가능'}
+            {view.source === 'local'
+              ? ' · 이 기기 · Folio 편집 가능'
+              : view.source === 'file-picker'
+                ? ' · 로컬 폴더'
+                : ' · 서버 FS · Folio 편집 가능'}
           </p>
         </div>
         <div className="min-w-[140px]">
@@ -273,11 +236,13 @@ function StageGrid({
   )
 }
 
-function TimelineList({ items }: { items: TimelineItem[] }) {
+function TimelineList({ items, beaconConnected }: { items: TimelineItem[]; beaconConnected: boolean }) {
   if (items.length === 0) {
     return (
       <p className="text-sm text-muted-foreground py-6 text-center">
-        Timeline 이력이 없습니다. Beacon 스캔 후 <code className="text-xs">beacon.db</code> 에 쌓입니다.
+        {beaconConnected
+          ? <>Timeline 이력이 없습니다. Beacon 활동이 생기면 여기에 표시됩니다.</>
+          : <>업무 흐름을 저장하면 변경 기록이 여기에 쌓입니다.</>}
       </p>
     );
   }
@@ -305,16 +270,20 @@ function TimelineList({ items }: { items: TimelineItem[] }) {
 function ArtifactChecklist({
   items,
   editable,
+  beaconConnected,
   onToggle,
 }: {
   items: ArtifactItem[]
   editable: boolean
+  beaconConnected: boolean
   onToggle: (path: string, present: boolean) => void
 }) {
   if (items.length === 0) {
     return (
       <p className="text-sm text-muted-foreground py-6 text-center">
-        산출물 목록이 없습니다. Docs에서 export 하거나 Beacon 스냅샷이 있으면 표시됩니다.
+        {beaconConnected
+          ? 'Docs에서 export 하거나 Beacon 산출물이 생기면 표시됩니다.'
+          : 'Beacon을 연결하면 프로젝트 산출물을 자동으로 확인할 수 있습니다.'}
       </p>
     )
   }
@@ -403,12 +372,16 @@ export function BeaconPanel() {
     return list;
   }, []);
 
-  const loadFromServer = useCallback(async (opts?: { clearUpdateBadge?: boolean }) => {
+  const loadFromServer = useCallback(async (opts?: { clearUpdateBadge?: boolean; forceBeacon?: boolean }) => {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchBeaconSummary();
+      const wantsBeacon = opts?.forceBeacon || getProcessProviderPreference() === 'beacon';
+      const data = wantsBeacon ? await fetchBeaconSummary() : loadLocalProcess();
       const activeData = data.available ? data : loadLocalProcess();
+      if (opts?.forceBeacon && activeData.source === 'server') {
+        setProcessProviderPreference('beacon');
+      }
       setView(activeData);
       const gated = applyGateAutomation(activeData.summary?.stages ?? [], activeData.artifacts ?? []);
       setNameDraft(activeData.summary?.name ?? activeData.project?.name ?? '');
@@ -462,6 +435,9 @@ export function BeaconPanel() {
           await refreshSnapshots();
         }
       }
+      if (opts?.forceBeacon && activeData.source === 'local') {
+        setError('연결된 Beacon 프로젝트가 없습니다. .beacon 폴더를 직접 선택해 주세요.');
+      }
     } catch (e) {
       // Beacon은 선택 확장이다. 연결 실패가 기본 로컬 업무 흐름을 막지 않는다.
       console.warn('Beacon 연결을 건너뛰고 로컬 프로세스를 사용합니다.', e);
@@ -477,7 +453,15 @@ export function BeaconPanel() {
     setError(null);
     try {
       const data = await loadBeaconFromDirectoryPicker();
+      if (!data.available) {
+        setError(data.message ?? 'Beacon 프로젝트를 읽을 수 없습니다.');
+        return;
+      }
+      setProcessProviderPreference('beacon');
       setView(data);
+      setNameDraft(data.summary?.name ?? data.project?.name ?? '');
+      setStagesDraft(data.summary?.stages ?? []);
+      setArtifactsDraft(data.artifacts ?? []);
       setLastUpdatedAt(new Date().toISOString());
       setUpdateAvailable(false);
     } catch (e) {
@@ -489,6 +473,19 @@ export function BeaconPanel() {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  const useLocalProvider = useCallback(() => {
+    setProcessProviderPreference('local');
+    const localView = loadLocalProcess();
+    setView(localView);
+    setNameDraft(localView.summary?.name ?? '');
+    setStagesDraft(localView.summary?.stages ?? []);
+    setArtifactsDraft(localView.artifacts);
+    setSnapshots([]);
+    setError(null);
+    setLastUpdatedAt(new Date().toISOString());
+    showAppToast('이 기기의 업무 흐름으로 전환했습니다');
   }, []);
 
   const takeSnapshot = useCallback(async (source: 'manual' | 'auto' | 'change' = 'manual') => {
@@ -712,24 +709,54 @@ export function BeaconPanel() {
     );
   }
 
-  if (!view?.available || !view.summary) {
-    return (
-      <div className="space-y-3">
-        {error && (
-          <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
-        )}
-        <EmptyState
-          message={view?.message ?? 'Beacon 프로젝트를 초기화하세요'}
-          onPick={() => void pickFolder()}
-          onRefresh={() => void loadFromServer()}
-          loading={loading}
-        />
-      </div>
-    );
-  }
+  if (!view?.available || !view.summary) return null;
 
   return (
     <div className="space-y-6">
+      <Card className="rounded-2xl border border-gray-100 bg-card p-4 shadow-sm dark:border-gray-800">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800">
+              {beaconConnected ? <Database className="size-4" /> : <HardDrive className="size-4" />}
+            </div>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm font-semibold">
+                  {beaconConnected ? 'Beacon 확장 연결됨' : '이 기기에서 사용 중'}
+                </p>
+                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
+                  {beaconConnected ? '확장' : '기본'}
+                </span>
+              </div>
+              <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                {beaconConnected
+                  ? '프로젝트 파일·Timeline·스냅샷을 업무 흐름에 연결합니다.'
+                  : '별도 설치 없이 단계와 기록을 이 브라우저에 안전하게 저장합니다.'}
+              </p>
+            </div>
+          </div>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            {beaconConnected ? (
+              <Button type="button" size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={useLocalProvider}>
+                <HardDrive className="size-3.5" />
+                이 기기로 전환
+              </Button>
+            ) : (
+              <>
+                <Button type="button" size="sm" variant="outline" className="h-8 gap-1.5 text-xs" disabled={loading} onClick={() => void loadFromServer({ forceBeacon: true })}>
+                  {loading ? <Loader2 className="size-3.5 animate-spin" /> : <Sparkles className="size-3.5" />}
+                  프로젝트 감지
+                </Button>
+                <Button type="button" size="sm" variant="outline" className="h-8 gap-1.5 text-xs" disabled={loading} onClick={() => void pickFolder()}>
+                  <FolderOpen className="size-3.5" />
+                  폴더 연결
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      </Card>
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
           <Activity className="h-4 w-4" />
@@ -790,17 +817,10 @@ export function BeaconPanel() {
             {snapBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
             스냅샷
           </Button>}
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="h-7 text-xs gap-1.5"
-            disabled={loading}
-            onClick={() => void pickFolder()}
-          >
+          {beaconConnected && <Button type="button" size="sm" variant="outline" className="h-7 gap-1.5 text-xs" disabled={loading} onClick={() => void pickFolder()}>
             <FolderOpen className="h-3.5 w-3.5" />
-            {beaconConnected ? '폴더 선택' : 'Beacon 연결'}
-          </Button>
+            다른 폴더
+          </Button>}
         </div>
       </div>
 
@@ -932,7 +952,7 @@ export function BeaconPanel() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card className="rounded-2xl border border-gray-100 dark:border-gray-800 p-5 bg-card shadow-sm">
           <h3 className="text-sm font-semibold tracking-tight mb-4">Timeline</h3>
-          <TimelineList items={view.timeline} />
+          <TimelineList items={view.timeline} beaconConnected={beaconConnected} />
         </Card>
         <Card className="rounded-2xl border border-gray-100 dark:border-gray-800 p-5 bg-card shadow-sm">
           <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1">
@@ -957,12 +977,13 @@ export function BeaconPanel() {
           <ArtifactChecklist
             items={activeArtifacts}
             editable={editable}
+            beaconConnected={beaconConnected}
             onToggle={toggleArtifact}
           />
         </Card>
       </div>
 
-      <BeaconTimelineAnalytics events={view.timeline} />
+      <BeaconTimelineAnalytics events={view.timeline} includeBeacon={beaconConnected} />
 
       {beaconConnected && <Card className="rounded-2xl border border-gray-100 dark:border-gray-800 p-5 bg-card shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-3 mb-4">

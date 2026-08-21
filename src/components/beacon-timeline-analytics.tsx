@@ -35,14 +35,20 @@ function Heatmap({ analytics }: { analytics: TimelineAnalytics }) {
   )
 }
 
-export function BeaconTimelineAnalytics({ events }: { events: TimelineItem[] }) {
+export function BeaconTimelineAnalytics({
+  events,
+  includeBeacon = true,
+}: {
+  events: TimelineItem[]
+  includeBeacon?: boolean
+}) {
   const analytics = useMemo(() => analyzeTimeline(events, 28), [events])
 
   return (
     <Card className="rounded-2xl border border-gray-100 dark:border-gray-800 p-5 bg-card shadow-sm">
       <h3 className="text-sm font-semibold tracking-tight">Timeline 분석</h3>
       <p className="mt-0.5 text-[11px] text-muted-foreground mb-4">
-        최근 28일 활동 · Beacon DB + Folio 이벤트
+        최근 28일 활동 · {includeBeacon ? 'Beacon + Folio 이벤트' : 'Folio 업무 흐름'}
       </p>
 
       <div className="grid grid-cols-2 gap-3 mb-4">
