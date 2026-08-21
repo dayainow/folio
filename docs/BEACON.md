@@ -70,7 +70,7 @@ BEACON_PROJECT_ROOT=/path/to/project
 
 ### 저장 모드 Beacon
 
-1. 헤더에서 **Beacon** 선택 (available 일 때만 활성)
+1. 사이드바 저장 메뉴의 **고급 확장**에서 Beacon 선택 (available 일 때만 활성)
 2. Journal/Docs/Board 저장 → `PUT /api/beacon/folio`
 3. 파일: `.beacon/cache/folio-journals.json` / `folio-docs.json` / `folio-boards.json`
 4. 원격(캐시) 실패·타임아웃(5초) 시에도 **로컬에는 이미 저장됨**

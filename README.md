@@ -1156,6 +1156,7 @@ npm run runbook:backup
 - 완료: **P68** Local-first 업무 흐름 · Beacon 선택형 확장 · 연결 실패 복구
 - 품질: 전체 271개 테스트 · 린트 · 타입 검사 · 프로덕션 빌드 통과
 - 다음: 4.3 로드맵
+- 인수인계: **[2026-08-21 작업 현황과 다음 단계](docs/HANDOFF-2026-08-21.md)**
 - 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md) · [docs/BEACON.md](docs/BEACON.md))
 
 ---
