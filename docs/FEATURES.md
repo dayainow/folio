@@ -116,9 +116,9 @@
 
 ---
 
-## 프로세스 (Beacon)
+## 프로세스 (Local-first · Beacon 선택)
 
-프로젝트 Gate · Timeline · 산출물.
+Beacon 설치 없이 사용하는 프로젝트 Gate · Timeline. Beacon을 연결하면 산출물과 스냅샷이 확장된다.
 
 ### Gate 상태
 - P0–P4 등 Gate 진행률
@@ -132,6 +132,8 @@
 - Docs에서 Beacon으로 export 가능
 
 ### Beacon 연동
+- 선택 기능이며 기본 프로세스 사용에는 설치가 필요하지 않음
+- 프로세스 Provider 카드에서 연결·로컬 전환
 - 저장 모드 **beacon** 또는 `.beacon` 폴더
 - `BEACON_PROJECT_ROOT` 환경변수
 - 상세: [BEACON.md](./BEACON.md)
@@ -162,7 +164,7 @@
 |------|-----------|--------|------|
 | **local** | 브라우저 localStorage | 불필요 | 기본 · 오프라인 · 기기 종속 |
 | **cloud** | Supabase | 필요 | 멀티 기기 · 팀 공유 |
-| **beacon** | `.beacon` 캐시/프로젝트 | 선택 | CLI·Gate와 동기 |
+| **beacon** | `.beacon` 캐시/프로젝트 | 선택 | 고급 확장 · CLI·Gate와 동기 |
 
 ### 전환 방법
 1. 사이드바에서 모드 변경

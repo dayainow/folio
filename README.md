@@ -2,7 +2,7 @@
 
 ![Dashboard](screenshots/dashboard.png)
 
-**프로젝트의 기록, 한 곳에서.** · **v4.1.0**
+**프로젝트의 기록, 한 곳에서.** · **v4.2.0**
 
 Folio는 개발자의 일지·문서·일정·프로세스를 하나로 묶는 워크스페이스입니다.
 Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정을 tracking하는 흐름을,
@@ -19,8 +19,8 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **Jira** | 프로젝트 일정, 이슈 트래킹 |
 | **Folio** | **이 셋을 하나의 워크스페이스로 통합** |
 
-로컬 우선으로 시작해 팀 공유·Beacon·MCP까지 확장할 수 있습니다.
-데이터는 브라우저 또는 Supabase/Beacon에 저장되며, Markdown/CSV/JSON/ZIP으로 내보낼 수 있습니다.
+로컬 우선으로 바로 시작해 팀 공유·MCP·선택형 Beacon 확장까지 연결할 수 있습니다.
+데이터는 기본적으로 브라우저에 저장되며, 필요할 때 Supabase 또는 Beacon으로 확장하고 Markdown/CSV/JSON/ZIP으로 내보낼 수 있습니다.
 
 ---
 
@@ -31,7 +31,7 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **일지** | 날짜별 기록 · 자동 저장 · 태그 · 트리/캘린더/목록 · 통계 · Writing-first · Obsidian |
 | **문서** | 마크다운 편집/프리뷰 · `[[위키링크]]` · 링크 그래프 |
 | **일정** | 4컬럼 칸반 DnD · 우선순위/태그/즐겨찾기 · Jira · GitHub Issues |
-| **프로세스** | Beacon Gate(P0–P4) · Timeline · 산출물 · 변경 감지 · 스냅샷 |
+| **프로세스** | Local Gate(P0–P4) · Timeline · 선택형 Beacon 산출물/스냅샷 |
 | **검색** | `Cmd/Ctrl+K` · 일지·문서·일정 통합 · 아이콘 확장 검색 |
 | **저장** | local / cloud(Supabase) / beacon · 오프라인 큐 · PWA · **저장 관측(P47)** |
 | **내보내기** | MD(frontmatter) · HTML · PDF · CSV · JSON · ZIP · 공유 링크 · 임베드 |
@@ -59,7 +59,7 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 ### 일정 — 4컬럼 칸반(Backlog/In Progress/Review/Done) · Jira 동기화
 ![일정](screenshots/board.png)
 
-### 프로세스 — Beacon Gate(P0–P4) · Timeline · 산출물 체크 · 스냅샷
+### 프로세스 — Local-first Gate(P0–P4) · Timeline · 선택형 Beacon 확장
 ![프로세스 - Gate와 산출물](screenshots/process.png)
 ![프로세스 - Timeline 이력](screenshots/process-2.png)
 
@@ -112,7 +112,9 @@ Obsidian으로 메모하고, Notion으로 문서를 관리하고, Jira로 일정
 | **37** | **3.9.0** | 테마/다크/고대비/커스텀 프리셋·접근성 | ✅ |
 | **38** | **4.0.0** | 성능 최적화 · 테스트 강화 | ✅ |
 | **39** | **4.1.0** | AI 자동완성 · 의미검색 · 편집 · 분석 | ✅ |
+| **40** | **4.2.0** | Local-first 업무 흐름 · Beacon 선택형 확장 | ✅ |
 
+Phase 40 상세: **P68** Local Process Provider · Beacon 연결/전환 · 실패 복구 · 데이터 보존 — [docs/BEACON.md](docs/BEACON.md)
 Phase 39 상세: **P67** OpenAI/Anthropic/Gemini · 의미검색 · 편집/분석 — [docs/AI.md](docs/AI.md)  
 Phase 38 상세: **P66** 번들/예산 · Web Vitals · Vitest 80% · Playwright · Storybook/Chromatic · 가상화 — `542a006` · [docs/PERFORMANCE.md](docs/PERFORMANCE.md)  
 Phase 37 상세: **P65** Light/Dark/System · 고대비 · 프리셋 · 글자/포커스/모션 — `d6400a1` · [docs/THEMES.md](docs/THEMES.md)  
@@ -1146,14 +1148,15 @@ npm run runbook:backup
 - **v3.9** ✅ — 테마/다크/고대비/접근성 · **3.9.0**
 - **v4.0** ✅ — 성능 최적화 · 테스트 강화 · **4.0.0**
 - **v4.1** ✅ — AI 기능 · 개인 업무 비서 UX · 보안·Standalone 패키징 · **4.1.0**
+- **v4.2** ✅ — Beacon 없이 쓰는 Local-first 업무 흐름 · 선택형 확장 · **4.2.0**
 
 ## 작업 관리
 
-- 현재 릴리스: **Phase 39** · v**4.1.0**
-- 완료: **P67** AI 자동완성 · 의미검색 · 편집 · 분석 · 개인 업무 비서 UX
-- 품질: 보안 검토 주요 4건 해결 · 배포 의존성 취약점 0건 · Standalone 실행 검증
-- 다음: 4.2 로드맵
-- 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md) · [docs/AI.md](docs/AI.md))
+- 현재 릴리스: **Phase 40** · v**4.2.0**
+- 완료: **P68** Local-first 업무 흐름 · Beacon 선택형 확장 · 연결 실패 복구
+- 품질: 전체 271개 테스트 · 린트 · 타입 검사 · 프로덕션 빌드 통과
+- 다음: 4.3 로드맵
+- 이어가기: `git pull origin main` 후 이 상태에서 진행 ([VERSION.md](VERSION.md) · [docs/BEACON.md](docs/BEACON.md))
 
 ---
 
@@ -1166,4 +1169,4 @@ Copyright (c) dayainow. All rights reserved.
 
 ---
 
-**Folio** — 프로젝트의 기록, 한 곳에서. · v4.1.0
+**Folio** — 프로젝트의 기록, 한 곳에서. · v4.2.0
