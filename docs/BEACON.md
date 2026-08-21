@@ -1,5 +1,9 @@
 # Folio ↔ Beacon 연동 (BEACON)
 
+> Beacon은 선택 확장 기능이다. Folio는 Beacon CLI나 `.beacon/` 폴더 없이도 로컬
+> 프로세스 단계와 Gate를 생성·편집·저장한다. Beacon을 연결하면 프로젝트 스캔,
+> 파일 변경 감지, 산출물 연동, 스냅샷 Diff가 추가된다.
+
 Folio **프로세스** 탭과 저장 모드 `Beacon`이 Beacon Project OS와 어떻게 맞물리는지 정리한다.  
 규약 원문: [PROCESS.md](../PROCESS.md)
 

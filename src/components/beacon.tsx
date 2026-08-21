@@ -52,6 +52,7 @@ import {
   subscribeBeaconTimelineConsent,
 } from '@/lib/beacon-timeline-consent';
 import { showAppToast } from '@/lib/health-monitor';
+import { loadLocalProcess, saveLocalProcess } from '@/lib/local-process';
 
 const AUTO_SNAPSHOT_MS = 5 * 60 * 1000;
 
@@ -387,7 +388,8 @@ export function BeaconPanel() {
   const autoSnapAt = useRef(0);
   const previousViewRef = useRef<BeaconViewModel | null>(null);
   const autoDetectRef = useRef(true);
-  const editable = view?.source === 'server';
+  const editable = view?.source === 'server' || view?.source === 'local';
+  const beaconConnected = view?.source === 'server' || view?.source === 'file-picker';
 
   const refreshSnapshots = useCallback(async () => {
     const list = await fetchBeaconSnapshots();
@@ -406,12 +408,13 @@ export function BeaconPanel() {
     setError(null);
     try {
       const data = await fetchBeaconSummary();
-      setView(data);
-      const gated = applyGateAutomation(data.summary?.stages ?? [], data.artifacts ?? []);
-      setNameDraft(data.summary?.name ?? data.project?.name ?? '');
+      const activeData = data.available ? data : loadLocalProcess();
+      setView(activeData);
+      const gated = applyGateAutomation(activeData.summary?.stages ?? [], activeData.artifacts ?? []);
+      setNameDraft(activeData.summary?.name ?? activeData.project?.name ?? '');
       setStagesDraft(gated.stages);
-      setArtifactsDraft(data.artifacts ?? []);
-      setProjectMtime(data.projectMtime ?? null);
+      setArtifactsDraft(activeData.artifacts ?? []);
+      setProjectMtime(activeData.projectMtime ?? null);
       setConflict(null);
       setLastUpdatedAt(new Date().toISOString());
       if (gated.autoPassed.length > 0) {
@@ -451,8 +454,8 @@ export function BeaconPanel() {
       if (opts?.clearUpdateBadge !== false) {
         setUpdateAvailable(false);
       }
-      const list = await refreshSnapshots();
-      if (data.available && list.length === 0) {
+      const list = activeData.source === 'server' ? await refreshSnapshots() : [];
+      if (activeData.source === 'server' && list.length === 0) {
         const snap = await createBeaconSnapshotClient('auto');
         if (snap) {
           autoSnapAt.current = Date.now();
@@ -460,16 +463,10 @@ export function BeaconPanel() {
         }
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : '로드 실패');
-      setView({
-        available: false,
-        project: null,
-        summary: null,
-        timeline: [],
-        artifacts: [],
-        message: 'Beacon 프로젝트를 초기화하세요',
-        source: 'none',
-      });
+      // Beacon은 선택 확장이다. 연결 실패가 기본 로컬 업무 흐름을 막지 않는다.
+      console.warn('Beacon 연결을 건너뛰고 로컬 프로세스를 사용합니다.', e);
+      setError(null);
+      setView(loadLocalProcess());
     } finally {
       setLoading(false);
     }
@@ -566,6 +563,21 @@ export function BeaconPanel() {
           modifiedAt: a.modifiedAt,
         }));
 
+        if (view?.source === 'local') {
+          const localView = saveLocalProcess({
+            name: nameDraft,
+            gates,
+            artifacts,
+          });
+          setView(localView);
+          setNameDraft(localView.summary?.name ?? '');
+          setStagesDraft(localView.summary?.stages ?? []);
+          setArtifactsDraft(localView.artifacts);
+          setLastUpdatedAt(new Date().toISOString());
+          showAppToast('업무 흐름을 이 기기에 저장했습니다');
+          return;
+        }
+
         const result = await putBeaconProject({
           expectedMtime: projectMtime,
           strategy,
@@ -593,12 +605,12 @@ export function BeaconPanel() {
         setSaveBusy(false);
       }
     },
-    [artifactsDraft, editable, loadFromServer, nameDraft, projectMtime, stagesDraft],
+    [artifactsDraft, editable, loadFromServer, nameDraft, projectMtime, stagesDraft, view?.source],
   );
 
   // 변경 감지 폴링 + 자동 새로고침/스냅샷/diff
   useEffect(() => {
-    if (view?.source === 'file-picker') return;
+    if (view?.source !== 'server') return;
 
     const watcher = watchBeaconFiles({
       intervalMs: 5000,
@@ -722,11 +734,13 @@ export function BeaconPanel() {
         <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
           <Activity className="h-4 w-4" />
           <span>
-            {editable
+            {view.source === 'local'
+              ? '이 기기에 안전하게 저장 · Beacon 없이 바로 사용'
+              : editable
               ? '양방향 · Folio 오버레이는 project.json 에 append-only 로 저장'
               : '폴더 선택 모드 · 서버 쓰기 비활성'}
           </span>
-          {view.source !== 'file-picker' && (
+          {view.source === 'server' && (
             <span className="text-[10px] rounded-full border border-gray-200 px-2 py-0.5 dark:border-gray-700">
               {autoDetect ? '자동 감지 ON' : '자동 감지 OFF'}
             </span>
@@ -753,7 +767,7 @@ export function BeaconPanel() {
               프로세스 저장
             </Button>
           )}
-          <Button
+          {beaconConnected && <Button
             type="button"
             size="sm"
             variant="outline"
@@ -764,8 +778,8 @@ export function BeaconPanel() {
           >
             {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
             새로고침
-          </Button>
-          <Button
+          </Button>}
+          {beaconConnected && <Button
             type="button"
             size="sm"
             variant="outline"
@@ -775,7 +789,7 @@ export function BeaconPanel() {
           >
             {snapBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
             스냅샷
-          </Button>
+          </Button>}
           <Button
             type="button"
             size="sm"
@@ -785,12 +799,12 @@ export function BeaconPanel() {
             onClick={() => void pickFolder()}
           >
             <FolderOpen className="h-3.5 w-3.5" />
-            폴더 선택
+            {beaconConnected ? '폴더 선택' : 'Beacon 연결'}
           </Button>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-4">
+      {beaconConnected && <div className="flex flex-wrap gap-4">
         <label className="inline-flex items-center gap-2 text-[11px] text-muted-foreground cursor-pointer">
           <input
             type="checkbox"
@@ -817,7 +831,7 @@ export function BeaconPanel() {
           />
           Folio 저장/편집 이벤트를 Beacon Timeline에 기록 (기본 꺼짐)
         </label>
-      </div>
+      </div>}
 
       {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
 
@@ -938,7 +952,7 @@ export function BeaconPanel() {
             />
           </div>
           <p className="text-[11px] text-muted-foreground mb-4">
-            Beacon + Folio export · {artifactStats.total}개 · 100% 시 Gate 자동 PASS
+            {beaconConnected ? 'Beacon + Folio export' : 'Folio 로컬 산출물'} · {artifactStats.total}개 · 100% 시 Gate 자동 PASS
           </p>
           <ArtifactChecklist
             items={activeArtifacts}
@@ -950,7 +964,7 @@ export function BeaconPanel() {
 
       <BeaconTimelineAnalytics events={view.timeline} />
 
-      <Card className="rounded-2xl border border-gray-100 dark:border-gray-800 p-5 bg-card shadow-sm">
+      {beaconConnected && <Card className="rounded-2xl border border-gray-100 dark:border-gray-800 p-5 bg-card shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
           <div>
             <h3 className="text-sm font-semibold tracking-tight flex items-center gap-1.5">
@@ -1023,7 +1037,7 @@ export function BeaconPanel() {
             />
           </div>
         )}
-      </Card>
+      </Card>}
     </div>
   );
 }

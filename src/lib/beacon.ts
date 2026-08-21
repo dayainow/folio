@@ -139,7 +139,7 @@ export interface BeaconViewModel {
   timeline: TimelineItem[]
   artifacts: ArtifactItem[]
   message?: string
-  source: 'server' | 'file-picker' | 'none'
+  source: 'local' | 'server' | 'file-picker' | 'none'
   /** project.json mtime (ms) — 충돌 감지용 */
   projectMtime?: number | null
 }
